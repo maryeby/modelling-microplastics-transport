@@ -4,7 +4,9 @@ import scipy.integrate as integrate
 import scipy.optimize as optimize
 from scipy import constants
 from tqdm import tqdm
-from maxey_riley import compare_drift_velocities
+
+import ocean_wave
+# TODO refactor & make object-oriented
 
 def main():
 	# compute the relative errors for each depth case

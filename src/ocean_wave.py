@@ -152,14 +152,12 @@ class OceanWave:
 		z_hist : array
 			The vertical particle positions computed with history.
 		"""
-		t_span = (0, 20 * self.__period)	# time span
+		t_span = (0, 100 * self.__period + 0.1 * self.__period)	# time span
 
-		# compute numerical solutions with and without history
 		x, z, _, _ = integrate.solve_ivp(self.mr_no_history, t_span,
-										 [x_0, z_0, u_0, w_0], method='BDF').y
-		x_hist, z_hist, _, _ = integrate.solve_ivp(self.mr_with_history, t_span,
-										 [x_0, z_0, u_0, w_0], method='BDF').y
-		return x, z, x_hist, z_hist
+										 [x_0, z_0, u_0, w_0], method='BDF',
+										 rtol=1e-8, atol=1e-10).y
+		return x, z
 
 	def compare_drift_velocities(self, initial_depths, x_0):
 		"""
@@ -175,8 +173,8 @@ class OceanWave:
 		# initialize local variables
 		analytical_drift_vels = []
 		numerical_drift_vels = []
-		phase_speed = self.__angular_freq / self.__wave_num	# c
-		t_span = (0, 20 * self.__period)					# time span
+		phase_speed = self.__angular_freq / self.__wave_num		# c
+		t_span = (0, 20 * self.__period + self.__period * 0.1)	# time span
 
 		for z_0 in initial_depths:
 			# make the initial particle velocity the same as the fluid velocity
@@ -185,11 +183,26 @@ class OceanWave:
 			# run numerics for each initial depth
 			x, z, u, w = integrate.solve_ivp(self.mr_no_history, t_span,
 											 [x_0, z_0, u_0, w_0],
-											 method='BDF').y
+											 method='BDF', rtol=1e-8,
+											 atol=1e-10).y
 			
+			# find where the trajectory completes the last orbit
+			if z_0 < z[-1]:
+				index = np.where(z <= z_0)[-1][-1]
+			elif z[-1] < z_0:
+				index = np.where(z >= z_0)[-1][-1]
+			else:
+				index = len(z) - 1
+
+			if z[index] == z_0:
+				x_final = x[index]
+			else:
+				x_final = (x[index] + x[index + 1]) / 2
+	
 			# compute numerical and analytical drift velocities
-			numerical_sol = (x[-1] - x[0]) / t_span[1]
-			analytical_sol = phase_speed * (self.__amplitude * self.__wave_num) 										 ** 2 * np.cosh(2 * self.__wave_num
+			numerical_sol = (x_final - x_0) / t_span[1]
+			analytical_sol = phase_speed * (self.__amplitude * self.__wave_num)\
+										 ** 2 * np.cosh(2 * self.__wave_num
 														* (z_0 + self.__depth))\
 										 / (2 * np.sinh(self.__wave_num
 														* self.__depth) ** 2)
@@ -222,7 +235,7 @@ class OceanWave:
 		x, z = y[:2]				# current position
 		particle_velocity = y[2:]	# u and w components of particle velocity
 		fluid_velocity = self.velocity_field(x, z, t)
-		
+
 		# full derivative along the trajectory of the fluid element, Du / Dt
 		fluid_derivative = np.array([
 						   self.__amplitude * self.__angular_freq ** 2
@@ -320,9 +333,9 @@ class OceanWave:
 				# avoid dividing by zero
 				if self.__timesteps[-1] - self.__timesteps[i] != 0:
 						delta_t = self.__timesteps[i + 1] - self.__timesteps[i]
-						integrand += delta_t / (np.sqrt(np.abs(
+						integrand += delta_t / (np.sqrt(
 												self.__timesteps[-1]
-											 	- self.__timesteps[i]))) \
+											 	- self.__timesteps[i])) \
 										  	 * (np.array(
 											 	self.__particle_vel_history[i]) 
 										  	 	- np.array(

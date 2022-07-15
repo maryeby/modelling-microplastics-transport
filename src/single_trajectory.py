@@ -2,28 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 from scipy import constants
-from maxey_riley import particle_trajectory
+
+import ocean_wave
 
 # define variables
-amplitude = 0.1						# A
-wavelength = 10 					# lambda
-wave_num = 2 * np.pi / wavelength 	# k
-depth = 2							# h
-# calculate omega using dispersion relation
-angular_freq = np.sqrt(constants.g * wave_num * np.tanh(wave_num * depth))
-period = 2 * np.pi / angular_freq	# period of particle oscillation
-t_span = (0, 20 * period)			# time span
-density = 2 / 3						# R
-stokes_num = 1e-5					# St
-x_0, z_0, u_0, w_0 = 0, -0.5, 1, 0	# initial position and velocity values
-
-# compute particle trajectory
-x, z = particle_trajectory(x_0, z_0, u_0, w_0, period, wave_num, depth,
-						   angular_freq, amplitude, density, stokes_num)
+my_wave = ocean_wave.OceanWave(amplitude=0.026, wavelength=0.5,
+							   density=1.01 * (2 / 3),
+							   stokes_num=(0.5 * 1.01 * (2 / 3) / 11))
+x_0, z_0, u_0, w_0 = 0.13, -0.3, 0, 0
+x, z = my_wave.particle_trajectory(x_0, z_0, u_0, w_0)
 
 # plot results
-plt.plot(x, z, 'k')
-plt.title(r'Particle Trajectory with $ St $ = {:.0e}'.format(stokes_num))
-plt.xlabel('Horizontal x')
-plt.ylabel('Depth z')
+plt.plot(my_wave.get_wave_num() * x, my_wave.get_wave_num() * z, 'k')
+plt.xlim(0, 3)
+plt.ylim(-4, 0)
+plt.title(r'Particle Trajectory with $ St $ = {:.0e}'.format(
+													  my_wave.get_stokes_num()))
+plt.xlabel('kx')
+plt.ylabel('kz')
 plt.show()
