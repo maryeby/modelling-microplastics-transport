@@ -96,7 +96,7 @@ class OceanWave:
 		"""Return the maximum velocity U."""
 		return self.__max_velocity
 
-	def get_respnse_time(self):
+	def get_response_time(self):
 		"""Return the response time tau."""
 		return self.__response_time
 
@@ -104,13 +104,13 @@ class OceanWave:
 		"""Return the period."""
 		return self.__period
 
-	def get_particle_vel_history(self):
-		"""Return the particle velocity history."""
-		return self.__particle_vel_history
+	def get_particle_history(self):
+		"""Return the history of v dot."""
+		return self.__particle_history
 
 	def get_fluid_vel_history(self):
-		"""Return the fluid velocity history."""
-		return self.__fluid_vel_history
+		"""Return the history of u dot."""
+		return self.__fluid_history
 
 	def get_timesteps(self):
 		"""Return the time steps."""
