@@ -26,41 +26,32 @@ def main():
 	# plot results
 	# analytical solutions for the shallow case
 	plt.plot(shallow_analytics, shallow_z0 / shallow_h, c='deeppink',
-			 linestyle='--',
-			 label=r'Analytical solution for $ h / \lambda = {:.2f} $'\
-					 .format(shallow_label))
+			 linestyle='--', label='Shallow analytical solution')
 
 	# numerical solutions for the shallow case
 	plt.scatter(shallow_numerics, shallow_z0 / shallow_h, c='k', marker='^',
-				label=r'Numerical solution for $ h / \lambda = {:.2f} $'\
-					    .format(shallow_label))	
+				label='Shallow numerical solution')	
 
 	# analytical solutions for the intermediate case
 	plt.plot(intermediate_analytics, intermediate_z0 / intermediate_h,
 			 c='mediumpurple', linestyle='--',
-			 label=r'Analytical solution for $ h / \lambda = {:.2f} $'\
-					 .format(intermediate_label))
+			 label='Intermediate analytical solution')
 
 	# numerical solutions for the intermediate case
 	plt.scatter(intermediate_numerics, intermediate_z0 / intermediate_h,
-				c='k', marker='o',
-				label=r'Numerical solution for $ h / \lambda = {:.2f} $'\
-					    .format(intermediate_label))
+				c='k', marker='o', label='Intermediate numerical solution')
 
 	# analytical solutions for the deep case	
 	plt.plot(deep_analytics, deep_z0 / deep_h, c='cornflowerblue',
-			 linestyle='--',
-			 label=r'Analytical solution for $ h / \lambda = {:.2f} $'\
-					 .format(deep_label))
+			 linestyle='--', label='Deep analytical solution')
 
 	# numerical solutions for the deep case
 	plt.scatter(deep_numerics, deep_z0 / deep_h, c='k', marker='s',
-				label=r'Numerical solution for $ h / \lambda = {:.2f} $'\
-					    .format(deep_label))	
+				label='Deep numerical solution')	
 
-	plt.title('Drift Velocity Comparisons for Varying Depths')
-	plt.xlabel(r'Drift velocity $ u_d $')
-	plt.ylabel(r'$ \frac{z}{h} $')
+	plt.title('Drift Velocity Comparisons for Varying Depths', fontsize=16)
+	plt.xlabel(r'Drift Velocity $ u_d $', fontsize=14)
+	plt.ylabel(r'$ \frac{z}{h} $', fontsize=14)
 	plt.legend()
 	plt.show()
 
@@ -75,15 +66,26 @@ def run_comparisons(depth):
 
 	Returns
 	-------
-	Arrays containing the numerical solutions, analytical solutions, and
-	initial depths, and a float representing h over lambda.
+	Arrays containing the normalized numerical solutions, analytical solutions,
+	and initial depths, and a float representing h over lambda.
 	"""
-	my_wave = ocean_wave.OceanWave(amplitude=0.05, depth=depth,
+	# initialize ocean wave object and other variables
+	my_wave = ocean_wave.OceanWave(amplitude=0.1, depth=depth,
 			  stokes_num=1e-10)
 	initial_depths = np.linspace(0, -depth, num=10, endpoint=False)
-	x_0 = 0									
-	numerical_sol, analytical_sol =  my_wave.compare_drift_velocities(
-												  initial_depths, x_0)
+	x_0 = 0								
+	# compute solutions
+	numerical_sol, analytical_sol = my_wave.compare_drift_velocities(
+											my_wave.mr_no_history,
+											initial_depths, x_0)
+	# normalize drift velocities
+	numerical_sol /= np.sqrt(constants.g / my_wave.get_wave_num()
+										 * np.tanh(my_wave.get_wave_num()
+										 * depth))
+	analytical_sol /= np.sqrt(constants.g / my_wave.get_wave_num()
+										 * np.tanh(my_wave.get_wave_num()
+										 * depth))
+	# return normalized solutions
 	return numerical_sol, analytical_sol, initial_depths, \
 		   depth / my_wave.get_wavelength()
 

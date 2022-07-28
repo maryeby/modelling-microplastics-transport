@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 from scipy import constants
 
+# reproducing Figure 9 from Sevilla 2021
 def main():
 	# define variables
 	amplitude = 0.3						# A

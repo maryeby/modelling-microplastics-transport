@@ -7,7 +7,7 @@ from tqdm import tqdm
 import ocean_wave
 
 # define variables
-my_wave = ocean_wave.OceanWave(amplitude=0.3, depth=10, stokes_num=1e-10)
+my_wave = ocean_wave.OceanWave(amplitude=0.05, depth=10, stokes_num=1e-10)
 trajectory_depths = np.linspace(-1, -my_wave.get_depth(), num=5,
 								endpoint=False)
 drift_vel_depths = np.linspace(-1, -my_wave.get_depth(), num=10,
@@ -17,7 +17,8 @@ plt.figure()
 
 # compute particle trajectories from various initial depths
 for z_0 in tqdm(trajectory_depths):
-	x, z = my_wave.particle_trajectory(x_0, z_0, u_0, w_0)
+	x, z = my_wave.particle_trajectory(my_wave.mr_no_history, x_0, z_0, u_0,
+									   w_0)
 	# plot particle trajectories
 	plt.subplot(121)
 	plt.plot(x, z, 'k')
@@ -27,6 +28,7 @@ plt.ylabel('Depth z')
 
 # compute the drift velocity comparisons for various initial depths	
 numerical_drift_vels, analytical_drift_vels = my_wave.compare_drift_velocities(
+													  my_wave.mr_no_history,
 													  drift_vel_depths, x_0)
 
 # plot drift velocity comparisons

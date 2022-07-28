@@ -57,10 +57,10 @@ def relative_errors(stokes_nums, depth):
 
 	Parameters
 	----------
-	depth : float
-		The depth of the water, h in the correpsonding mathematics.
 	stokes_nums : int, float, or array
 		Number(s) to be used as the Stokes number, St.
+	depth : float
+		The depth of the water, h in the correpsonding mathematics.
 
 	Returns
 	-------

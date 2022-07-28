@@ -18,22 +18,28 @@ class OceanWave:
 		The density, denoted R in the corresponding mathematics.
 	stokes_num : float
 		The Stokes number, denoted St in the corresponding mathematics.
+	beta : float
+		The non-dimensional variable beta from Santamaria et al. 2013.
 	wave_num : float
 		The wave number, denoted k in the corresponding mathematics.
 	angular_freq : float
 		The angular frequency, denoted omega in the corresponding mathematics.
+	max_velocity : float
+		The maximum velocity U from Santamaria et al. 2013.
+	response_time : float
+		The Stokes response time tau from Santamaria et al. 2013.
 	period : float
 		The period of the particle oscillations.
-	particle_vel_history : array
-		An array containing the previous particle velocity values.
-	fluid_vel_history : array
-		An array containing the previous fluid velocity values.
+	particle_history : array
+		An array containing the previous particle acceleration values (vdot).
+	fluid_history : array
+		An array containing the previous fluid acceleration values (udot).
 	timesteps : array
 		An array containing the time steps where the M-R equation is evaluated.
 	"""
 	
 	def __init__(self, amplitude=0.1, wavelength=10, depth=8, density=2/3,
-				 stokes_num=0.1, beta=1):
+				 stokes_num=1e-5, beta=1):
 		"""Create an OceanWave object."""
 		self.__amplitude = amplitude	# A
 		self.__wavelength = wavelength	# lambda
@@ -88,7 +94,7 @@ class OceanWave:
 
 	def get_max_velocity(self):
 		"""Return the maximum velocity U."""
-		return self.__angular_freq
+		return self.__max_velocity
 
 	def get_respnse_time(self):
 		"""Return the response time tau."""
@@ -127,21 +133,20 @@ class OceanWave:
 		-------
 		Array containing the velocity field vector components.
 		"""
-		return np.array([0,0])
-#		return np.array([self.__amplitude * self.__angular_freq
-#										  * np.cosh(self.__wave_num
-#													* (z + self.__depth))
-#										  * np.sin(self.__angular_freq * t 
-#												   - self.__wave_num * x)
-#										  / np.sinh(self.__wave_num
-#													* self.__depth),
-#						 self.__amplitude * self.__angular_freq
-#										  * np.sinh(self.__wave_num
-#													* (z + self.__depth))
-#										  * np.cos(self.__angular_freq * t
-#												   - self.__wave_num * x)
-#										  / np.sinh(self.__wave_num
-#													* self.__depth)])
+		return np.array([self.__amplitude * self.__angular_freq
+										  * np.cosh(self.__wave_num
+													* (z + self.__depth))
+										  * np.sin(self.__angular_freq * t
+												   - self.__wave_num * x)
+										  / np.sinh(self.__wave_num
+													* self.__depth),
+						 self.__amplitude * self.__angular_freq
+										  * np.sinh(self.__wave_num
+													* (z + self.__depth))
+										  * np.cos(self.__angular_freq * t
+												   - self.__wave_num * x)
+										  / np.sinh(self.__wave_num
+													* self.__depth)])
 
 	def fluid_accel(self, x, z, t):
 		"""
@@ -160,21 +165,20 @@ class OceanWave:
 		-------
 		Array containing the velocity field vector components.
 		"""
-		return np.array([0,0])
-#		return np.array([self.__amplitude * self.__angular_freq ** 2
-#										  * np.cosh(self.__wave_num
-#													* (z + self.__depth))
-#										  * np.cos(self.__angular_freq * t 
-#												   - self.__wave_num * x)
-#										  / np.sinh(self.__wave_num
-#													* self.__depth),
-#						 -self.__amplitude * self.__angular_freq ** 2
-#										   * np.sinh(self.__wave_num
-#													 * (z + self.__depth))
-#										   * np.cos(self.__angular_freq * t
-#												    - self.__wave_num * x)
-#										   / np.sinh(self.__wave_num
-#													 * self.__depth)])
+		return np.array([self.__amplitude * self.__angular_freq ** 2
+										  * np.cosh(self.__wave_num
+													* (z + self.__depth))
+										  * np.cos(self.__angular_freq * t 
+												   - self.__wave_num * x)
+										  / np.sinh(self.__wave_num
+													* self.__depth),
+						 -self.__amplitude * self.__angular_freq ** 2
+										   * np.sinh(self.__wave_num
+													 * (z + self.__depth))
+										   * np.cos(self.__angular_freq * t
+												    - self.__wave_num * x)
+										   / np.sinh(self.__wave_num
+													 * self.__depth)])
 
 	def fluid_derivative(self, x, z, t):
 		"""
@@ -236,7 +240,7 @@ class OceanWave:
 		"""
 		t_span = (0, 20 * self.__period + 0.1 * self.__period)	# time span
 		x, z, _, _ = integrate.solve_ivp(fun, t_span, [x_0, z_0, u_0, w_0],
-								   method='BDF', rtol=1e-8, atol=1e-10).y
+							   method='BDF', rtol=1e-8, atol=1e-10).y
 		return x, z
 
 	def particle_velocity(self, fun, x_0, z_0, u_0, w_0):
@@ -346,6 +350,7 @@ class OceanWave:
 		"""
 		x, z = y[:2]				# current position
 		particle_velocity = y[2:]	# u and w components of particle velocity
+		fluid_velocity = self.fluid_velocity(x, z, t)
 
 		# compute the terms of the Maxey-Riley equation (neglecting history)
 		fluid_pressure_gradient = 3 / 2 * self.__density \
@@ -358,58 +363,6 @@ class OceanWave:
 		# particle acceleration is the LHS of the M-R equation, denoted dv/dt
 		particle_acceleration = fluid_pressure_gradient + buoyancy_force \
 														- stokes_drag
-
-		return np.concatenate((particle_velocity, particle_acceleration))
-
-	def santamaria(self, t, y):
-		"""
-		Returns the evaluation of the M-R equation using Santamaria's model.
-
-		Parameters
-		----------
-		t : float
-			The time to use in the computation.
-		y : list (array-like)
-			A list containing the x, z, u, and w values to use.
-		
-		Returns
-		-------
-		NumPy array
-			An array containing the x and z components of the particle's
-			velocity and the x and z components of the particle's acceleration.
-			These are denoted by  u, w, du/dt, and dw/dt in the corresponding
-			mathematics.
-		"""	
-		x, z = y[:2]	# current position
-		particle_velocity = y[2:]	# u and w components of particle velocity
-		fluid_velocity = np.array([self.__max_velocity
-								   * np.exp(self.__wave_num * z)
-								   * np.cos(self.__wave_num * x
-											- self.__angular_freq * t),
-						  		   self.__max_velocity
-								   * np.exp(self.__wave_num * z)
-								   * np.sin(self.__wave_num * x
-											- self.__angular_freq * t)])
-		fluid_acceleration = np.array([self.__angular_freq * self.__max_velocity
-									   * np.exp(self.__wave_num * z)
-									   * np.sin(self.__wave_num * x
-												- self.__angular_freq * t),
-						  	  		   -self.__angular_freq
-									   * self.__max_velocity
-									   * np.exp(self.__wave_num * z)
-									   * np.cos(self.__wave_num * x
-												- self.__angular_freq * t)])
-		if t == 0:
-			particle_velocity = fluid_velocity
-
-		fluid_pressure_gradient = self.__beta * fluid_acceleration 
-		buoyancy_force = (1 - self.__beta) * np.array([0, -constants.g])
-		stokes_drag = (fluid_velocity - particle_velocity) \
-									  / self.__response_time
-
-		# particle acceleration is the LHS of the M-R equation, denoted dv/dt
-		particle_acceleration = fluid_pressure_gradient + buoyancy_force \
-														+ stokes_drag
 
 		return np.concatenate((particle_velocity, particle_acceleration))
 
@@ -471,9 +424,63 @@ class OceanWave:
 		# particle acceleration is the LHS of the M-R equation, denoted dv/dt
 		particle_acceleration = fluid_pressure_gradient + buoyancy_force \
 														- stokes_drag - history
-		# update relevant OceanWave attributes
+		# update relevant OceanWave attributes to keep track of history
 		self.__particle_history.append(particle_acceleration)
 		self.__fluid_history.append(self.fluid_accel(x, z, t))
 		self.__timesteps.append(t)
+
+		return np.concatenate((particle_velocity, particle_acceleration))
+
+	def santamaria(self, t, y):
+		"""
+		Returns the evaluation of the M-R equation using the model from
+		Santamaria et al. 2013.
+
+		Parameters
+		----------
+		t : float
+			The time to use in the computation.
+		y : list (array-like)
+			A list containing the x, z, u, and w values to use.
+		
+		Returns
+		-------
+		NumPy array
+			An array containing the x and z components of the particle's
+			velocity and the x and z components of the particle's acceleration.
+			These are denoted by  u, w, du/dt, and dw/dt in the corresponding
+			mathematics.
+		"""	
+		x, z = y[:2]	# current position
+		particle_velocity = y[2:]	# u and w components of particle velocity
+		fluid_velocity = np.array([self.__max_velocity
+								   * np.exp(self.__wave_num * z)
+								   * np.cos(self.__wave_num * x
+											- self.__angular_freq * t),
+						  		   self.__max_velocity
+								   * np.exp(self.__wave_num * z)
+								   * np.sin(self.__wave_num * x
+											- self.__angular_freq * t)])
+		fluid_acceleration = np.array([self.__angular_freq * self.__max_velocity
+									   * np.exp(self.__wave_num * z)
+									   * np.sin(self.__wave_num * x
+												- self.__angular_freq * t),
+						  	  		   -self.__angular_freq
+									   * self.__max_velocity
+									   * np.exp(self.__wave_num * z)
+									   * np.cos(self.__wave_num * x
+												- self.__angular_freq * t)])
+		if t == 0:
+			particle_velocity = fluid_velocity
+
+		# compute the terms of the M-R equation
+		fluid_pressure_gradient = self.__beta * fluid_acceleration 
+		buoyancy_force = (1 - self.__beta) * np.array([0, -constants.g])
+		stokes_drag = (fluid_velocity - particle_velocity) \
+									  / self.__response_time
+
+		# particle acceleration is the LHS of the M-R equation, denoted dv/dt
+		particle_acceleration = fluid_pressure_gradient + buoyancy_force \
+														+ stokes_drag
 
 		return np.concatenate((particle_velocity, particle_acceleration))
