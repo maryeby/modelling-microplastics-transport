@@ -68,8 +68,6 @@ This program contains the `OceanWave` class, which defines an object representin
    Returns the time steps at which the model is evaluated.
 - `fluid_velocity(x, z, t)`  
    Returns the fluid velocity vector u for water of arbitrary depth.
-- `fluid_accel(x, z, t)`  
-   Returns the fluid acceleration u dot for water of arbitrary depth.
 - `fluid_derivative(x, z, t)`  
    Returns the derivative along the trajectory of the fluid element, $\frac{\mathrm{D}\textit{\textbf{u}}}{\mathrm{D}t}$.
 - `particle_trajectory(fun, x_0, z_0, u_0, w_0)`  

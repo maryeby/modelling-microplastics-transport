@@ -148,38 +148,6 @@ class OceanWave:
 										  / np.sinh(self.__wave_num
 													* self.__depth)])
 
-	def fluid_accel(self, x, z, t):
-		"""
-		Returns the fluid acceleration u dot for water of arbitrary depth.
-
-		Parameters
-		----------
-		x : float
-			The x position at which to evaluate the velocity.
-		z : float
-			The z position at which to evaluate the velocity.
-		t : float
-			The time at which to evaluate the velocity.
-
-		Returns
-		-------
-		Array containing the velocity field vector components.
-		"""
-		return np.array([self.__amplitude * self.__angular_freq ** 2
-										  * np.cosh(self.__wave_num
-													* (z + self.__depth))
-										  * np.cos(self.__angular_freq * t 
-												   - self.__wave_num * x)
-										  / np.sinh(self.__wave_num
-													* self.__depth),
-						 -self.__amplitude * self.__angular_freq ** 2
-										   * np.sinh(self.__wave_num
-													 * (z + self.__depth))
-										   * np.cos(self.__angular_freq * t
-												    - self.__wave_num * x)
-										   / np.sinh(self.__wave_num
-													 * self.__depth)])
-
 	def fluid_derivative(self, x, z, t):
 		"""
 		Returns the derivative along the trajectory of the fluid element, Du/Dt.
@@ -474,13 +442,13 @@ class OceanWave:
 			particle_velocity = fluid_velocity
 
 		# compute the terms of the M-R equation
-		fluid_pressure_gradient = self.__beta * fluid_acceleration 
-		buoyancy_force = (1 - self.__beta) * np.array([0, -constants.g])
 		stokes_drag = (fluid_velocity - particle_velocity) \
 									  / self.__response_time
+		buoyancy_force = (1 - self.__beta) * np.array([0, -constants.g])
+		fluid_pressure_gradient = self.__beta * fluid_acceleration 
 
 		# particle acceleration is the LHS of the M-R equation, denoted dv/dt
-		particle_acceleration = fluid_pressure_gradient + buoyancy_force \
-														+ stokes_drag
+		particle_acceleration = stokes_drag + buoyancy_force \
+								+ fluid_pressure_gradient
 
 		return np.concatenate((particle_velocity, particle_acceleration))
