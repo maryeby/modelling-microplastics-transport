@@ -31,90 +31,77 @@ class SantamariaModel:
 		return self.__settling_velocity
 
 	def fluid_velocity(self, x, z, t):
-		return np.array([self.__max_velocity * np.exp(self.__wave_num * z) 
-						 * np.cos(self.__wave_num * x
-								  - self.__angular_freq * t),
-						 self.__max_velocity * np.exp(self.__wave_num * z) 
-						 * np.sin(self.__wave_num * x
-								  - self.__angular_freq * t)])
+		U = self.__max_velocity
+		k = self.__wave_num
+		omega = self.__angular_freq
 
-	def fluid_derivative(self, x, z, t):
+		return np.array([U * np.exp(k * z) * np.cos(k * x - omega * t),
+						 U * np.exp(k * z) * np.sin(k * x - omega * t)])
+
+	def material_derivative(self, x, z, t):
+		U = self.__max_velocity
+		k = self.__wave_num
+		omega = self.__angular_freq
 		u, w = self.fluid_velocity(x, z, t)
-		return np.array([self.__angular_freq * w,
-						 self.__wave_num * self.__max_velocity ** 2
-										 * np.exp(2 * self.__wave_num * z)
-										 - self.__angular_freq * u])
-#		return np.array([self.__angular_freq * self.__max_velocity
-#						* np.exp(self.__wave_num * z)
-#						* np.sin(self.__wave_num * x - self.__angular_freq * t),
-#						-self.__angular_freq * self.__max_velocity
-#						* np.exp(self.__wave_num * z)
-#						* np.cos(self.__wave_num * x - self.__angular_freq * t)]
-#						+ np.dot(fluid_velocity,
-#								 np.gradient(1/2 * fluid_velocity ** 2)))
+
+		return np.array([omega * w, k * U ** 2 * np.exp(2 * k * z) - omega * u])
 
 	def analytical_particle_velocity(self, x_0=0, z_0=0, t=0):
-		# local variables for equations (11) and (12)
+		U = self.__max_velocity
+		k = self.__wave_num
+		St = self.__stokes_num
+		c = self.__phase_velocity
 		bprime = 1 - self.__beta
-		phi = self.__wave_num * x_0 - self.__angular_freq * t
-		z_0t = z_0 - self.__stokes_num * self.__phase_velocity * bprime * t
+		phi = k * x_0 - self.__angular_freq * t
+		z_0t = z_0 - St * c * bprime * t
 
 		# equation (11)
-		u = self.__max_velocity * np.exp(self.__wave_num * z_0t) \
-								* ((1 - self.__stokes_num ** 2 * self.__beta
-									  * bprime) * np.cos(phi) \
-									  - self.__stokes_num * bprime \
-									  * np.sin(phi)) \
-								+ self.__max_velocity ** 2 \
-								/ self.__phase_velocity \
-								* np.exp(2 * self.__wave_num * z_0t) \
-								* (1 - self.__stokes_num ** 2 * self.__beta
-									 * bprime)
+		xdot = U * np.exp(k * z_0t) * ((1 - St ** 2 * self.__beta * bprime)
+				 * np.cos(phi) - St * bprime * np.sin(phi)) \
+				 + U ** 2 / c * np.exp(2 * k * z_0t) \
+				 * (1 - St ** 2 * self.__beta * bprime)
 		# equation (12)
-		w = self.__max_velocity * np.exp(self.__wave_num * z_0t) \
-								* ((1 - self.__stokes_num ** 2 * self.__beta
-									  * bprime)
-								* np.sin(phi) + self.__stokes_num * bprime \
-								* np.cos(phi)) \
-								- self.__phase_velocity \
-								* self.__stokes_num * bprime \
-								* (1 + 2 * self.__max_velocity ** 2
-								/ self.__phase_velocity ** 2
-								* np.exp(2 * self.__wave_num * z_0t))
-		return u, w
+		zdot = U * np.exp(k * z_0t) * ((1 - St ** 2 * self.__beta * bprime)
+				 * np.sin(phi) + St * bprime * np.cos(phi)) \
+				 - c * St * bprime \
+				 * (1 + 2 * U ** 2 / c ** 2 * np.exp(2 * k * z_0t))
+		return xdot, zdot
 
-	def analytical_drift_velocity(self, x_0=0, z_0=0, t=0):
+	def analytical_drift_velocity(self, x_0=0, z_0=0, t=0, shifted=False):
+		U = self.__max_velocity
+		k = self.__wave_num
+		St = self.__stokes_num
+		c = self.__phase_velocity
 		bprime = 1 - self.__beta
+		tau = self.__st_response_time
 
 		# equation (13)
-		u_d = self.__max_velocity ** 2 / self.__phase_velocity \
-				  * (1 - self.__beta * bprime * self.__stokes_num ** 2) \
-				  * np.exp(2 * self.__wave_num * (z_0 - bprime * self.__gravity 
-				  * self.__st_response_time * t))
-#		delta = 40 / self.__angular_freq	# shift anomaly in w_d
+		u_d = U ** 2 / c * (1 - self.__beta * bprime * St ** 2) \
+				  * np.exp(2 * k * (z_0 - bprime * self.__gravity * tau * t))
 		# equation (14)
-		w_d = -bprime * self.__gravity * self.__st_response_time \
-				  - 2 * bprime * self.__stokes_num \
-				  * self.__max_velocity ** 2 / self.__phase_velocity \
-				  * np.exp(2 * self.__wave_num * (z_0 - bprime * self.__gravity
-							 * self.__st_response_time * t))
-#							 * self.__st_response_time * (t - delta)))
+		if shifted:
+			delta = 40 / self.__angular_freq	# shift anomaly in w_d
+			w_d = -bprime * self.__gravity * tau - 2 * bprime * St \
+					  	  * U ** 2 / c \
+						  * np.exp(2 * k * (z_0 - bprime * self.__gravity * tau 
+												* (t - delta)))
+		else:
+			w_d = -bprime * self.__gravity * tau - 2 * bprime * St * U ** 2 \
+						  / c * np.exp(2 * k * (z_0 - bprime * self.__gravity
+													* tau * t))
 		return u_d, w_d
 
 	def my_analytical_drift_velocity(self, x_0=0, z_0=0, z=0, u=0, w=0, t=0):
+		U = self.__max_velocity
+		St = self.__stokes_num
+		c = self.__phase_velocity
 		bprime = 1 - self.__beta
-		e_2z0t = np.exp(2 * (self.__wave_num * z_0 - self.__stokes_num * bprime
-											 * t * self.__angular_freq))
+		e_2z0t = np.exp(2 * (self.__wave_num * z_0 - St * bprime * t
+											 * self.__angular_freq))
 
-		# equation (13) derived using my equations (6) and (7)
-		u_d = e_2z0t * (1 - bprime * self.__stokes_num ** 2) \
-					 * (self.__max_velocity ** 2 / self.__phase_velocity)
-
-		# equation (14) derived using my equations (6) and (7)
-		w_d = -self.__phase_velocity * self.__stokes_num * bprime \
-				* (1 + 2 * self.__max_velocity ** 2 
-					 / self.__phase_velocity ** 2 * e_2z0t)
-
+		# equations (13) and (14) derived using my equations (6) and (7)
+		u_d = e_2z0t * (1 - bprime * St ** 2) * (U ** 2 / c)
+		w_d = -c * St * bprime * (1 + 2 * U ** 2 / c ** 2 * e_2z0t)
 		return u_d, w_d
 
 	def particle_trajectory(self, x_0=0, z_0=0, delta_t=5e-3, method='BDF'):
@@ -225,12 +212,12 @@ class SantamariaModel:
 		x, z = y[:2]
 		particle_velocity = y[2:]
 		fluid_velocity = self.fluid_velocity(x, z, t)
-		fluid_derivative = self.fluid_derivative(x, z, t)
+		material_derivative = self.material_derivative(x, z, t)
 
 		stokes_drag = (fluid_velocity - particle_velocity) \
 					  / self.__st_response_time
 		buoyancy_force = (1 - self.__beta) * np.array([0, -self.__gravity]) 
-		fluid_pressure_gradient = self.__beta * fluid_derivative
+		fluid_pressure_gradient = self.__beta * material_derivative
 		particle_accel = stokes_drag + buoyancy_force + fluid_pressure_gradient
 
 		return np.concatenate((particle_velocity, particle_accel))

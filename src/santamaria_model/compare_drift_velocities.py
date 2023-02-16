@@ -12,10 +12,10 @@ def main():
 	x, z, u, w, t = my_wave.particle_trajectory(delta_t=delta_t)
 
 	plt.figure(1)
-#	plot_uw(my_wave, x, z, u, w, t, is_numerical)
-#	plt.figure(2)
-#	plot_particle_trajectory(my_wave, x, z, u, w, t)
-#	plt.figure(3)
+	plot_uw(my_wave, x, z, u, w, t, is_numerical)
+	plt.figure(2)
+	plot_particle_trajectory(my_wave, x, z, u, w, t)
+	plt.figure(3)
 	plot_drift_velocity(my_wave, x, z, u, w, t, delta_t, limit_axes=False)
 #	plot_drift_velocity_varying_delta_t(my_wave, x, z, u, w, t,
 #										limit_axes=False)

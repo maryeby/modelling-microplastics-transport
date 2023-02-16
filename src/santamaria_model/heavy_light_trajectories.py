@@ -10,11 +10,11 @@ heavy_wave = santamaria.SantamariaModel(wave_num=4 * np.pi, amplitude=0.026,
 light_wave = santamaria.SantamariaModel(wave_num=4 * np.pi, amplitude=0.026,
 							 			stokes_num=0.5, beta=1.01)
 # compute trajectories
-x_heavy, z_heavy = heavy_wave.particle_trajectory(0, 0)
-x_light, z_light = light_wave.particle_trajectory(0.13, -0.3)
+x_heavy, z_heavy, _, _, _ = heavy_wave.particle_trajectory(0, 0)
+x_light, z_light, _, _, _ = light_wave.particle_trajectory(0.13, -0.3)
 
 # plot results
-plt.title('Santamaria Model Reproduction Without Translation', fontsize=16)
+plt.title('Santamaria Figure 1 Reproduction', fontsize=16)
 plt.xlabel('kx', fontsize=12)
 plt.ylabel('kz', fontsize=12)
 plt.xlim(0, 3)
