@@ -143,7 +143,11 @@ class TransportSystem:
 		"""Append a new value to the timesteps array."""
 		self.__timesteps.append(new)
 
-	def fluid_velocity(self, x, z, t, deep=False):
+	def set_stokes_num(self, stokes_num):
+		"""Set the Stokes number to the specified value."""
+		self.__stokes_num = stokes_num
+
+	def fluid_velocity(self, x, z, t, deep=False, dimensional=False):
 		"""
 		Computes the fluid velocity vector u.
 
@@ -157,6 +161,8 @@ class TransportSystem:
 			The time(s) at which to evaluate the velocity.
 		deep : boolean, default=False
 			Whether the water is assumed to be infinitely deep.
+		dimensional : boolean, default=False
+			Whether the expression should be dimensional.
 
 		Returns
 		-------
@@ -165,19 +171,23 @@ class TransportSystem:
 		U = self.__max_velocity
 		A = self.__amplitude
 		k = self.__wavenum
+		epsilon = A * k
 		omega = self.__angular_freq
 		h = self.__depth
 
-		if deep:
+		if deep and dimensional:
 			return np.array([U * np.exp(k * z) * np.cos(k * x - omega * t),
 							 U * np.exp(k * z) * np.sin(k * x - omega * t)])
+		elif deep and not dimensional:
+			return np.array([np.exp(z) * np.cos(x - t / epsilon),
+							 np.exp(z) * np.sin(x - t / epsilon)])
 		else:
 			return np.array([A * omega * np.cosh(k * (z + h)) 
 							   * np.sin(omega * t - k * x) / np.sinh(k * h),
 							 A * omega * np.sinh(k * (z + h))
 							   * np.cos(omega * t - k * x) / np.sinh(k * h)])
 
-	def material_derivative(self, x, z, t, deep=False):
+	def material_derivative(self, x, z, t, deep=False, dimensional=False):
 		"""
 		Computes the Lagrangian derivative, Du/Dt.
 
@@ -191,19 +201,63 @@ class TransportSystem:
 			The time(s) at which to evaluate the velocity.
 		deep : boolean, default=False
 			Whether the water is assumed to be infinitely deep.
+		dimensional : boolean, default=False
+			Whether the expression should be dimensional.
 
 		Returns
 		-------
-		Array containing the fluid derivative vector components.
+		Array containing the material derivative vector components.
 		"""
 		U = self.__max_velocity
 		k = self.__wavenum
 		omega = self.__angular_freq
-		u, w = self.fluid_velocity(x, z, t, deep)
+		epsilon = k * self.__amplitude # from Santamaria
+		u, w = self.fluid_velocity(x, z, t, deep, dimensional)
 
-		return np.array([omega * w, k * U ** 2 * np.exp(2 * k * z) - omega * u])
+		if dimensional:
+			return np.array([omega * w,
+							 k * U ** 2 * np.exp(2 * k * z) - omega * u])
+		else:
+			return np.array([w / epsilon, np.exp(2 * z) - u / epsilon])
 
-	def analytical_particle_velocity(self, x_0=0, z_0=0, t=0):
+	def material_derivative2(self, x, z, t, deep=False, dimensional=False):
+		"""
+		Computes the second order Lagrangian derivative.
+
+		Parameters
+		----------
+		x : float or array
+			The x position(s) at which to evaluate the fluid velocity.
+		z : float or array
+			The z position(s) at which to evaluate the velocity and derivative.
+		t : float or array
+			The time(s) at which to evaluate the velocity.
+		deep : boolean, default=False
+			Whether the water is assumed to be infinitely deep.
+		dimensional : boolean, default=False
+			Whether the expression should be dimensional.
+
+		Returns
+		-------
+		Array containing the second order material derivative vector components.
+		"""
+		U = self.__max_velocity
+		k = self.__wavenum
+		omega = self.__angular_freq
+		epsilon = k * self.__amplitude # from Santamaria
+		u, w = self.fluid_velocity(x, z, t, deep, dimensional)
+
+		if dimensional:
+			return np.array([k * w * U ** 2 * np.exp(2 * k * z)
+							   - omega ** 2 * u,
+						 	 w * (2 * np.exp(2 * k * z) * U ** 2 * k ** 2 
+							   - omega ** 2)])
+		else:
+			return np.array([np.exp(2 * z) - u / epsilon ** 2,
+							 w * (2 * np.exp(2 * z) - 1 / epsilon ** 2)])
+
+	def analytical_particle_velocity(self, x_0=0, z_0=0, t=0,
+									 dimensional=False):
 		"""
 		Computes the analytical solutions for the particle velocity.
 
@@ -215,6 +269,8 @@ class TransportSystem:
 			The initial vertical position of the particle.
 		t : float or array, default=0
 			The time(s) at which to evaluate the particle velocity.
+		dimensional : boolean, default=False
+			Whether the expression should be dimensional.
 
 		Returns
 		-------
@@ -225,27 +281,37 @@ class TransportSystem:
 
 		Notes
 		-----
-		The formulas used to compute these analytical solutions are from
-		Santamaria et al., 2013.
+		The formulas used to compute the dimensional analytical solutions are
+		equations (11) and (12) from Santamaria et al., 2013.
 		"""
 		U = self.__max_velocity
 		k = self.__wavenum
 		St = self.__stokes_num
 		c = self.__phase_velocity
 		bprime = 1 - self.__beta
-		phi = k * x_0 - self.__angular_freq * t 
+		epsilon = k * self.__amplitude
 		z_0t = z_0 - St * bprime * t 
 
-		# equation (11) from Santamaria 2013
-		xdot = U * np.exp(k * z_0t) * ((1 - St ** 2 * self.__beta * bprime)
-				 * np.cos(phi) - St * bprime * np.sin(phi)) \
-				 + U ** 2 / c * np.exp(2 * k * z_0t) \
-				 * (1 - St ** 2 * self.__beta * bprime)
-		# equation (12) from Santamaria 2013
-		zdot = U * np.exp(k * z_0t) * ((1 - St ** 2 * self.__beta * bprime)
-				 * np.sin(phi) + St * bprime * np.cos(phi)) \
-				 - c * St * bprime \
-				 * (1 + 2 * U ** 2 / c ** 2 * np.exp(2 * k * z_0t))
+		if dimensional:
+			phi = k * x_0 - self.__angular_freq * t
+			xdot = U * np.exp(k * z_0t) * ((1 - St ** 2 * self.__beta * bprime)
+					 * np.cos(phi) - St * bprime * np.sin(phi)) \
+					 + U ** 2 / c * np.exp(2 * k * z_0t) \
+					 * (1 - St ** 2 * self.__beta * bprime)
+			zdot = U * np.exp(k * z_0t) * ((1 - St ** 2 * self.__beta * bprime)
+					 * np.sin(phi) + St * bprime * np.cos(phi)) \
+					 - c * St * bprime \
+					 * (1 + 2 * U ** 2 / c ** 2 * np.exp(2 * k * z_0t))
+		else:
+			phi = x_0 - t
+			xdot = np.exp(z_0t) * epsilon * (np.cos(phi) * (1 - St ** 2
+								* bprime) - St * bprime * np.sin(phi)) \
+								+ np.exp(2 * z_0t) * epsilon ** 2 * (1 - St ** 2
+								* bprime)
+			zdot = np.exp(z_0t) * epsilon * (np.sin(phi) * (1 - St ** 2
+								* bprime) + St * bprime * np.cos(phi)) \
+								- St * bprime * (1 + 2 * epsilon ** 2
+													   * np.exp(2 * z_0t))
 		return xdot, zdot
 
 	def analytical_drift_velocity(self, x_0=0, z_0=0, t=0, shifted=False):
@@ -428,8 +494,8 @@ class TransportSystem:
 		return np.array(averaged_xdot), np.array(averaged_zdot), \
 			   np.array(period_t)
 
-	def particle_trajectory(self, model, x_0=0, z_0=0, num_periods=50,
-							delta_t=5e-3, method='BDF'):
+	def particle_trajectory(self, model, dimensional=False, x_0=0, z_0=0,
+							num_periods=50, delta_t=5e-3, method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -437,6 +503,8 @@ class TransportSystem:
 		----------
 		model : function
 			The function corresponding to the model to use to generate numerics.
+		dimensional : boolean, default=False
+			Whether the model is dimensional.
 		x_0 : float, default=0
 			The initial horizontal position of the particle.
 		z_0 : float, default=0
@@ -464,7 +532,8 @@ class TransportSystem:
 		num_steps = int(np.rint(num_periods * self.__period / delta_t))
 		t_span = (0, num_periods * self.__period)
 		t_eval = np.linspace(0, num_periods * self.__period, num_steps)
-		xdot_0, zdot_0 = self.analytical_particle_velocity()
+		xdot_0, zdot_0 = self.analytical_particle_velocity(
+							  dimensional=dimensional)
 		sols = integrate.solve_ivp(model, t_span, [x_0, z_0, xdot_0, zdot_0],
 								   method=method, t_eval=t_eval, rtol=1e-8,
 								   atol=1e-10, args=(self,))
