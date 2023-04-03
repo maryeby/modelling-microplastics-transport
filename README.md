@@ -27,11 +27,10 @@ further the existing understanding of the movement of these particles, researche
 using the Maxey-Riley equation. However, existing models only account for cases of deep water and/or cases with microplastic particles that are
 sufficiently small. We examine previous work done to model this process using the non-dimensional Maxey-Riley equation, and seek to increase the
 robustness of existing models by employing more general solutions for the velocity field and the Stokes drift velocity, and including the
-Basset-Boussinesq history term. In other words, our model is applicable for ocean water of any depth, and microplastic particles of any size.
+Basset-Boussinesq history term.
 
 ## Source Code
-The source code written for this project is contained in the `src` directory. The structure is object-oriented, with the exception of the
-`figure9_reproduction.py` program, which was written in the early stages of the project before this structure was implemented.
+The source code written for this project is contained in the `src` directory, and has an object-oriented structure.
 
 `ocean_wave.py`  
 This program contains the `OceanWave` class, which defines an object representing a wave in the ocean.
