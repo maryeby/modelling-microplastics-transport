@@ -11,15 +11,15 @@ class TransportSystem:
 	amplitude : float, default=0.1
 		The amplitude of the wave, denoted A in the corresponding mathematics.
 	wavelength : float, default=10
-		The wavelength of the wave, denoted lambda in corresponding mathematics.
+		The wavelength, denoted lambda in the corresponding mathematics.
 	depth : float, default=8
 		The depth of the water, denoted h in the corresponding mathematics.
 	density : float, default=2/3
-		The density, denoted R in the corresponding mathematics.
+		The density ratio, denoted R in the corresponding mathematics.
 	stokes_num : float, default=1e-5
 		The Stokes number, denoted St in the corresponding mathematics.
 	beta : float, default=1
-		The variable beta, related to the heaviness of the particle (SM 2013).
+		The variable beta, related to the density ratio (Santamaria 2013).
 	wavenum : float
 		The wave number, denoted k in the corresponding mathematics.
 	angular_freq : float
@@ -27,7 +27,7 @@ class TransportSystem:
 	max_velocity : float
 		The maximum velocity U at the surface z=0 (Santamaria 2013).
 	response_time : float
-		The Stokes response time tau from Santamaria et al. 2013.
+		The Stokes response time tau (Santamaria 2013).
 	period : float
 		The period of the particle oscillations.
 	particle_history : array
@@ -62,6 +62,15 @@ class TransportSystem:
 		self.__settling_velocity = -(1 - self.__beta) * constants.g \
 								   * self.__response_time
 		self.__period = 2 * np.pi / self.__angular_freq # period of oscillation
+
+		# ensuring that the density ratio R corresponds to beta appropriately
+		if self.__density != 2 / 3 * self.__beta:
+			if self.__beta == 1:
+				self.__beta = 3 / 2 * density
+			elif self.__density == 2 / 3:
+				self.__density =  2 / 3 * self.__beta
+			else:
+				print('Particle density could not be properly assigned.')
 
 		self.__particle_history = []	# history of v dot
 		self.__fluid_history = []	   # history of u dot
@@ -143,10 +152,6 @@ class TransportSystem:
 		"""Append a new value to the timesteps array."""
 		self.__timesteps.append(new)
 
-	def set_stokes_num(self, stokes_num):
-		"""Set the Stokes number to the specified value."""
-		self.__stokes_num = stokes_num
-
 	def fluid_velocity(self, x, z, t, deep=False, dimensional=False):
 		"""
 		Computes the fluid velocity vector u.
@@ -171,7 +176,7 @@ class TransportSystem:
 		U = self.__max_velocity
 		A = self.__amplitude
 		k = self.__wavenum
-		epsilon = A * k
+		epsilon = A * k # as defined in Santamaria et al. 2013
 		omega = self.__angular_freq
 		h = self.__depth
 
@@ -211,7 +216,7 @@ class TransportSystem:
 		U = self.__max_velocity
 		k = self.__wavenum
 		omega = self.__angular_freq
-		epsilon = k * self.__amplitude # from Santamaria
+		epsilon = k * self.__amplitude # as defined in Santamaria et al. 2013
 		u, w = self.fluid_velocity(x, z, t, deep, dimensional)
 
 		if dimensional:
@@ -244,7 +249,7 @@ class TransportSystem:
 		U = self.__max_velocity
 		k = self.__wavenum
 		omega = self.__angular_freq
-		epsilon = k * self.__amplitude # from Santamaria
+		epsilon = k * self.__amplitude # as defined in Santamaria et al. 2013
 		u, w = self.fluid_velocity(x, z, t, deep, dimensional)
 
 		if dimensional:
@@ -290,7 +295,7 @@ class TransportSystem:
 		c = self.__phase_velocity
 		bprime = 1 - self.__beta
 		epsilon = k * self.__amplitude
-		z_0t = z_0 - St * bprime * t 
+		z_0t = z_0 - St * bprime * t * c
 
 		if dimensional:
 			phi = k * x_0 - self.__angular_freq * t
@@ -400,7 +405,7 @@ class TransportSystem:
 		w_d = -c * St * bprime * (1 + 2 * U ** 2 / c ** 2 * e_2z0t)
 		return u_d, w_d
 
-	def analytical_period_info(self, x, z, t):
+	def analytical_period_info(self, x, z, t, dimensional):
 		"""
 		Finds the x, z, xdot, zdot, and t values at the end of each period.
 
@@ -412,6 +417,8 @@ class TransportSystem:
 			The vertical particle positions.
 		t : array
 			The time over which the particle is being transported.
+		dimensional : boolean, default
+			Whether the expression should be dimensional.
 
 		Returns
 		-------
@@ -439,7 +446,8 @@ class TransportSystem:
 		# TODO make list of zeros called period_end_u the same length
 		# TODO compute zdot's at each t, save into period_end_zdot list
 
-		xdot, zdot = self.analytical_particle_velocity(t=t)
+		xdot, zdot = self.analytical_particle_velocity(t=t,
+													   dimensional=dimensional)
 		period_end = []
 		for i in range(1, len(xdot)):
 			if xdot[i - 1] < 0 and 0 <= xdot[i]:
@@ -459,7 +467,7 @@ class TransportSystem:
 			   np.array(current_xdot), np.array(current_zdot), \
 			   np.array(current_t)
 
-	def analytical_averages(self, x, z, t):
+	def analytical_averages(self, x, z, t, dimensional):
 		"""
 		Computes the period averages of the analytical solutions for xdot, zdot.
 
@@ -471,6 +479,8 @@ class TransportSystem:
 			The vertical particle positions.
 		t : array
 			The time over which the particle is being transported.
+		dimensional : boolean
+			Whether the expression should be dimensional.
 
 		Returns
 		-------
@@ -482,9 +492,10 @@ class TransportSystem:
 			The times at which the oscillatory periods end.
 		"""
 		averaged_xdot, averaged_zdot = [], []
-		period_end, _, _, _, _, period_t = self.analytical_period_info(x, z, t)
-		xdot, zdot = self.analytical_particle_velocity(t=t)
-
+		period_end, _, _, _, _, period_t = self.analytical_period_info(x, z, t,
+												dimensional=dimensional)
+		xdot, zdot = self.analytical_particle_velocity(t=t,
+													   dimensional=dimensional)
 		for i in range(1, len(period_end)):
 			previous = period_end[i - 1]
 			current = period_end[i]
@@ -494,8 +505,9 @@ class TransportSystem:
 		return np.array(averaged_xdot), np.array(averaged_zdot), \
 			   np.array(period_t)
 
-	def particle_trajectory(self, model, dimensional=False, x_0=0, z_0=0,
-							num_periods=50, delta_t=5e-3, method='BDF'):
+	def particle_trajectory(self, model, deep=False, dimensional=False,
+							x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
+							method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -503,6 +515,8 @@ class TransportSystem:
 		----------
 		model : function
 			The function corresponding to the model to use to generate numerics.
+		deep : boolean, default=False
+			Whether the water is assumed to be infinitely deep.
 		dimensional : boolean, default=False
 			Whether the model is dimensional.
 		x_0 : float, default=0
@@ -532,7 +546,9 @@ class TransportSystem:
 		num_steps = int(np.rint(num_periods * self.__period / delta_t))
 		t_span = (0, num_periods * self.__period)
 		t_eval = np.linspace(0, num_periods * self.__period, num_steps)
-		xdot_0, zdot_0 = self.analytical_particle_velocity(
+#		xdot_0, zdot_0 = self.analytical_particle_velocity(x_0=x_0, z_0=z_0,
+#							  dimensional=dimensional)
+		xdot_0, zdot_0 = self.fluid_velocity(x_0, z_0, 0, deep=deep,
 							  dimensional=dimensional)
 		sols = integrate.solve_ivp(model, t_span, [x_0, z_0, xdot_0, zdot_0],
 								   method=method, t_eval=t_eval, rtol=1e-8,

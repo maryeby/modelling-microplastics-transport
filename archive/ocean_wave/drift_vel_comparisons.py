@@ -7,7 +7,7 @@ import ocean_wave
 
 def main():
 	# values of h for each depth case
-	shallow_h = 1
+	shallow_h = 2
 	intermediate_h = 3
 	deep_h = 8	
 

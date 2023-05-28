@@ -276,8 +276,10 @@ def haller(t, y, transport_sys):
 		The components of the particle's velocity and acceleration.
 	"""
 	R = transport_sys.get_density()
-	epsilon = transport_sys.get_stokes_num() / R
-	g = np.array([0, -constants.g])
+	epsilon = transport_sys.get_stokes_num() *  transport_sys.get_wavenum() \
+				* transport_sys.get_amplitude()
+	g = np.array([0, -constants.g]) / (transport_sys.get_wavenum() \
+			* transport_sys.get_max_velocity() ** 2)
 	x, z = y[:2]
 	particle_velocity = y[2:]
 
@@ -310,8 +312,10 @@ def haller_order0(t, y, transport_sys):
 		The components of the particle's velocity and acceleration.
 	"""
 	R = transport_sys.get_density()
-	epsilon = transport_sys.get_stokes_num() / R
-	g = np.array([0, -constants.g])
+	epsilon = transport_sys.get_stokes_num() *  transport_sys.get_wavenum() \
+				* transport_sys.get_amplitude()
+	g = np.array([0, -constants.g]) / (transport_sys.get_wavenum() \
+			* transport_sys.get_max_velocity() ** 2)
 
 	x, z = y[:2]
 	fluid_velocity = transport_sys.fluid_velocity(x, z, t, deep=True)
@@ -345,8 +349,10 @@ def haller_order1(t, y, transport_sys):
 		The components of the particle's velocity and acceleration.
 	"""
 	R = transport_sys.get_density()
-	epsilon = transport_sys.get_stokes_num() / R
-	g = np.array([0, -constants.g])
+	epsilon = transport_sys.get_stokes_num() *  transport_sys.get_wavenum() \
+				* transport_sys.get_amplitude()
+	g = np.array([0, -constants.g]) / (transport_sys.get_wavenum() \
+			* transport_sys.get_max_velocity() ** 2)
 
 	x, z = y[:2]
 	material_derivative = transport_sys.material_derivative(x, z, t, deep=True)
@@ -380,8 +386,10 @@ def haller_order2(t, y, transport_sys):
 		The components of the particle's velocity and acceleration.
 	"""
 	R = transport_sys.get_density()
-	epsilon = transport_sys.get_stokes_num() / R
-	g = np.array([0, -constants.g])
+	epsilon = transport_sys.get_stokes_num() *  transport_sys.get_wavenum() \
+				* transport_sys.get_amplitude()
+	g = np.array([0, -constants.g]) / (transport_sys.get_wavenum() \
+			* transport_sys.get_max_velocity() ** 2)
 
 	x, z = y[:2]
 	material_derivative = transport_sys.material_derivative(x, z, t, deep=True)
@@ -430,8 +438,10 @@ def haller_order2_no_jacobian(t, y, transport_sys):
 	This evaluation excludes the contribution of the Jacobian term from (12).
 	"""
 	R = transport_sys.get_density()
-	epsilon = transport_sys.get_stokes_num() / R
-	g = np.array([0, -constants.g])
+	epsilon = transport_sys.get_stokes_num() *  transport_sys.get_wavenum() \
+				* transport_sys.get_amplitude()
+	g = np.array([0, -constants.g]) / (transport_sys.get_wavenum() \
+			* transport_sys.get_max_velocity() ** 2)
 
 	x, z = y[:2]
 	material_derivative = transport_sys.material_derivative(x, z, t, deep=True)
