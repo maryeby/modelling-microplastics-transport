@@ -7,5 +7,8 @@ class Particle:
 		----------
 		stokes_num : float
 			The stokes number *St*.
+		history : list (array-like)
+			The history of the velocity of the particle **v**.
 		"""
 		self.stokes_num = stokes_num
+		self.history = []

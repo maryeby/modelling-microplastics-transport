@@ -32,15 +32,15 @@ import sys
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
 from scipy import constants
-from transport_framework import flow
+from transport_framework import wave
 
-class DimensionalDeepWaterWave(flow.Flow):
+class DimensionalDeepWaterWave(wave.Wave):
         &#34;&#34;&#34;
         Represents the fluid flow described in Santamaria et al., (2013). The flow
         is a linear water wave with infinite depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15, density=1):
+        def __init__(self, amplitude, wavelength, depth=15):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
@@ -50,8 +50,6 @@ class DimensionalDeepWaterWave(flow.Flow):
                         The wavelength lambda.
                 depth : float, default=15
                         The depth of the fluid *h*.
-                density : float
-                        The density of the fluid rho_f.
                 wavenum : float
                         The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
                 gravity : float
@@ -64,7 +62,7 @@ class DimensionalDeepWaterWave(flow.Flow):
                         The period of the wave, computed as
                         $$\text{period} = \frac{2\pi}{\omega}.$$
                 &#34;&#34;&#34;
-                super().__init__(amplitude, wavelength, depth, density)
+                super().__init__(depth, amplitude, wavelength)
                 self.max_velocity = self.angular_freq * self.amplitude
 
         def set_gravity(self):
@@ -176,7 +174,7 @@ class DimensionalDeepWaterWave(flow.Flow):
 <dl>
 <dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave"><code class="flex name class">
 <span>class <span class="ident">DimensionalDeepWaterWave</span></span>
-<span>(</span><span>amplitude, wavelength, depth=15, density=1)</span>
+<span>(</span><span>amplitude, wavelength, depth=15)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents the fluid flow described in Santamaria et al., (2013). The flow
@@ -189,8 +187,6 @@ is a linear water wave with infinite depth.</p>
 <dd>The wavelength lambda.</dd>
 <dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>15</code></dt>
 <dd>The depth of the fluid <em>h</em>.</dd>
-<dt><strong><code>density</code></strong> :&ensp;<code>float</code></dt>
-<dd>The density of the fluid rho_f.</dd>
 <dt><strong><code>wavenum</code></strong> :&ensp;<code>float</code></dt>
 <dd>The wave number <em>k</em>, computed as <span><span class="MathJax_Preview">k = \frac{2 \pi}{\lambda}.</span><script type="math/tex; mode=display">k = \frac{2 \pi}{\lambda}.</script></span></dd>
 <dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
@@ -207,13 +203,13 @@ is a linear water wave with infinite depth.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class DimensionalDeepWaterWave(flow.Flow):
+<pre><code class="python">class DimensionalDeepWaterWave(wave.Wave):
         &#34;&#34;&#34;
         Represents the fluid flow described in Santamaria et al., (2013). The flow
         is a linear water wave with infinite depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15, density=1):
+        def __init__(self, amplitude, wavelength, depth=15):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
@@ -223,8 +219,6 @@ is a linear water wave with infinite depth.</p>
                         The wavelength lambda.
                 depth : float, default=15
                         The depth of the fluid *h*.
-                density : float
-                        The density of the fluid rho_f.
                 wavenum : float
                         The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
                 gravity : float
@@ -237,7 +231,7 @@ is a linear water wave with infinite depth.</p>
                         The period of the wave, computed as
                         $$\text{period} = \frac{2\pi}{\omega}.$$
                 &#34;&#34;&#34;
-                super().__init__(amplitude, wavelength, depth, density)
+                super().__init__(depth, amplitude, wavelength)
                 self.max_velocity = self.angular_freq * self.amplitude
 
         def set_gravity(self):
@@ -339,6 +333,7 @@ is a linear water wave with infinite depth.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
+<li>transport_framework.wave.Wave</li>
 <li>transport_framework.flow.Flow</li>
 <li>abc.ABC</li>
 </ul>

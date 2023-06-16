@@ -90,8 +90,7 @@ def main():
         haller_light = {&#39;x&#39;: x, &#39;z&#39;: z}
 
         # read data from Cathal&#39;s plot
-        if __name__ == &#39;__main__&#39;:
-                cathals_data = pd.read_csv(&#39;data/cathals_sm_fig1_recreation.csv&#39;)
+        cathals_data = pd.read_csv(&#39;data/cathals_sm_fig1_recreation.csv&#39;)
 
         # plot results
         plt.figure()
@@ -118,7 +117,8 @@ def main():
                          data=haller_light, label=&#39;my Haller data (light)&#39;)
         plt.legend()
         plt.show()
-main()</code></pre>
+if __name__ == &#39;__main__&#39;:
+        main()</code></pre>
 </details>
 </section>
 <section>
@@ -189,8 +189,7 @@ to ensure our solutions agree.</p></div>
         haller_light = {&#39;x&#39;: x, &#39;z&#39;: z}
 
         # read data from Cathal&#39;s plot
-        if __name__ == &#39;__main__&#39;:
-                cathals_data = pd.read_csv(&#39;data/cathals_sm_fig1_recreation.csv&#39;)
+        cathals_data = pd.read_csv(&#39;data/cathals_sm_fig1_recreation.csv&#39;)
 
         # plot results
         plt.figure()

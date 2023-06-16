@@ -40,7 +40,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 		terminal_velocity : float
 			The asymptotic behavior of the particle velocity **v** at long
 			times, based on eq (4.8) from Prasath (2019),
-			$$c(\alpha, gamma) = \frac{\sigma}{\alpha}.$$
+			$$c(\alpha, \gamma) = \frac{\sigma}{\alpha}.$$
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.epsilon = self.particle.stokes_num / self.density_ratio
@@ -253,8 +253,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 
 		return np.concatenate((particle_velocity, particle_accel))
 
-	def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
-					 delta_t=5e-3, method='BDF'):
+	def run_numerics(self, equation, order=2, x_0=0, z_0=0, xdot_0=1, zdot_0=1,
+					 num_periods=50, delta_t=5e-3, method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -293,7 +293,6 @@ class MyTransportSystem(transport_system.TransportSystem):
 		t_final = num_periods * self.flow.period
 		t_span = (0, t_final)	
 		t_eval = np.linspace(0, t_final, num_steps)
-		xdot_0, zdot_0 = 1, 1
 		args = ()
 
 		# decide what arguments to provide for the specified equation

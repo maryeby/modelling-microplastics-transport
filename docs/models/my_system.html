@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>modelling-microplastics-transport.models.my_system API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>modelling-microplastics-transport.models.my_system</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import sys
+sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
+                                + &#39;modelling-microplastics-transport&#39;)
+import numpy as np
+import scipy.integrate as integrate
+from models import deep_water_wave
+from transport_framework import particle, transport_system
+
+class MyTransportSystem(transport_system.TransportSystem):
+        &#34;&#34;&#34; 
+        Represents the transport of an inertial particle in a linear water wave as
+        described by Haller and Sapsis (2008).
+        &#34;&#34;&#34;
+
+        def __init__(self, particle, flow, density_ratio):
+                r&#34;&#34;&#34;
+                Attributes
+                ----------
+                particle : Particle (obj)
+                        The particle being transported.
+                flow : Flow (obj)
+                        The flow through which the particle is transported.
+                density_ratio : float
+                        The ratio between the particle&#39;s density and the fluid&#39;s density.
+                epsilon : float
+                        A relationship between the Stokes number and density ratio,
+                        $$\epsilon = \frac{St}{R}.$$
+                sigma : float
+                        A parameter related to the density ratio,
+                        $$\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},$$
+                        used to compute the asymptotic behavior of the system.
+                alpha : float
+                        A relationship between the density ratio and Stokes number,
+                        $$\alpha = \frac{R}{St},$$
+                        used to compute the asymptotic behavior of the system.
+                gamma : float
+                        Another relationship between the density ratio and Stokes number,
+                        $$\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},$$
+                        used to compute the asymptotic behavior of the system.
+                terminal_velocity : float
+                        The asymptotic behavior of the particle velocity **v** at long
+                        times, based on eq (4.8) from Prasath (2019),
+                        $$c(\alpha, \gamma) = \frac{\sigma}{\alpha}.$$
+                &#34;&#34;&#34;
+                super().__init__(particle, flow, density_ratio)
+                self.epsilon = self.particle.stokes_num / self.density_ratio
+                self.sigma = (1 - 3 / 2 * self.density_ratio) * self.flow.gravity[1]
+                self.alpha = self.density_ratio / self.particle.stokes_num
+                self.gamma = 3 / 2 * self.density_ratio \
+                                           * np.sqrt(2 / self.particle.stokes_num)
+                self.terminal_velocity = self.sigma / self.alpha
+
+        def asymptotic_velocity(self, t):
+                r&#34;&#34;&#34;
+                Computes the leading order asymptotic behavior of the particle velocity
+                based on eq (4.7) from Prasath et al. (2019),
+                $$q^{(2)}(0, t) \approx c(\alpha, \gamma)
+                        - \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
+                        + \mathcal{O}(t^{3 / 2}),$$
+                with a sign change on the singular term.
+
+                Parameters
+                ----------
+                t : float or array
+                        The time(s) to use in the computations.
+
+                Returns
+                -------
+                float or array
+                        The asymptotic particle velocity.
+                &#34;&#34;&#34;
+#               return self.terminal_velocity - self.sigma * self.gamma \
+#                                                                         / (self.alpha ** 2 * np.sqrt(np.pi * t))
+                return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
+                                 / (2 * self.alpha ** 2))
+
+        def maxey_riley(self, t, y, delta_t, t_final):
+                r&#34;&#34;&#34;
+                Evaluates the Maxey-Riley equation,
+                $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
+                $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
+                        - \textbf{v}}{\epsilon}
+                        + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+                        + (1 - \frac{3R}{2}) \textbf{g}
+                        - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+                        \frac{1}{\sqrt{t - s}} \mathrm{d}s
+                        [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
+                with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
+                        \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
+                
+                Parameters
+                ----------
+                t : float
+                        The time to use in the computations.
+                y : list (array-like)
+                        A list containing the x, z, xdot, zdot values to use.
+                delta_t : float
+                        The size of the time steps used for integration.
+                t_final : float
+                        The final time of integration.
+
+                Returns
+                -------
+                Array
+                        The components of the particle&#39;s velocity and acceleration.
+                &#34;&#34;&#34;
+                # initialize local variables and update the particle and fluid histories
+                R = self.density_ratio
+                x, z = y[:2]
+                particle_velocity = y[2:]
+                fluid_velocity = self.flow.velocity(x, z, t)
+                self.update_history(fluid_velocity, particle_velocity)
+
+                # compute each term on the RHS of the M-R equation
+                stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
+                buoyancy_force = (1 - 3 * R / 2) * self.flow.gravity
+                fluid_pressure_gradient = 3 * R / 2 \
+                                                                        * self.flow.material_derivative(x, z, t)
+                history = self.compute_history(delta_t, t)
+
+                # M-R equation
+                particle_acceleration = stokes_drag + buoyancy_force \
+                                                                                        + fluid_pressure_gradient \
+                                                                                        + history
+                print(&#39;{:.0%}&#39;.format(t / t_final), end=&#39;\r&#39;)
+                return np.concatenate((particle_velocity, particle_acceleration))
+
+        def update_history(self, fluid_velocity, particle_velocity):
+                &#34;&#34;&#34;
+                Updates the history of the fluid velocity **u** and particle velocity
+                **v**.
+
+                Parameters
+                ----------
+                fluid_velocity : array
+                        The components of the fluid velocity **u**.
+                particle_velocity : array
+                        The components of the particle velocity **v**.
+                &#34;&#34;&#34;
+                self.flow.history.append(fluid_velocity)
+                self.particle.history.append(particle_velocity)
+
+        def compute_history(self, delta_t, t):
+                r&#34;&#34;&#34;
+                Computes the Basset-Boussinesq history term,
+                $$-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+                        \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+                        \frac{\mathrm{d}}{\mathrm{d}s},$$
+                using the quadrature scheme,
+                $$\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+                        \frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
+                        \sum_{j=0}^{n}
+                        \alpha_j^n f(s_{n-j}),$$
+                with
+                $$f(s) = \textbf{v} - \textbf{u},$$
+                *n* steps, and
+                $$\alpha_j^n = \frac{4}{3} \begin{cases}
+                        1 &amp; j = 0 \\
+                        (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+                        (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n.
+                        \end{cases}$$
+
+                Parameters
+                ----------
+                delta_t : float
+                        The size of the time steps used for integration.
+                t : float
+                        The time at which to evaluate the history term.
+
+                Returns
+                -------
+                Array
+                        The components of the history term.
+                &#34;&#34;&#34;
+                # initialize local variables
+                integrand = np.empty(2,)
+                coefficient = -np.sqrt(9 / (2 * np.pi)) * self.density_ratio \
+                                          / np.sqrt(self.particle.stokes_num)
+                f_s = np.array(self.particle.history) - np.array(self.flow.history)
+                num_steps = int(t / delta_t)
+                alpha = 4 / 3
+
+                # compute the sum
+                for j in range(num_steps + 1):
+                        if j == 0:
+                                alpha *= 1
+                        elif j == num_steps:
+                                alpha *= (num_steps - 1) ** (3 / 2) - num_steps ** (3 / 2) \
+                                                                        + (3 / 2) * np.sqrt(num_steps)
+                        else: # 0 &lt; j &lt; num_steps
+                                alpha *= (j - 1) ** (3 / 2) + (j + 1) ** (3 / 2) \
+                                                                                        - 2 * j ** (3 / 2)
+                        integrand += alpha * f_s[num_steps - j]
+                integrand *= np.sqrt(delta_t)
+                return coefficient * integrand
+
+        def inertial_equation(self, t, y, order):
+                r&#34;&#34;&#34;
+                Evalutes the inertial equation, corresponding to equation (10) in
+                Haller and Sapsis (2008),
+                $$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+                \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
+                + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+                \Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
+                + \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
+                \cdot \nabla \textbf{u}\Bigg]
+                + \mathcal{O}(\epsilon^3).$$
+
+                Parameters
+                ----------
+                t : float
+                        The time to use in the computations
+                y : list (array-like)
+                        A list containing the x and z values to use, and the order of the
+                        equation.
+                order : int
+                        The order at which to evaluate the inertial equation.
+
+                Returns
+                -------
+                Array
+                        The components of the particle&#39;s velocity and acceleration.
+                &#34;&#34;&#34;
+                g = self.flow.gravity
+                R = self.density_ratio
+                x, z = y[:2]
+                fluid_velocity = self.flow.velocity(x, z, t)
+                material_dv = self.flow.material_derivative(x, z, t)
+
+                if order == 0:
+                        particle_velocity = fluid_velocity
+                elif order == 1:
+                        particle_velocity = fluid_velocity + self.epsilon * (3 * R / 2 - 1)\
+                                                                                           * (material_dv - g)
+                elif order == 2:
+                        u, w = fluid_velocity
+                        Du, Dw = material_dv
+                        gx, gz = g
+                        jacobian_term = np.array([Dw * u - Du * w, Du * u + Dw * w]) \
+                                                        - np.array([u * gz - w * gx, u * gx + w * gz])
+                        particle_velocity = fluid_velocity + self.epsilon * (3 * R / 2 - 1)\
+                                                                * (material_dv - g) \
+                                                                + self.epsilon ** 2 * (1 - 3 * R / 2) \
+                                                                * (self.flow.material_derivative2(x, z, t)
+                                                                + jacobian_term)
+                else:
+                        print(&#39;Could not identify the order for the inertial equation.&#39;)
+
+                stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
+                buoyancy_force = (1 - 3 * R / 2) * g
+                fluid_pressure_gradient = 3 * R / 2 * material_dv
+                particle_accel = stokes_drag + buoyancy_force + fluid_pressure_gradient
+
+                return np.concatenate((particle_velocity, particle_accel))
+
+        def run_numerics(self, equation, order=2, x_0=0, z_0=0, xdot_0=1, zdot_0=1,
+                                         num_periods=50, delta_t=5e-3, method=&#39;BDF&#39;):
+                &#34;&#34;&#34;
+                Computes the position and velocity of the particle over time.
+
+                Parameters
+                ----------
+                equation : fun
+                        The equation to evaluate, either M-R or the inertial equation.
+                order : int
+                        The order at which to evaluate the inertial equation.
+                x_0 : float, default=0
+                        The initial horizontal position of the particle.
+                z_0 : float, default=0
+                        The initial vertical position of the particle.
+                num_periods : int, default=50
+                        The number of oscillation periods to integrate over.
+                delta_t : float, default=5e-3
+                        The size of the time steps used for integration.
+                method : str, default=&#39;BDF&#39;
+                        The method of integration to use.
+
+                Returns
+                -------
+                x : array
+                        The horizontal positions of the particle.
+                z : array
+                        The vertical positions of the particle.
+                xdot : array
+                        The horizontal velocities of the particle.
+                zdot : array
+                        The vertical velocities of the particle.
+                t : array
+                        The times at which the model was evaluated.
+                &#34;&#34;&#34;
+                # initialize parameters for the solver
+                num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
+                t_final = num_periods * self.flow.period
+                t_span = (0, t_final)   
+                t_eval = np.linspace(0, t_final, num_steps)
+                args = ()
+
+                # decide what arguments to provide for the specified equation
+                if &#39;maxey_riley&#39; in str(equation):
+                        args=(delta_t, t_final)
+                elif &#39;inertial&#39; in str(equation):
+                        args=(order,)
+                else:
+                        print(&#39;Could not recognize equation.&#39;)
+
+                # run computations
+                sols = integrate.solve_ivp(equation, t_span,
+                                                                   [x_0, z_0, xdot_0, zdot_0],
+                                                                   method=method, t_eval=t_eval,
+                                                                   rtol=1e-8, atol=1e-10, args=args)
+                # unpack and return solutions
+                x, z, xdot, zdot = sols.y
+                t = sols.t
+                return x, z, xdot, zdot, t</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem"><code class="flex name class">
+<span>class <span class="ident">MyTransportSystem</span></span>
+<span>(</span><span>particle, flow, density_ratio)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Represents the transport of an inertial particle in a linear water wave as
+described by Haller and Sapsis (2008).</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>particle</code></strong> :&ensp;<code>Particle (obj)</code></dt>
+<dd>The particle being transported.</dd>
+<dt><strong><code>flow</code></strong> :&ensp;<code>Flow (obj)</code></dt>
+<dd>The flow through which the particle is transported.</dd>
+<dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle's density and the fluid's density.</dd>
+<dt><strong><code>epsilon</code></strong> :&ensp;<code>float</code></dt>
+<dd>A relationship between the Stokes number and density ratio,
+<span><span class="MathJax_Preview">\epsilon = \frac{St}{R}.</span><script type="math/tex; mode=display">\epsilon = \frac{St}{R}.</script></span></dd>
+<dt><strong><code>sigma</code></strong> :&ensp;<code>float</code></dt>
+<dd>A parameter related to the density ratio,
+<span><span class="MathJax_Preview">\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},</span><script type="math/tex; mode=display">\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},</script></span>
+used to compute the asymptotic behavior of the system.</dd>
+<dt><strong><code>alpha</code></strong> :&ensp;<code>float</code></dt>
+<dd>A relationship between the density ratio and Stokes number,
+<span><span class="MathJax_Preview">\alpha = \frac{R}{St},</span><script type="math/tex; mode=display">\alpha = \frac{R}{St},</script></span>
+used to compute the asymptotic behavior of the system.</dd>
+<dt><strong><code>gamma</code></strong> :&ensp;<code>float</code></dt>
+<dd>Another relationship between the density ratio and Stokes number,
+<span><span class="MathJax_Preview">\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},</span><script type="math/tex; mode=display">\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},</script></span>
+used to compute the asymptotic behavior of the system.</dd>
+<dt><strong><code>terminal_velocity</code></strong> :&ensp;<code>float</code></dt>
+<dd>The asymptotic behavior of the particle velocity <strong>v</strong> at long
+times, based on eq (4.8) from Prasath (2019),
+<span><span class="MathJax_Preview">c(\alpha, \gamma) = \frac{\sigma}{\alpha}.</span><script type="math/tex; mode=display">c(\alpha, \gamma) = \frac{\sigma}{\alpha}.</script></span></dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MyTransportSystem(transport_system.TransportSystem):
+        &#34;&#34;&#34; 
+        Represents the transport of an inertial particle in a linear water wave as
+        described by Haller and Sapsis (2008).
+        &#34;&#34;&#34;
+
+        def __init__(self, particle, flow, density_ratio):
+                r&#34;&#34;&#34;
+                Attributes
+                ----------
+                particle : Particle (obj)
+                        The particle being transported.
+                flow : Flow (obj)
+                        The flow through which the particle is transported.
+                density_ratio : float
+                        The ratio between the particle&#39;s density and the fluid&#39;s density.
+                epsilon : float
+                        A relationship between the Stokes number and density ratio,
+                        $$\epsilon = \frac{St}{R}.$$
+                sigma : float
+                        A parameter related to the density ratio,
+                        $$\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},$$
+                        used to compute the asymptotic behavior of the system.
+                alpha : float
+                        A relationship between the density ratio and Stokes number,
+                        $$\alpha = \frac{R}{St},$$
+                        used to compute the asymptotic behavior of the system.
+                gamma : float
+                        Another relationship between the density ratio and Stokes number,
+                        $$\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},$$
+                        used to compute the asymptotic behavior of the system.
+                terminal_velocity : float
+                        The asymptotic behavior of the particle velocity **v** at long
+                        times, based on eq (4.8) from Prasath (2019),
+                        $$c(\alpha, \gamma) = \frac{\sigma}{\alpha}.$$
+                &#34;&#34;&#34;
+                super().__init__(particle, flow, density_ratio)
+                self.epsilon = self.particle.stokes_num / self.density_ratio
+                self.sigma = (1 - 3 / 2 * self.density_ratio) * self.flow.gravity[1]
+                self.alpha = self.density_ratio / self.particle.stokes_num
+                self.gamma = 3 / 2 * self.density_ratio \
+                                           * np.sqrt(2 / self.particle.stokes_num)
+                self.terminal_velocity = self.sigma / self.alpha
+
+        def asymptotic_velocity(self, t):
+                r&#34;&#34;&#34;
+                Computes the leading order asymptotic behavior of the particle velocity
+                based on eq (4.7) from Prasath et al. (2019),
+                $$q^{(2)}(0, t) \approx c(\alpha, \gamma)
+                        - \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
+                        + \mathcal{O}(t^{3 / 2}),$$
+                with a sign change on the singular term.
+
+                Parameters
+                ----------
+                t : float or array
+                        The time(s) to use in the computations.
+
+                Returns
+                -------
+                float or array
+                        The asymptotic particle velocity.
+                &#34;&#34;&#34;
+#               return self.terminal_velocity - self.sigma * self.gamma \
+#                                                                         / (self.alpha ** 2 * np.sqrt(np.pi * t))
+                return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
+                                 / (2 * self.alpha ** 2))
+
+        def maxey_riley(self, t, y, delta_t, t_final):
+                r&#34;&#34;&#34;
+                Evaluates the Maxey-Riley equation,
+                $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
+                $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
+                        - \textbf{v}}{\epsilon}
+                        + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+                        + (1 - \frac{3R}{2}) \textbf{g}
+                        - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+                        \frac{1}{\sqrt{t - s}} \mathrm{d}s
+                        [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
+                with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
+                        \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
+                
+                Parameters
+                ----------
+                t : float
+                        The time to use in the computations.
+                y : list (array-like)
+                        A list containing the x, z, xdot, zdot values to use.
+                delta_t : float
+                        The size of the time steps used for integration.
+                t_final : float
+                        The final time of integration.
+
+                Returns
+                -------
+                Array
+                        The components of the particle&#39;s velocity and acceleration.
+                &#34;&#34;&#34;
+                # initialize local variables and update the particle and fluid histories
+                R = self.density_ratio
+                x, z = y[:2]
+                particle_velocity = y[2:]
+                fluid_velocity = self.flow.velocity(x, z, t)
+                self.update_history(fluid_velocity, particle_velocity)
+
+                # compute each term on the RHS of the M-R equation
+                stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
+                buoyancy_force = (1 - 3 * R / 2) * self.flow.gravity
+                fluid_pressure_gradient = 3 * R / 2 \
+                                                                        * self.flow.material_derivative(x, z, t)
+                history = self.compute_history(delta_t, t)
+
+                # M-R equation
+                particle_acceleration = stokes_drag + buoyancy_force \
+                                                                                        + fluid_pressure_gradient \
+                                                                                        + history
+                print(&#39;{:.0%}&#39;.format(t / t_final), end=&#39;\r&#39;)
+                return np.concatenate((particle_velocity, particle_acceleration))
+
+        def update_history(self, fluid_velocity, particle_velocity):
+                &#34;&#34;&#34;
+                Updates the history of the fluid velocity **u** and particle velocity
+                **v**.
+
+                Parameters
+                ----------
+                fluid_velocity : array
+                        The components of the fluid velocity **u**.
+                particle_velocity : array
+                        The components of the particle velocity **v**.
+                &#34;&#34;&#34;
+                self.flow.history.append(fluid_velocity)
+                self.particle.history.append(particle_velocity)
+
+        def compute_history(self, delta_t, t):
+                r&#34;&#34;&#34;
+                Computes the Basset-Boussinesq history term,
+                $$-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+                        \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+                        \frac{\mathrm{d}}{\mathrm{d}s},$$
+                using the quadrature scheme,
+                $$\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+                        \frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
+                        \sum_{j=0}^{n}
+                        \alpha_j^n f(s_{n-j}),$$
+                with
+                $$f(s) = \textbf{v} - \textbf{u},$$
+                *n* steps, and
+                $$\alpha_j^n = \frac{4}{3} \begin{cases}
+                        1 &amp; j = 0 \\
+                        (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+                        (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n.
+                        \end{cases}$$
+
+                Parameters
+                ----------
+                delta_t : float
+                        The size of the time steps used for integration.
+                t : float
+                        The time at which to evaluate the history term.
+
+                Returns
+                -------
+                Array
+                        The components of the history term.
+                &#34;&#34;&#34;
+                # initialize local variables
+                integrand = np.empty(2,)
+                coefficient = -np.sqrt(9 / (2 * np.pi)) * self.density_ratio \
+                                          / np.sqrt(self.particle.stokes_num)
+                f_s = np.array(self.particle.history) - np.array(self.flow.history)
+                num_steps = int(t / delta_t)
+                alpha = 4 / 3
+
+                # compute the sum
+                for j in range(num_steps + 1):
+                        if j == 0:
+                                alpha *= 1
+                        elif j == num_steps:
+                                alpha *= (num_steps - 1) ** (3 / 2) - num_steps ** (3 / 2) \
+                                                                        + (3 / 2) * np.sqrt(num_steps)
+                        else: # 0 &lt; j &lt; num_steps
+                                alpha *= (j - 1) ** (3 / 2) + (j + 1) ** (3 / 2) \
+                                                                                        - 2 * j ** (3 / 2)
+                        integrand += alpha * f_s[num_steps - j]
+                integrand *= np.sqrt(delta_t)
+                return coefficient * integrand
+
+        def inertial_equation(self, t, y, order):
+                r&#34;&#34;&#34;
+                Evalutes the inertial equation, corresponding to equation (10) in
+                Haller and Sapsis (2008),
+                $$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+                \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
+                + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+                \Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
+                + \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
+                \cdot \nabla \textbf{u}\Bigg]
+                + \mathcal{O}(\epsilon^3).$$
+
+                Parameters
+                ----------
+                t : float
+                        The time to use in the computations
+                y : list (array-like)
+                        A list containing the x and z values to use, and the order of the
+                        equation.
+                order : int
+                        The order at which to evaluate the inertial equation.
+
+                Returns
+                -------
+                Array
+                        The components of the particle&#39;s velocity and acceleration.
+                &#34;&#34;&#34;
+                g = self.flow.gravity
+                R = self.density_ratio
+                x, z = y[:2]
+                fluid_velocity = self.flow.velocity(x, z, t)
+                material_dv = self.flow.material_derivative(x, z, t)
+
+                if order == 0:
+                        particle_velocity = fluid_velocity
+                elif order == 1:
+                        particle_velocity = fluid_velocity + self.epsilon * (3 * R / 2 - 1)\
+                                                                                           * (material_dv - g)
+                elif order == 2:
+                        u, w = fluid_velocity
+                        Du, Dw = material_dv
+                        gx, gz = g
+                        jacobian_term = np.array([Dw * u - Du * w, Du * u + Dw * w]) \
+                                                        - np.array([u * gz - w * gx, u * gx + w * gz])
+                        particle_velocity = fluid_velocity + self.epsilon * (3 * R / 2 - 1)\
+                                                                * (material_dv - g) \
+                                                                + self.epsilon ** 2 * (1 - 3 * R / 2) \
+                                                                * (self.flow.material_derivative2(x, z, t)
+                                                                + jacobian_term)
+                else:
+                        print(&#39;Could not identify the order for the inertial equation.&#39;)
+
+                stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
+                buoyancy_force = (1 - 3 * R / 2) * g
+                fluid_pressure_gradient = 3 * R / 2 * material_dv
+                particle_accel = stokes_drag + buoyancy_force + fluid_pressure_gradient
+
+                return np.concatenate((particle_velocity, particle_accel))
+
+        def run_numerics(self, equation, order=2, x_0=0, z_0=0, xdot_0=1, zdot_0=1,
+                                         num_periods=50, delta_t=5e-3, method=&#39;BDF&#39;):
+                &#34;&#34;&#34;
+                Computes the position and velocity of the particle over time.
+
+                Parameters
+                ----------
+                equation : fun
+                        The equation to evaluate, either M-R or the inertial equation.
+                order : int
+                        The order at which to evaluate the inertial equation.
+                x_0 : float, default=0
+                        The initial horizontal position of the particle.
+                z_0 : float, default=0
+                        The initial vertical position of the particle.
+                num_periods : int, default=50
+                        The number of oscillation periods to integrate over.
+                delta_t : float, default=5e-3
+                        The size of the time steps used for integration.
+                method : str, default=&#39;BDF&#39;
+                        The method of integration to use.
+
+                Returns
+                -------
+                x : array
+                        The horizontal positions of the particle.
+                z : array
+                        The vertical positions of the particle.
+                xdot : array
+                        The horizontal velocities of the particle.
+                zdot : array
+                        The vertical velocities of the particle.
+                t : array
+                        The times at which the model was evaluated.
+                &#34;&#34;&#34;
+                # initialize parameters for the solver
+                num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
+                t_final = num_periods * self.flow.period
+                t_span = (0, t_final)   
+                t_eval = np.linspace(0, t_final, num_steps)
+                args = ()
+
+                # decide what arguments to provide for the specified equation
+                if &#39;maxey_riley&#39; in str(equation):
+                        args=(delta_t, t_final)
+                elif &#39;inertial&#39; in str(equation):
+                        args=(order,)
+                else:
+                        print(&#39;Could not recognize equation.&#39;)
+
+                # run computations
+                sols = integrate.solve_ivp(equation, t_span,
+                                                                   [x_0, z_0, xdot_0, zdot_0],
+                                                                   method=method, t_eval=t_eval,
+                                                                   rtol=1e-8, atol=1e-10, args=args)
+                # unpack and return solutions
+                x, z, xdot, zdot = sols.y
+                t = sols.t
+                return x, z, xdot, zdot, t</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>transport_framework.transport_system.TransportSystem</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.asymptotic_velocity"><code class="name flex">
+<span>def <span class="ident">asymptotic_velocity</span></span>(<span>self, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the leading order asymptotic behavior of the particle velocity
+based on eq (4.7) from Prasath et al. (2019),
+<span><span class="MathJax_Preview">q^{(2)}(0, t) \approx c(\alpha, \gamma)
+- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
++ \mathcal{O}(t^{3 / 2}),</span><script type="math/tex; mode=display">q^{(2)}(0, t) \approx c(\alpha, \gamma)
+- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
++ \mathcal{O}(t^{3 / 2}),</script></span>
+with a sign change on the singular term.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) to use in the computations.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code> or <code>array</code></dt>
+<dd>The asymptotic particle velocity.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">        def asymptotic_velocity(self, t):
+                r&#34;&#34;&#34;
+                Computes the leading order asymptotic behavior of the particle velocity
+                based on eq (4.7) from Prasath et al. (2019),
+                $$q^{(2)}(0, t) \approx c(\alpha, \gamma)
+                        - \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
+                        + \mathcal{O}(t^{3 / 2}),$$
+                with a sign change on the singular term.
+
+                Parameters
+                ----------
+                t : float or array
+                        The time(s) to use in the computations.
+
+                Returns
+                -------
+                float or array
+                        The asymptotic particle velocity.
+                &#34;&#34;&#34;
+#               return self.terminal_velocity - self.sigma * self.gamma \
+#                                                                         / (self.alpha ** 2 * np.sqrt(np.pi * t))
+                return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
+                                 / (2 * self.alpha ** 2))</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.compute_history"><code class="name flex">
+<span>def <span class="ident">compute_history</span></span>(<span>self, delta_t, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the Basset-Boussinesq history term,
+<span><span class="MathJax_Preview">-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+\frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+\frac{\mathrm{d}}{\mathrm{d}s},</span><script type="math/tex; mode=display">-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+\frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+\frac{\mathrm{d}}{\mathrm{d}s},</script></span>
+using the quadrature scheme,
+<span><span class="MathJax_Preview">\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+\frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
+\sum_{j=0}^{n}
+\alpha_j^n f(s_{n-j}),</span><script type="math/tex; mode=display">\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+\frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
+\sum_{j=0}^{n}
+\alpha_j^n f(s_{n-j}),</script></span>
+with
+<span><span class="MathJax_Preview">f(s) = \textbf{v} - \textbf{u},</span><script type="math/tex; mode=display">f(s) = \textbf{v} - \textbf{u},</script></span>
+<em>n</em> steps, and
+<span><span class="MathJax_Preview">\alpha_j^n = \frac{4}{3} \begin{cases}
+1 &amp; j = 0 \\
+(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n.
+\end{cases}</span><script type="math/tex; mode=display">\alpha_j^n = \frac{4}{3} \begin{cases}
+1 & j = 0 \\
+(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
+(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n.
+\end{cases}</script></span></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
+<dd>The size of the time steps used for integration.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
+<dd>The time at which to evaluate the history term.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Array</code></dt>
+<dd>The components of the history term.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_history(self, delta_t, t):
+        r&#34;&#34;&#34;
+        Computes the Basset-Boussinesq history term,
+        $$-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+                \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+                \frac{\mathrm{d}}{\mathrm{d}s},$$
+        using the quadrature scheme,
+        $$\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
+                \frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
+                \sum_{j=0}^{n}
+                \alpha_j^n f(s_{n-j}),$$
+        with
+        $$f(s) = \textbf{v} - \textbf{u},$$
+        *n* steps, and
+        $$\alpha_j^n = \frac{4}{3} \begin{cases}
+                1 &amp; j = 0 \\
+                (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+                (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n.
+                \end{cases}$$
+
+        Parameters
+        ----------
+        delta_t : float
+                The size of the time steps used for integration.
+        t : float
+                The time at which to evaluate the history term.
+
+        Returns
+        -------
+        Array
+                The components of the history term.
+        &#34;&#34;&#34;
+        # initialize local variables
+        integrand = np.empty(2,)
+        coefficient = -np.sqrt(9 / (2 * np.pi)) * self.density_ratio \
+                                  / np.sqrt(self.particle.stokes_num)
+        f_s = np.array(self.particle.history) - np.array(self.flow.history)
+        num_steps = int(t / delta_t)
+        alpha = 4 / 3
+
+        # compute the sum
+        for j in range(num_steps + 1):
+                if j == 0:
+                        alpha *= 1
+                elif j == num_steps:
+                        alpha *= (num_steps - 1) ** (3 / 2) - num_steps ** (3 / 2) \
+                                                                + (3 / 2) * np.sqrt(num_steps)
+                else: # 0 &lt; j &lt; num_steps
+                        alpha *= (j - 1) ** (3 / 2) + (j + 1) ** (3 / 2) \
+                                                                                - 2 * j ** (3 / 2)
+                integrand += alpha * f_s[num_steps - j]
+        integrand *= np.sqrt(delta_t)
+        return coefficient * integrand</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.inertial_equation"><code class="name flex">
+<span>def <span class="ident">inertial_equation</span></span>(<span>self, t, y, order)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Evalutes the inertial equation, corresponding to equation (10) in
+Haller and Sapsis (2008),
+<span><span class="MathJax_Preview">\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
++ \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+\Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
++ \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
+\cdot \nabla \textbf{u}\Bigg]
++ \mathcal{O}(\epsilon^3).</span><script type="math/tex; mode=display">\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
++ \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+\Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
++ \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
+\cdot \nabla \textbf{u}\Bigg]
++ \mathcal{O}(\epsilon^3).</script></span></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
+<dd>The time to use in the computations</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
+<dd>A list containing the x and z values to use, and the order of the
+equation.</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>int</code></dt>
+<dd>The order at which to evaluate the inertial equation.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Array</code></dt>
+<dd>The components of the particle's velocity and acceleration.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def inertial_equation(self, t, y, order):
+        r&#34;&#34;&#34;
+        Evalutes the inertial equation, corresponding to equation (10) in
+        Haller and Sapsis (2008),
+        $$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+        \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
+        + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+        \Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
+        + \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
+        \cdot \nabla \textbf{u}\Bigg]
+        + \mathcal{O}(\epsilon^3).$$
+
+        Parameters
+        ----------
+        t : float
+                The time to use in the computations
+        y : list (array-like)
+                A list containing the x and z values to use, and the order of the
+                equation.
+        order : int
+                The order at which to evaluate the inertial equation.
+
+        Returns
+        -------
+        Array
+                The components of the particle&#39;s velocity and acceleration.
+        &#34;&#34;&#34;
+        g = self.flow.gravity
+        R = self.density_ratio
+        x, z = y[:2]
+        fluid_velocity = self.flow.velocity(x, z, t)
+        material_dv = self.flow.material_derivative(x, z, t)
+
+        if order == 0:
+                particle_velocity = fluid_velocity
+        elif order == 1:
+                particle_velocity = fluid_velocity + self.epsilon * (3 * R / 2 - 1)\
+                                                                                   * (material_dv - g)
+        elif order == 2:
+                u, w = fluid_velocity
+                Du, Dw = material_dv
+                gx, gz = g
+                jacobian_term = np.array([Dw * u - Du * w, Du * u + Dw * w]) \
+                                                - np.array([u * gz - w * gx, u * gx + w * gz])
+                particle_velocity = fluid_velocity + self.epsilon * (3 * R / 2 - 1)\
+                                                        * (material_dv - g) \
+                                                        + self.epsilon ** 2 * (1 - 3 * R / 2) \
+                                                        * (self.flow.material_derivative2(x, z, t)
+                                                        + jacobian_term)
+        else:
+                print(&#39;Could not identify the order for the inertial equation.&#39;)
+
+        stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
+        buoyancy_force = (1 - 3 * R / 2) * g
+        fluid_pressure_gradient = 3 * R / 2 * material_dv
+        particle_accel = stokes_drag + buoyancy_force + fluid_pressure_gradient
+
+        return np.concatenate((particle_velocity, particle_accel))</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.maxey_riley"><code class="name flex">
+<span>def <span class="ident">maxey_riley</span></span>(<span>self, t, y, delta_t, t_final)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Evaluates the Maxey-Riley equation,
+<span><span class="MathJax_Preview">\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},</script></span>
+<span><span class="MathJax_Preview">\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
+- \textbf{v}}{\epsilon}
++ \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
++ (1 - \frac{3R}{2}) \textbf{g}
+- \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+\frac{1}{\sqrt{t - s}} \mathrm{d}s
+[\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
+- \textbf{v}}{\epsilon}
++ \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
++ (1 - \frac{3R}{2}) \textbf{g}
+- \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+\frac{1}{\sqrt{t - s}} \mathrm{d}s
+[\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},</script></span>
+with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
+\quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.</span><script type="math/tex; mode=display">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
+\quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.</script></span></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
+<dd>The time to use in the computations.</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
+<dd>A list containing the x, z, xdot, zdot values to use.</dd>
+<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
+<dd>The size of the time steps used for integration.</dd>
+<dt><strong><code>t_final</code></strong> :&ensp;<code>float</code></dt>
+<dd>The final time of integration.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Array</code></dt>
+<dd>The components of the particle's velocity and acceleration.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def maxey_riley(self, t, y, delta_t, t_final):
+        r&#34;&#34;&#34;
+        Evaluates the Maxey-Riley equation,
+        $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
+        $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
+                - \textbf{v}}{\epsilon}
+                + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+                + (1 - \frac{3R}{2}) \textbf{g}
+                - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+                \frac{1}{\sqrt{t - s}} \mathrm{d}s
+                [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
+        with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
+                \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
+        
+        Parameters
+        ----------
+        t : float
+                The time to use in the computations.
+        y : list (array-like)
+                A list containing the x, z, xdot, zdot values to use.
+        delta_t : float
+                The size of the time steps used for integration.
+        t_final : float
+                The final time of integration.
+
+        Returns
+        -------
+        Array
+                The components of the particle&#39;s velocity and acceleration.
+        &#34;&#34;&#34;
+        # initialize local variables and update the particle and fluid histories
+        R = self.density_ratio
+        x, z = y[:2]
+        particle_velocity = y[2:]
+        fluid_velocity = self.flow.velocity(x, z, t)
+        self.update_history(fluid_velocity, particle_velocity)
+
+        # compute each term on the RHS of the M-R equation
+        stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
+        buoyancy_force = (1 - 3 * R / 2) * self.flow.gravity
+        fluid_pressure_gradient = 3 * R / 2 \
+                                                                * self.flow.material_derivative(x, z, t)
+        history = self.compute_history(delta_t, t)
+
+        # M-R equation
+        particle_acceleration = stokes_drag + buoyancy_force \
+                                                                                + fluid_pressure_gradient \
+                                                                                + history
+        print(&#39;{:.0%}&#39;.format(t / t_final), end=&#39;\r&#39;)
+        return np.concatenate((particle_velocity, particle_acceleration))</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.run_numerics"><code class="name flex">
+<span>def <span class="ident">run_numerics</span></span>(<span>self, equation, order=2, x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50, delta_t=0.005, method='BDF')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the position and velocity of the particle over time.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>equation</code></strong> :&ensp;<code>fun</code></dt>
+<dd>The equation to evaluate, either M-R or the inertial equation.</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>int</code></dt>
+<dd>The order at which to evaluate the inertial equation.</dd>
+<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dd>The initial horizontal position of the particle.</dd>
+<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dd>The initial vertical position of the particle.</dd>
+<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code>, default=<code>50</code></dt>
+<dd>The number of oscillation periods to integrate over.</dd>
+<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code>, default=<code>5e-3</code></dt>
+<dd>The size of the time steps used for integration.</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>str</code>, default=<code>'BDF'</code></dt>
+<dd>The method of integration to use.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>array</code></dt>
+<dd>The horizontal positions of the particle.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>array</code></dt>
+<dd>The vertical positions of the particle.</dd>
+<dt><strong><code>xdot</code></strong> :&ensp;<code>array</code></dt>
+<dd>The horizontal velocities of the particle.</dd>
+<dt><strong><code>zdot</code></strong> :&ensp;<code>array</code></dt>
+<dd>The vertical velocities of the particle.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>array</code></dt>
+<dd>The times at which the model was evaluated.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_numerics(self, equation, order=2, x_0=0, z_0=0, xdot_0=1, zdot_0=1,
+                                 num_periods=50, delta_t=5e-3, method=&#39;BDF&#39;):
+        &#34;&#34;&#34;
+        Computes the position and velocity of the particle over time.
+
+        Parameters
+        ----------
+        equation : fun
+                The equation to evaluate, either M-R or the inertial equation.
+        order : int
+                The order at which to evaluate the inertial equation.
+        x_0 : float, default=0
+                The initial horizontal position of the particle.
+        z_0 : float, default=0
+                The initial vertical position of the particle.
+        num_periods : int, default=50
+                The number of oscillation periods to integrate over.
+        delta_t : float, default=5e-3
+                The size of the time steps used for integration.
+        method : str, default=&#39;BDF&#39;
+                The method of integration to use.
+
+        Returns
+        -------
+        x : array
+                The horizontal positions of the particle.
+        z : array
+                The vertical positions of the particle.
+        xdot : array
+                The horizontal velocities of the particle.
+        zdot : array
+                The vertical velocities of the particle.
+        t : array
+                The times at which the model was evaluated.
+        &#34;&#34;&#34;
+        # initialize parameters for the solver
+        num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
+        t_final = num_periods * self.flow.period
+        t_span = (0, t_final)   
+        t_eval = np.linspace(0, t_final, num_steps)
+        args = ()
+
+        # decide what arguments to provide for the specified equation
+        if &#39;maxey_riley&#39; in str(equation):
+                args=(delta_t, t_final)
+        elif &#39;inertial&#39; in str(equation):
+                args=(order,)
+        else:
+                print(&#39;Could not recognize equation.&#39;)
+
+        # run computations
+        sols = integrate.solve_ivp(equation, t_span,
+                                                           [x_0, z_0, xdot_0, zdot_0],
+                                                           method=method, t_eval=t_eval,
+                                                           rtol=1e-8, atol=1e-10, args=args)
+        # unpack and return solutions
+        x, z, xdot, zdot = sols.y
+        t = sols.t
+        return x, z, xdot, zdot, t</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.update_history"><code class="name flex">
+<span>def <span class="ident">update_history</span></span>(<span>self, fluid_velocity, particle_velocity)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Updates the history of the fluid velocity <strong>u</strong> and particle velocity
+<strong>v</strong>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>fluid_velocity</code></strong> :&ensp;<code>array</code></dt>
+<dd>The components of the fluid velocity <strong>u</strong>.</dd>
+<dt><strong><code>particle_velocity</code></strong> :&ensp;<code>array</code></dt>
+<dd>The components of the particle velocity <strong>v</strong>.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_history(self, fluid_velocity, particle_velocity):
+        &#34;&#34;&#34;
+        Updates the history of the fluid velocity **u** and particle velocity
+        **v**.
+
+        Parameters
+        ----------
+        fluid_velocity : array
+                The components of the fluid velocity **u**.
+        particle_velocity : array
+                The components of the particle velocity **v**.
+        &#34;&#34;&#34;
+        self.flow.history.append(fluid_velocity)
+        self.particle.history.append(particle_velocity)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="modelling-microplastics-transport.models" href="index.html">modelling-microplastics-transport.models</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem">MyTransportSystem</a></code></h4>
+<ul class="two-column">
+<li><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem.asymptotic_velocity" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem.asymptotic_velocity">asymptotic_velocity</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem.compute_history" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem.compute_history">compute_history</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem.inertial_equation" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem.inertial_equation">inertial_equation</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem.maxey_riley" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem.maxey_riley">maxey_riley</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem.run_numerics" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem.run_numerics">run_numerics</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem.update_history" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem.update_history">update_history</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

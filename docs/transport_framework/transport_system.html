@@ -29,7 +29,6 @@
 </summary>
 <pre><code class="python">from abc import ABC, abstractmethod
 import numpy as np
-import scipy.integrate as integrate
 
 class TransportSystem:
         &#34;&#34;&#34;
@@ -72,17 +71,14 @@ class TransportSystem:
                 &#34;&#34;&#34;
                 pass
 
-        def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
-                                         delta_t=5e-3, method=&#39;BDF&#39;):
+        @abstractmethod
+        def run_numerics(self, x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
+                                         method=&#39;BDF&#39;):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
                 Parameters
                 ----------
-                equation : fun
-                        The equation to evaluate, either M-R or the inertial equation.
-                order : int
-                        The order at which to evaluate the inertial equation.
                 x_0 : float, default=0
                         The initial horizontal position of the particle.
                 z_0 : float, default=0
@@ -106,36 +102,8 @@ class TransportSystem:
                         The vertical velocities of the particle.
                 t : array
                         The times at which the model was evaluated.
-
-                Notes
-                -----
-                The velocity of the particle is set to the initial velocity of the
-                fluid.
                 &#34;&#34;&#34;
-                # initial parameters
-                num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
-                t_span = (0, num_periods * self.flow.period)
-                t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
-                xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
-
-                # run computations
-                if &#39;maxey_riley&#39; in str(equation):
-                        sols = integrate.solve_ivp(equation, t_span,
-                                                                           [x_0, z_0, xdot_0, zdot_0],
-                                                                           method=method, t_eval=t_eval,
-                                                                           rtol=1e-8, atol=1e-10)
-                elif &#39;inertial&#39; in str(equation):
-                        sols = integrate.solve_ivp(equation, t_span,
-                                                                           [x_0, z_0, xdot_0, zdot_0],
-                                                                           method=method, t_eval=t_eval,
-                                                                           rtol=1e-8, atol=1e-10, args=(order,))
-                else:
-                        print(&#39;Could not recognize equation.&#39;)
-
-                # unpack and return solutions
-                x, z, xdot, zdot = sols.y
-                t = sols.t
-                return x, z, xdot, zdot, t</code></pre>
+                pass</code></pre>
 </details>
 </section>
 <section>
@@ -209,17 +177,14 @@ class TransportSystem:
                 &#34;&#34;&#34;
                 pass
 
-        def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
-                                         delta_t=5e-3, method=&#39;BDF&#39;):
+        @abstractmethod
+        def run_numerics(self, x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
+                                         method=&#39;BDF&#39;):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
                 Parameters
                 ----------
-                equation : fun
-                        The equation to evaluate, either M-R or the inertial equation.
-                order : int
-                        The order at which to evaluate the inertial equation.
                 x_0 : float, default=0
                         The initial horizontal position of the particle.
                 z_0 : float, default=0
@@ -243,36 +208,8 @@ class TransportSystem:
                         The vertical velocities of the particle.
                 t : array
                         The times at which the model was evaluated.
-
-                Notes
-                -----
-                The velocity of the particle is set to the initial velocity of the
-                fluid.
                 &#34;&#34;&#34;
-                # initial parameters
-                num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
-                t_span = (0, num_periods * self.flow.period)
-                t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
-                xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
-
-                # run computations
-                if &#39;maxey_riley&#39; in str(equation):
-                        sols = integrate.solve_ivp(equation, t_span,
-                                                                           [x_0, z_0, xdot_0, zdot_0],
-                                                                           method=method, t_eval=t_eval,
-                                                                           rtol=1e-8, atol=1e-10)
-                elif &#39;inertial&#39; in str(equation):
-                        sols = integrate.solve_ivp(equation, t_span,
-                                                                           [x_0, z_0, xdot_0, zdot_0],
-                                                                           method=method, t_eval=t_eval,
-                                                                           rtol=1e-8, atol=1e-10, args=(order,))
-                else:
-                        print(&#39;Could not recognize equation.&#39;)
-
-                # unpack and return solutions
-                x, z, xdot, zdot = sols.y
-                t = sols.t
-                return x, z, xdot, zdot, t</code></pre>
+                pass</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -318,16 +255,12 @@ def maxey_riley(self, t, y):
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.transport_framework.transport_system.TransportSystem.run_numerics"><code class="name flex">
-<span>def <span class="ident">run_numerics</span></span>(<span>self, equation, order=2, x_0=0, z_0=0, num_periods=50, delta_t=0.005, method='BDF')</span>
+<span>def <span class="ident">run_numerics</span></span>(<span>self, x_0=0, z_0=0, num_periods=50, delta_t=0.005, method='BDF')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the position and velocity of the particle over time.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>equation</code></strong> :&ensp;<code>fun</code></dt>
-<dd>The equation to evaluate, either M-R or the inertial equation.</dd>
-<dt><strong><code>order</code></strong> :&ensp;<code>int</code></dt>
-<dd>The order at which to evaluate the inertial equation.</dd>
 <dt><strong><code>x_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
 <dd>The initial horizontal position of the particle.</dd>
 <dt><strong><code>z_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
@@ -351,25 +284,19 @@ def maxey_riley(self, t, y):
 <dd>The vertical velocities of the particle.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>array</code></dt>
 <dd>The times at which the model was evaluated.</dd>
-</dl>
-<h2 id="notes">Notes</h2>
-<p>The velocity of the particle is set to the initial velocity of the
-fluid.</p></div>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
-                                 delta_t=5e-3, method=&#39;BDF&#39;):
+<pre><code class="python">@abstractmethod
+def run_numerics(self, x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
+                                 method=&#39;BDF&#39;):
         &#34;&#34;&#34;
         Computes the position and velocity of the particle over time.
 
         Parameters
         ----------
-        equation : fun
-                The equation to evaluate, either M-R or the inertial equation.
-        order : int
-                The order at which to evaluate the inertial equation.
         x_0 : float, default=0
                 The initial horizontal position of the particle.
         z_0 : float, default=0
@@ -393,36 +320,8 @@ fluid.</p></div>
                 The vertical velocities of the particle.
         t : array
                 The times at which the model was evaluated.
-
-        Notes
-        -----
-        The velocity of the particle is set to the initial velocity of the
-        fluid.
         &#34;&#34;&#34;
-        # initial parameters
-        num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
-        t_span = (0, num_periods * self.flow.period)
-        t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
-        xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
-
-        # run computations
-        if &#39;maxey_riley&#39; in str(equation):
-                sols = integrate.solve_ivp(equation, t_span,
-                                                                   [x_0, z_0, xdot_0, zdot_0],
-                                                                   method=method, t_eval=t_eval,
-                                                                   rtol=1e-8, atol=1e-10)
-        elif &#39;inertial&#39; in str(equation):
-                sols = integrate.solve_ivp(equation, t_span,
-                                                                   [x_0, z_0, xdot_0, zdot_0],
-                                                                   method=method, t_eval=t_eval,
-                                                                   rtol=1e-8, atol=1e-10, args=(order,))
-        else:
-                print(&#39;Could not recognize equation.&#39;)
-
-        # unpack and return solutions
-        x, z, xdot, zdot = sols.y
-        t = sols.t
-        return x, z, xdot, zdot, t</code></pre>
+        pass</code></pre>
 </details>
 </dd>
 </dl>

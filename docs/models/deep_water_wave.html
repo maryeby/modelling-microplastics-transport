@@ -32,16 +32,16 @@ import sys
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
 from scipy import constants
-from transport_framework import flow
+from transport_framework import wave
 
-class DeepWaterWave(flow.Flow):
+class DeepWaterWave(wave.Wave):
         &#34;&#34;&#34;
         Represents a non-dimensional version of the fluid flow described in
         Santamaria et al., (2013). The flow is a linear water wave with infinite 
         depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15, density=1):
+        def __init__(self, amplitude, wavelength, depth=15):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
@@ -49,10 +49,8 @@ class DeepWaterWave(flow.Flow):
                         The amplitude of the wave *A*.
                 wavelength : float
                         The wavelength lambda.
-                depth : float=15
+                depth : float, default=15
                         The depth of the fluid *h*.
-                density : float
-                        The density of the fluid rho_f.
                 wavenum : float
                         The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
                 gravity : float
@@ -65,7 +63,7 @@ class DeepWaterWave(flow.Flow):
                 epsilon : float
                         A relationship between the wave ampltiude *A* and wave number *k*.
                 &#34;&#34;&#34;
-                super().__init__(amplitude, wavelength, depth, density)
+                super().__init__(depth, amplitude, wavelength)
                 self.epsilon = self.amplitude * self.wavenum
 
         def set_angular_freq(self):
@@ -164,7 +162,7 @@ class DeepWaterWave(flow.Flow):
 <dl>
 <dt id="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave"><code class="flex name class">
 <span>class <span class="ident">DeepWaterWave</span></span>
-<span>(</span><span>amplitude, wavelength, depth=15, density=1)</span>
+<span>(</span><span>amplitude, wavelength, depth=15)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents a non-dimensional version of the fluid flow described in
@@ -176,10 +174,8 @@ depth.</p>
 <dd>The amplitude of the wave <em>A</em>.</dd>
 <dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
 <dd>The wavelength lambda.</dd>
-<dt><strong><code>depth</code></strong> :&ensp;<code>float=15</code></dt>
+<dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>15</code></dt>
 <dd>The depth of the fluid <em>h</em>.</dd>
-<dt><strong><code>density</code></strong> :&ensp;<code>float</code></dt>
-<dd>The density of the fluid rho_f.</dd>
 <dt><strong><code>wavenum</code></strong> :&ensp;<code>float</code></dt>
 <dd>The wave number <em>k</em>, computed as <span><span class="MathJax_Preview">k = \frac{2 \pi}{\lambda}.</span><script type="math/tex; mode=display">k = \frac{2 \pi}{\lambda}.</script></span></dd>
 <dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
@@ -196,14 +192,14 @@ depth.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class DeepWaterWave(flow.Flow):
+<pre><code class="python">class DeepWaterWave(wave.Wave):
         &#34;&#34;&#34;
         Represents a non-dimensional version of the fluid flow described in
         Santamaria et al., (2013). The flow is a linear water wave with infinite 
         depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15, density=1):
+        def __init__(self, amplitude, wavelength, depth=15):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
@@ -211,10 +207,8 @@ depth.</p>
                         The amplitude of the wave *A*.
                 wavelength : float
                         The wavelength lambda.
-                depth : float=15
+                depth : float, default=15
                         The depth of the fluid *h*.
-                density : float
-                        The density of the fluid rho_f.
                 wavenum : float
                         The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
                 gravity : float
@@ -227,7 +221,7 @@ depth.</p>
                 epsilon : float
                         A relationship between the wave ampltiude *A* and wave number *k*.
                 &#34;&#34;&#34;
-                super().__init__(amplitude, wavelength, depth, density)
+                super().__init__(depth, amplitude, wavelength)
                 self.epsilon = self.amplitude * self.wavenum
 
         def set_angular_freq(self):
@@ -316,6 +310,7 @@ depth.</p>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
+<li>transport_framework.wave.Wave</li>
 <li>transport_framework.flow.Flow</li>
 <li>abc.ABC</li>
 </ul>

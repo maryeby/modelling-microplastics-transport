@@ -69,4 +69,5 @@ def main():
 	plt.plot('x', 'z', 'k:', data=haller2, label='Haller second order')
 	plt.legend()
 	plt.show()
-main()
+if __name__ == '__main__':
+	main()

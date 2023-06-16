@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import numpy as np
-import scipy.integrate as integrate
 
 class TransportSystem:
 	"""
@@ -43,17 +42,14 @@ class TransportSystem:
 		"""
 		pass
 
-	def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
-					 delta_t=5e-3, method='BDF'):
+	@abstractmethod
+	def run_numerics(self, x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
+					 method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
 		Parameters
 		----------
-		equation : fun
-			The equation to evaluate, either M-R or the inertial equation.
-		order : int
-			The order at which to evaluate the inertial equation.
 		x_0 : float, default=0
 			The initial horizontal position of the particle.
 		z_0 : float, default=0
@@ -77,33 +73,5 @@ class TransportSystem:
 			The vertical velocities of the particle.
 		t : array
 			The times at which the model was evaluated.
-
-		Notes
-		-----
-		The velocity of the particle is set to the initial velocity of the
-		fluid.
 		"""
-		# initial parameters
-		num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
-		t_span = (0, num_periods * self.flow.period)
-		t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
-		xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
-
-		# run computations
-		if 'maxey_riley' in str(equation):
-			sols = integrate.solve_ivp(equation, t_span,
-									   [x_0, z_0, xdot_0, zdot_0],
-									   method=method, t_eval=t_eval,
-									   rtol=1e-8, atol=1e-10)
-		elif 'inertial' in str(equation):
-			sols = integrate.solve_ivp(equation, t_span,
-									   [x_0, z_0, xdot_0, zdot_0],
-									   method=method, t_eval=t_eval,
-									   rtol=1e-8, atol=1e-10, args=(order,))
-		else:
-			print('Could not recognize equation.')
-
-		# unpack and return solutions
-		x, z, xdot, zdot = sols.y
-		t = sols.t
-		return x, z, xdot, zdot, t
+		pass

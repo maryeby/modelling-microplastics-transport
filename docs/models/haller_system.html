@@ -31,6 +31,7 @@
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
 import numpy as np
+import scipy.integrate as integrate
 from models import deep_water_wave
 from transport_framework import particle, transport_system
 
@@ -93,31 +94,31 @@ class HallerTransportSystem(transport_system.TransportSystem):
 
         def inertial_equation(self, t, y, order):
                 r&#34;&#34;&#34;
-        Evalutes the inertial equation, corresponding to equation (10) in
-        Haller and Sapsis (2008),
-        $$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+                Evalutes the inertial equation, corresponding to equation (10) in
+                Haller and Sapsis (2008),
+                $$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
                 \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
-        + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+                + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
                 \Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
                 + \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
                 \cdot \nabla \textbf{u}\Bigg]
-        + \mathcal{O}(\epsilon^3).$$
+                + \mathcal{O}(\epsilon^3).$$
 
-        Parameters
-        ----------
-        t : float
-            The time to use in the computations
-        y : list (array-like)
-            A list containing the x and z values to use, and the order of the
-            equation.
+                Parameters
+                ----------
+                t : float
+                        The time to use in the computations
+                y : list (array-like)
+                        A list containing the x and z values to use, and the order of the
+                        equation.
                 order : int
                         The order at which to evaluate the inertial equation.
 
-        Returns
-        -------
-        Array
-            The components of the particle&#39;s velocity and acceleration.
-        &#34;&#34;&#34;
+                Returns
+                -------
+                Array
+                        The components of the particle&#39;s velocity and acceleration.
+                &#34;&#34;&#34;
                 g = self.flow.gravity
                 R = self.density_ratio
                 x, z = y[:2]
@@ -148,7 +149,72 @@ class HallerTransportSystem(transport_system.TransportSystem):
                 fluid_pressure_gradient = 3 * R / 2 * material_dv
                 particle_accel = stokes_drag + buoyancy_force + fluid_pressure_gradient
 
-                return np.concatenate((particle_velocity, particle_accel))</code></pre>
+                return np.concatenate((particle_velocity, particle_accel))
+
+        def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
+                                         delta_t=5e-3, method=&#39;BDF&#39;):
+                &#34;&#34;&#34;
+                Computes the position and velocity of the particle over time.
+
+                Parameters
+                ----------
+                equation : fun
+                        The equation to evaluate, either M-R or the inertial equation.
+                order : int
+                        The order at which to evaluate the inertial equation.
+                x_0 : float, default=0
+                        The initial horizontal position of the particle.
+                z_0 : float, default=0
+                        The initial vertical position of the particle.
+                num_periods : int, default=50
+                        The number of oscillation periods to integrate over.
+                delta_t : float, default=5e-3
+                        The size of the timesteps of integration.
+                method : str, default=&#39;BDF&#39;
+                        The method of integration to use.
+
+                Returns
+                -------
+                x : array
+                        The horizontal positions of the particle.
+                z : array
+                        The vertical positions of the particle.
+                xdot : array
+                        The horizontal velocities of the particle.
+                zdot : array
+                        The vertical velocities of the particle.
+                t : array
+                        The times at which the model was evaluated.
+
+                Notes
+                -----
+                The velocity of the particle is set to the initial velocity of the
+                fluid.
+                &#34;&#34;&#34;
+                # initial parameters
+                num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
+                t_span = (0, num_periods * self.flow.period)
+                t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
+                xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
+
+                # run computations
+                if &#39;maxey_riley&#39; in str(equation):
+                        sols = integrate.solve_ivp(equation, t_span,
+                                                                           [x_0, z_0, xdot_0, zdot_0],
+                                                                           method=method, t_eval=t_eval,
+                                                                           rtol=1e-8, atol=1e-10)
+                elif &#39;inertial&#39; in str(equation):
+                        sols = integrate.solve_ivp(equation, t_span,
+                                                                           [x_0, z_0, xdot_0, zdot_0],
+                                                                           method=method, t_eval=t_eval,
+                                                                           rtol=1e-8, atol=1e-10, args=(order,))
+                else:
+                        print(&#39;Could not recognize equation.&#39;)
+
+                # unpack and return solutions
+                x, z, xdot, zdot = sols.y
+                t = sols.t
+                return x, z, xdot, zdot, t</code></pre>
 </details>
 </section>
 <section>
@@ -241,31 +307,31 @@ described by Haller and Sapsis (2008).</p>
 
         def inertial_equation(self, t, y, order):
                 r&#34;&#34;&#34;
-        Evalutes the inertial equation, corresponding to equation (10) in
-        Haller and Sapsis (2008),
-        $$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+                Evalutes the inertial equation, corresponding to equation (10) in
+                Haller and Sapsis (2008),
+                $$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
                 \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
-        + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+                + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
                 \Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
                 + \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
                 \cdot \nabla \textbf{u}\Bigg]
-        + \mathcal{O}(\epsilon^3).$$
+                + \mathcal{O}(\epsilon^3).$$
 
-        Parameters
-        ----------
-        t : float
-            The time to use in the computations
-        y : list (array-like)
-            A list containing the x and z values to use, and the order of the
-            equation.
+                Parameters
+                ----------
+                t : float
+                        The time to use in the computations
+                y : list (array-like)
+                        A list containing the x and z values to use, and the order of the
+                        equation.
                 order : int
                         The order at which to evaluate the inertial equation.
 
-        Returns
-        -------
-        Array
-            The components of the particle&#39;s velocity and acceleration.
-        &#34;&#34;&#34;
+                Returns
+                -------
+                Array
+                        The components of the particle&#39;s velocity and acceleration.
+                &#34;&#34;&#34;
                 g = self.flow.gravity
                 R = self.density_ratio
                 x, z = y[:2]
@@ -296,7 +362,72 @@ described by Haller and Sapsis (2008).</p>
                 fluid_pressure_gradient = 3 * R / 2 * material_dv
                 particle_accel = stokes_drag + buoyancy_force + fluid_pressure_gradient
 
-                return np.concatenate((particle_velocity, particle_accel))</code></pre>
+                return np.concatenate((particle_velocity, particle_accel))
+
+        def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
+                                         delta_t=5e-3, method=&#39;BDF&#39;):
+                &#34;&#34;&#34;
+                Computes the position and velocity of the particle over time.
+
+                Parameters
+                ----------
+                equation : fun
+                        The equation to evaluate, either M-R or the inertial equation.
+                order : int
+                        The order at which to evaluate the inertial equation.
+                x_0 : float, default=0
+                        The initial horizontal position of the particle.
+                z_0 : float, default=0
+                        The initial vertical position of the particle.
+                num_periods : int, default=50
+                        The number of oscillation periods to integrate over.
+                delta_t : float, default=5e-3
+                        The size of the timesteps of integration.
+                method : str, default=&#39;BDF&#39;
+                        The method of integration to use.
+
+                Returns
+                -------
+                x : array
+                        The horizontal positions of the particle.
+                z : array
+                        The vertical positions of the particle.
+                xdot : array
+                        The horizontal velocities of the particle.
+                zdot : array
+                        The vertical velocities of the particle.
+                t : array
+                        The times at which the model was evaluated.
+
+                Notes
+                -----
+                The velocity of the particle is set to the initial velocity of the
+                fluid.
+                &#34;&#34;&#34;
+                # initial parameters
+                num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
+                t_span = (0, num_periods * self.flow.period)
+                t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
+                xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
+
+                # run computations
+                if &#39;maxey_riley&#39; in str(equation):
+                        sols = integrate.solve_ivp(equation, t_span,
+                                                                           [x_0, z_0, xdot_0, zdot_0],
+                                                                           method=method, t_eval=t_eval,
+                                                                           rtol=1e-8, atol=1e-10)
+                elif &#39;inertial&#39; in str(equation):
+                        sols = integrate.solve_ivp(equation, t_span,
+                                                                           [x_0, z_0, xdot_0, zdot_0],
+                                                                           method=method, t_eval=t_eval,
+                                                                           rtol=1e-8, atol=1e-10, args=(order,))
+                else:
+                        print(&#39;Could not recognize equation.&#39;)
+
+                # unpack and return solutions
+                x, z, xdot, zdot = sols.y
+                t = sols.t
+                return x, z, xdot, zdot, t</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -329,9 +460,9 @@ Haller and Sapsis (2008),
 <dd>The time to use in the computations</dd>
 <dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
 <dd>A list containing the x and z values to use, and the order of the
-equation.
-order : int
-The order at which to evaluate the inertial equation.</dd>
+equation.</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>int</code></dt>
+<dd>The order at which to evaluate the inertial equation.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -344,31 +475,31 @@ The order at which to evaluate the inertial equation.</dd>
 </summary>
 <pre><code class="python">def inertial_equation(self, t, y, order):
         r&#34;&#34;&#34;
-Evalutes the inertial equation, corresponding to equation (10) in
-Haller and Sapsis (2008),
-$$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+        Evalutes the inertial equation, corresponding to equation (10) in
+        Haller and Sapsis (2008),
+        $$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
         \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
-+ \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+        + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
         \Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
         + \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
         \cdot \nabla \textbf{u}\Bigg]
-+ \mathcal{O}(\epsilon^3).$$
+        + \mathcal{O}(\epsilon^3).$$
 
-Parameters
-----------
-t : float
-    The time to use in the computations
-y : list (array-like)
-    A list containing the x and z values to use, and the order of the
-    equation.
+        Parameters
+        ----------
+        t : float
+                The time to use in the computations
+        y : list (array-like)
+                A list containing the x and z values to use, and the order of the
+                equation.
         order : int
                 The order at which to evaluate the inertial equation.
 
-Returns
--------
-Array
-    The components of the particle&#39;s velocity and acceleration.
-&#34;&#34;&#34;
+        Returns
+        -------
+        Array
+                The components of the particle&#39;s velocity and acceleration.
+        &#34;&#34;&#34;
         g = self.flow.gravity
         R = self.density_ratio
         x, z = y[:2]
@@ -468,6 +599,114 @@ corresponding to equation (3) in Haller and Sapsis (2008),
         return np.concatenate((particle_velocity, particle_accel))</code></pre>
 </details>
 </dd>
+<dt id="modelling-microplastics-transport.models.haller_system.HallerTransportSystem.run_numerics"><code class="name flex">
+<span>def <span class="ident">run_numerics</span></span>(<span>self, equation, order=2, x_0=0, z_0=0, num_periods=50, delta_t=0.005, method='BDF')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the position and velocity of the particle over time.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>equation</code></strong> :&ensp;<code>fun</code></dt>
+<dd>The equation to evaluate, either M-R or the inertial equation.</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>int</code></dt>
+<dd>The order at which to evaluate the inertial equation.</dd>
+<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dd>The initial horizontal position of the particle.</dd>
+<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dd>The initial vertical position of the particle.</dd>
+<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code>, default=<code>50</code></dt>
+<dd>The number of oscillation periods to integrate over.</dd>
+<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code>, default=<code>5e-3</code></dt>
+<dd>The size of the timesteps of integration.</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>str</code>, default=<code>'BDF'</code></dt>
+<dd>The method of integration to use.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>array</code></dt>
+<dd>The horizontal positions of the particle.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>array</code></dt>
+<dd>The vertical positions of the particle.</dd>
+<dt><strong><code>xdot</code></strong> :&ensp;<code>array</code></dt>
+<dd>The horizontal velocities of the particle.</dd>
+<dt><strong><code>zdot</code></strong> :&ensp;<code>array</code></dt>
+<dd>The vertical velocities of the particle.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>array</code></dt>
+<dd>The times at which the model was evaluated.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>The velocity of the particle is set to the initial velocity of the
+fluid.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
+                                 delta_t=5e-3, method=&#39;BDF&#39;):
+        &#34;&#34;&#34;
+        Computes the position and velocity of the particle over time.
+
+        Parameters
+        ----------
+        equation : fun
+                The equation to evaluate, either M-R or the inertial equation.
+        order : int
+                The order at which to evaluate the inertial equation.
+        x_0 : float, default=0
+                The initial horizontal position of the particle.
+        z_0 : float, default=0
+                The initial vertical position of the particle.
+        num_periods : int, default=50
+                The number of oscillation periods to integrate over.
+        delta_t : float, default=5e-3
+                The size of the timesteps of integration.
+        method : str, default=&#39;BDF&#39;
+                The method of integration to use.
+
+        Returns
+        -------
+        x : array
+                The horizontal positions of the particle.
+        z : array
+                The vertical positions of the particle.
+        xdot : array
+                The horizontal velocities of the particle.
+        zdot : array
+                The vertical velocities of the particle.
+        t : array
+                The times at which the model was evaluated.
+
+        Notes
+        -----
+        The velocity of the particle is set to the initial velocity of the
+        fluid.
+        &#34;&#34;&#34;
+        # initial parameters
+        num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
+        t_span = (0, num_periods * self.flow.period)
+        t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
+        xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
+
+        # run computations
+        if &#39;maxey_riley&#39; in str(equation):
+                sols = integrate.solve_ivp(equation, t_span,
+                                                                   [x_0, z_0, xdot_0, zdot_0],
+                                                                   method=method, t_eval=t_eval,
+                                                                   rtol=1e-8, atol=1e-10)
+        elif &#39;inertial&#39; in str(equation):
+                sols = integrate.solve_ivp(equation, t_span,
+                                                                   [x_0, z_0, xdot_0, zdot_0],
+                                                                   method=method, t_eval=t_eval,
+                                                                   rtol=1e-8, atol=1e-10, args=(order,))
+        else:
+                print(&#39;Could not recognize equation.&#39;)
+
+        # unpack and return solutions
+        x, z, xdot, zdot = sols.y
+        t = sols.t
+        return x, z, xdot, zdot, t</code></pre>
+</details>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -491,6 +730,7 @@ corresponding to equation (3) in Haller and Sapsis (2008),
 <ul class="">
 <li><code><a title="modelling-microplastics-transport.models.haller_system.HallerTransportSystem.inertial_equation" href="#modelling-microplastics-transport.models.haller_system.HallerTransportSystem.inertial_equation">inertial_equation</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.haller_system.HallerTransportSystem.maxey_riley" href="#modelling-microplastics-transport.models.haller_system.HallerTransportSystem.maxey_riley">maxey_riley</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.haller_system.HallerTransportSystem.run_numerics" href="#modelling-microplastics-transport.models.haller_system.HallerTransportSystem.run_numerics">run_numerics</a></code></li>
 </ul>
 </li>
 </ul>

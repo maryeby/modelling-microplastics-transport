@@ -33,48 +33,21 @@ import numpy as np
 class Flow(ABC):
         &#34;&#34;&#34;Represents a fluid flow.&#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth, density=1):
+        def __init__(self, depth):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
-                amplitude : float
-                        The amplitude of the wave *A*.
-                wavelength : float
-                        The wavelength lambda.
                 depth : float
                         The depth of the fluid *h*.
-                wavenum : float
-                        The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
-                gravity : float
-                        The gravity _**g**_.
-                angular_freq : float
-                        The angular frequency omega, computed using the dispersion relation.
-                phase_velocity : float
-                        The phase velocity *c*.
+                history : list (array-like)
+                        The history of the velocity of the flow **u**.
                 period : float
-                        The period of the wave, computed as
-                        $$\text{period} = \frac{2\pi}{\omega}.$$
+                        A parameter used in the computation of the timespan over which to
+                        integrate.
                 &#34;&#34;&#34;
-                self.amplitude = amplitude
-                self.wavelength = wavelength
                 self.depth = depth
-
-                # computed attributes
-                self.wavenum = 2 * np.pi / self.wavelength
-                self.set_angular_freq()
-                self.set_gravity()
-                self.phase_velocity = self.angular_freq / self.wavenum
-                self.period = 2 * np.pi / self.angular_freq
-                
-        @abstractmethod
-        def set_angular_freq(self):
-                &#34;&#34;&#34;Defines the angular frequency omega.&#34;&#34;&#34;
-                pass
-
-        @abstractmethod
-        def set_gravity(self):
-                &#34;&#34;&#34;Defines the gravity _**g**_.&#34;&#34;&#34;
-                pass
+                self.history = []
+                self.period = 1
 
         @abstractmethod
         def velocity(self, x, z, t):
@@ -97,7 +70,7 @@ class Flow(ABC):
                 pass
 
         @abstractmethod
-        def material_derivative(self, x, z, t):
+        def material_derivative(self, x, z, t): 
                 &#34;&#34;&#34;
                 Computes the Lagrangian derivative.
 
@@ -148,29 +121,19 @@ class Flow(ABC):
 <dl>
 <dt id="modelling-microplastics-transport.transport_framework.flow.Flow"><code class="flex name class">
 <span>class <span class="ident">Flow</span></span>
-<span>(</span><span>amplitude, wavelength, depth, density=1)</span>
+<span>(</span><span>depth)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents a fluid flow.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
-<dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
-<dd>The amplitude of the wave <em>A</em>.</dd>
-<dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
-<dd>The wavelength lambda.</dd>
 <dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
 <dd>The depth of the fluid <em>h</em>.</dd>
-<dt><strong><code>wavenum</code></strong> :&ensp;<code>float</code></dt>
-<dd>The wave number <em>k</em>, computed as <span><span class="MathJax_Preview">k = \frac{2 \pi}{\lambda}.</span><script type="math/tex; mode=display">k = \frac{2 \pi}{\lambda}.</script></span></dd>
-<dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The gravity <em><strong>g</strong></em>.</dd>
-<dt><strong><code>angular_freq</code></strong> :&ensp;<code>float</code></dt>
-<dd>The angular frequency omega, computed using the dispersion relation.</dd>
-<dt><strong><code>phase_velocity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The phase velocity <em>c</em>.</dd>
+<dt><strong><code>history</code></strong> :&ensp;<code>list (array-like)</code></dt>
+<dd>The history of the velocity of the flow <strong>u</strong>.</dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
-<dd>The period of the wave, computed as
-<span><span class="MathJax_Preview">\text{period} = \frac{2\pi}{\omega}.</span><script type="math/tex; mode=display">\text{period} = \frac{2\pi}{\omega}.</script></span></dd>
+<dd>A parameter used in the computation of the timespan over which to
+integrate.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -179,48 +142,21 @@ class Flow(ABC):
 <pre><code class="python">class Flow(ABC):
         &#34;&#34;&#34;Represents a fluid flow.&#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth, density=1):
+        def __init__(self, depth):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
-                amplitude : float
-                        The amplitude of the wave *A*.
-                wavelength : float
-                        The wavelength lambda.
                 depth : float
                         The depth of the fluid *h*.
-                wavenum : float
-                        The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
-                gravity : float
-                        The gravity _**g**_.
-                angular_freq : float
-                        The angular frequency omega, computed using the dispersion relation.
-                phase_velocity : float
-                        The phase velocity *c*.
+                history : list (array-like)
+                        The history of the velocity of the flow **u**.
                 period : float
-                        The period of the wave, computed as
-                        $$\text{period} = \frac{2\pi}{\omega}.$$
+                        A parameter used in the computation of the timespan over which to
+                        integrate.
                 &#34;&#34;&#34;
-                self.amplitude = amplitude
-                self.wavelength = wavelength
                 self.depth = depth
-
-                # computed attributes
-                self.wavenum = 2 * np.pi / self.wavelength
-                self.set_angular_freq()
-                self.set_gravity()
-                self.phase_velocity = self.angular_freq / self.wavenum
-                self.period = 2 * np.pi / self.angular_freq
-                
-        @abstractmethod
-        def set_angular_freq(self):
-                &#34;&#34;&#34;Defines the angular frequency omega.&#34;&#34;&#34;
-                pass
-
-        @abstractmethod
-        def set_gravity(self):
-                &#34;&#34;&#34;Defines the gravity _**g**_.&#34;&#34;&#34;
-                pass
+                self.history = []
+                self.period = 1
 
         @abstractmethod
         def velocity(self, x, z, t):
@@ -243,7 +179,7 @@ class Flow(ABC):
                 pass
 
         @abstractmethod
-        def material_derivative(self, x, z, t):
+        def material_derivative(self, x, z, t): 
                 &#34;&#34;&#34;
                 Computes the Lagrangian derivative.
 
@@ -309,7 +245,7 @@ class Flow(ABC):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def material_derivative(self, x, z, t):
+def material_derivative(self, x, z, t): 
         &#34;&#34;&#34;
         Computes the Lagrangian derivative.
 
@@ -367,36 +303,6 @@ def material_derivative2(self, x, z, t):
         -------
         Array containing the second order material derivative vector components.
         &#34;&#34;&#34;
-        pass</code></pre>
-</details>
-</dd>
-<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.set_angular_freq"><code class="name flex">
-<span>def <span class="ident">set_angular_freq</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Defines the angular frequency omega.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@abstractmethod
-def set_angular_freq(self):
-        &#34;&#34;&#34;Defines the angular frequency omega.&#34;&#34;&#34;
-        pass</code></pre>
-</details>
-</dd>
-<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.set_gravity"><code class="name flex">
-<span>def <span class="ident">set_gravity</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Defines the gravity <em><strong>g</strong></em>.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@abstractmethod
-def set_gravity(self):
-        &#34;&#34;&#34;Defines the gravity _**g**_.&#34;&#34;&#34;
         pass</code></pre>
 </details>
 </dd>
@@ -464,8 +370,6 @@ def velocity(self, x, z, t):
 <ul class="">
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative" href="#modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative">material_derivative</a></code></li>
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative2" href="#modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative2">material_derivative2</a></code></li>
-<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.set_angular_freq" href="#modelling-microplastics-transport.transport_framework.flow.Flow.set_angular_freq">set_angular_freq</a></code></li>
-<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.set_gravity" href="#modelling-microplastics-transport.transport_framework.flow.Flow.set_gravity">set_gravity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.velocity" href="#modelling-microplastics-transport.transport_framework.flow.Flow.velocity">velocity</a></code></li>
 </ul>
 </li>

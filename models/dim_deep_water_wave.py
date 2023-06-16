@@ -3,15 +3,15 @@ import sys
 sys.path.append('/home/s2182576/Documents/academia/thesis/'
 				+ 'modelling-microplastics-transport')
 from scipy import constants
-from transport_framework import flow
+from transport_framework import wave
 
-class DimensionalDeepWaterWave(flow.Flow):
+class DimensionalDeepWaterWave(wave.Wave):
 	"""
 	Represents the fluid flow described in Santamaria et al., (2013). The flow
 	is a linear water wave with infinite depth.
 	"""
 
-	def __init__(self, amplitude, wavelength, depth=15, density=1):
+	def __init__(self, amplitude, wavelength, depth=15):
 		r"""
 		Attributes
 		----------
@@ -21,8 +21,6 @@ class DimensionalDeepWaterWave(flow.Flow):
 			The wavelength lambda.
 		depth : float, default=15
 			The depth of the fluid *h*.
-		density : float
-			The density of the fluid rho_f.
 		wavenum : float
 			The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
 		gravity : float
@@ -35,7 +33,7 @@ class DimensionalDeepWaterWave(flow.Flow):
 			The period of the wave, computed as
 			$$\text{period} = \frac{2\pi}{\omega}.$$
 		"""
-		super().__init__(amplitude, wavelength, depth, density)
+		super().__init__(depth, amplitude, wavelength)
 		self.max_velocity = self.angular_freq * self.amplitude
 
 	def set_gravity(self):

@@ -4,48 +4,21 @@ import numpy as np
 class Flow(ABC):
 	"""Represents a fluid flow."""
 
-	def __init__(self, amplitude, wavelength, depth, density=1):
+	def __init__(self, depth):
 		r"""
 		Attributes
 		----------
-		amplitude : float
-			The amplitude of the wave *A*.
-		wavelength : float
-			The wavelength lambda.
 		depth : float
 			The depth of the fluid *h*.
-		wavenum : float
-			The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
-		gravity : float
-			The gravity _**g**_.
-		angular_freq : float
-			The angular frequency omega, computed using the dispersion relation.
-		phase_velocity : float
-			The phase velocity *c*.
+		history : list (array-like)
+			The history of the velocity of the flow **u**.
 		period : float
-			The period of the wave, computed as
-			$$\text{period} = \frac{2\pi}{\omega}.$$
+			A parameter used in the computation of the timespan over which to
+			integrate.
 		"""
-		self.amplitude = amplitude
-		self.wavelength = wavelength
 		self.depth = depth
-
-		# computed attributes
-		self.wavenum = 2 * np.pi / self.wavelength
-		self.set_angular_freq()
-		self.set_gravity()
-		self.phase_velocity = self.angular_freq / self.wavenum
-		self.period = 2 * np.pi / self.angular_freq
-		
-	@abstractmethod
-	def set_angular_freq(self):
-		"""Defines the angular frequency omega."""
-		pass
-
-	@abstractmethod
-	def set_gravity(self):
-		"""Defines the gravity _**g**_."""
-		pass
+		self.history = []
+		self.period = 1
 
 	@abstractmethod
 	def velocity(self, x, z, t):
@@ -68,7 +41,7 @@ class Flow(ABC):
 		pass
 
 	@abstractmethod
-	def material_derivative(self, x, z, t):
+	def material_derivative(self, x, z, t): 
 		"""
 		Computes the Lagrangian derivative.
 
