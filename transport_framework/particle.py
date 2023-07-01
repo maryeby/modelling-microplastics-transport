@@ -11,4 +11,6 @@ class Particle:
 			The history of the velocity of the particle **v**.
 		"""
 		self.stokes_num = stokes_num
+		self.position = []
+		self.velocity = []
 		self.history = []

@@ -30,8 +30,10 @@
 <pre><code class="python">import sys
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
+import time
 import numpy as np
 import scipy.integrate as integrate
+from tqdm import tqdm
 from models import quiescent_flow
 from transport_framework import particle, transport_system
 
@@ -94,7 +96,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                 return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
                                  / (2 * self.alpha ** 2))
 
-        def maxey_riley(self, t, y, delta_t, include_history, t_final):
+        def maxey_riley(self, t, y):
                 r&#34;&#34;&#34;
                 Evaluates the Maxey-Riley equation,
                 $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
@@ -114,12 +116,6 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                         The time to use in the computations.
                 y : list (array-like)
                         A list containing the x, z, xdot, zdot values to use.
-                delta_t : float
-                        The size of the time steps used for integration.
-                include_history : boolean
-                        Whether to include history effects.
-                t_final : float
-                        The final value in the integration timespan.
 
                 Returns
                 -------
@@ -131,93 +127,73 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                 x, z = y[:2]
                 particle_velocity = y[2:]
                 fluid_velocity = self.flow.velocity(x, z, t)
-                history = 0
 
-                if include_history:
-                        self.update_history(fluid_velocity, particle_velocity)
-                        history = self.compute_history(t, delta_t)
-
-                # compute non-history terms on the RHS of the M-R equation
+                # compute terms on the RHS of the M-R equation
                 stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
                 fluid_pressure_gradient = 3 * R / 2 \
                                                                         * self.flow.material_derivative(x, z, t)
 
                 # M-R equation
-                particle_acceleration = stokes_drag + fluid_pressure_gradient + history
-#               print(&#39;t = {:f}&#39;.format(t))
-                print(&#39;{:.0%}&#39;.format(t / t_final), end=&#39;\r&#39;)
+                particle_acceleration = stokes_drag + fluid_pressure_gradient
                 return np.concatenate((particle_velocity, particle_acceleration))
 
-        def update_history(self, fluid_velocity, particle_velocity):
-                &#34;&#34;&#34;
-                Updates the history of the fluid velocity **u** and particle velocity
-                **v**.
-
-                Parameters
-                ----------
-                fluid_velocity : array
-                        The components of the fluid velocity **u**.
-                particle_velocity : array
-                        The components of the particle velocity **v**.
-                &#34;&#34;&#34;
-                self.flow.history.append(fluid_velocity)
-                self.particle.history.append(particle_velocity)
-
-        def compute_history(self, t, delta_t):
+        def full_maxey_riley(self, t, y, order):
                 r&#34;&#34;&#34;
-                Computes the Basset-Boussinesq history term,
-                $$-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                        \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-                        \frac{\mathrm{d}}{\mathrm{d}s},$$
-                using the quadrature scheme,
-                $$\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-                        \frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
-                        \sum_{j=0}^{n}
-                        \alpha_j^n f(s_{n-j}),$$
-                with
-                $$f(s) = \textbf{v} - \textbf{u},$$
-                *n* steps, and
-                $$\alpha_j^n = \frac{4}{3} \begin{cases}
-                        1 &amp; j = 0 \\
-                        (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
-                        (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n.
-                        \end{cases}$$
+                Implements the integration scheme for the full Maxey-Riley equation with
+                history effects, as outlined in Daitche (2013) Section 3.
 
                 Parameters
                 ----------
-                t : float
-                        The time at which to evaluate the history term.
-                delta_t : float
-                        The size of the time steps used for integration.
+                t : array
+                        The times when the Maxey-Riley equation should be evaluated.
+                y : list (array-like)
+                        A list containing the initial particle position and velocity.
+                order : int
+                        The order of the integration scheme.
 
                 Returns
                 -------
                 Array
-                        The components of the history term.
+                        The components of the particle&#39;s position and velocity.
                 &#34;&#34;&#34;
-                # initialize local variables
-                integrand = np.empty(2,)
-                coefficient = -np.sqrt(9 / (2 * np.pi)) * self.density_ratio \
-                                          / np.sqrt(self.particle.stokes_num)
-                f_s = np.array(self.particle.history) - np.array(self.flow.history)
-                alpha = 4 / 3
-                n = int(t / delta_t)
+                # initialize local variables and set initial conditions
+                R = self.density_ratio
+                St = self.particle.stokes_num
+                delta_t = t[1] - t[0]
+                xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+                num_steps = t.size - 1
+                x = np.empty((t.size, 2))
+                v = np.empty((t.size, 2))
+                x[0] = y[:2]
+                v[0] = y[2:]
+                alpha = compute_alpha(t.size)
+                beta = compute_beta(t.size, alpha[:, 1])
+                gamma = compute_gamma(t.size, beta[:, 2])
 
-                # compute the sum
-                for j in range(n + 1):
-                        if j == 0:
-                                alpha *= 1
-                        elif j == n:
-                                alpha *= (n - 1) ** (3 / 2) - n ** (3 / 2) \
-                                                                  + (3 / 2) * np.sqrt(n)
-                        else: # 0 &lt; j &lt; n
-                                alpha *= (j - 1) ** (3 / 2) + (j + 1) ** (3 / 2) \
-                                                                                        - 2 * j ** (3 / 2)
-                        integrand += alpha * f_s[n - j]
-#                       print(&#39;t = {:f}, n = {:d}, j = {:d}, f size = {:d}&#39;.format(t, n, j,
-#                               len(f_s)))
-                integrand *= np.sqrt(delta_t)
-                return coefficient * integrand
+                for n in tqdm(range(num_steps)):
+                        G = -R / St * v
+                        sum_term = 0
+                        if order == 1 or n == 0:
+                                for j in range(n + 1):
+                                        sum_term += v[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
+                                x[n + 1] = x[n] + delta_t * v[n]
+                                v[n + 1] = (v[n] + delta_t * G[n] - xi * sum_term) \
+                                                                 / (1 + xi * alpha[0, n + 1])
+                        elif order == 2 or n == 1:
+                                for j in range(n + 1):
+                                        sum_term += v[n - j] * (beta[j + 1, n + 1] - beta[j, n])
+                                x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
+                                v[n + 1] = (v[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+                                                                 - xi * sum_term) / (1 + xi * beta[0, n + 1])
+                        else: # order is 3 and n &gt; 1
+                                for j in range(n + 1):
+                                        sum_term += v[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
+                                x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
+                                                                + 5 * v[n - 2])
+                                v[n + 1] = (v[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                                 + 5 * G[n - 2]) - xi * sum_term) \
+                                                                 / (1 + xi * gamma[0, n + 1])
+                return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
         def run_numerics(self, include_history, x_0=0, z_0=0, xdot_0=1, zdot_0=1,
                                          num_periods=50, delta_t=5e-3, method=&#39;BDF&#39;):
@@ -237,7 +213,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                 delta_t : float, default=5e-3
                         The size of the time steps used for integration.
                 method : str, default=&#39;BDF&#39;
-                        The method of integration to use.
+                        The method of integration to use when neglecting history effects.
 
                 Returns
                 -------
@@ -256,17 +232,421 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                 t_final = num_periods * self.flow.period
                 t_span = (0, t_final)
                 t_eval = np.arange(0, t_final, delta_t)
-                args = (delta_t, include_history, t_final)
+                y = [x_0, z_0, xdot_0, zdot_0]
 
                 # run computations
-                sols = integrate.solve_ivp(self.maxey_riley, t_span,
-                                                                   [x_0, z_0, xdot_0, zdot_0],
-                                                                   method=method, t_eval=t_eval,
-                                                                   rtol=1e-8, atol=1e-10, args=args)
-                # unpack and return solutions
-                x, z, xdot, zdot = sols.y
-                t = sols.t
-                return x, z, xdot, zdot, t</code></pre>
+                if include_history:     
+                        x, z, xdot, zdot, t = self.full_maxey_riley(t_eval, y, order=3)
+                else:
+                        sols = integrate.solve_ivp(self.maxey_riley, t_span, y,
+                                                                           method=method, t_eval=t_eval,
+                                                                           rtol=1e-8, atol=1e-10)
+                        # unpack solutions
+                        x, z, xdot, zdot = sols.y
+                        t = sols.t
+                return x, z, xdot, zdot, t
+
+def alpha(j, n):
+        r&#34;&#34;&#34;
+        Computes the coefficient alpha for the specified *j* and *n*,
+        $$\alpha_j^n = \frac{4}{3} \begin{cases}
+                1 &amp; j = 0 \\
+                (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+                (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n,
+                \end{cases}$$
+        as in equation (9) from Daitche (2013).
+        &#34;&#34;&#34;
+        if n == 0:
+                return 0
+        else:
+                if j == 0:
+                        return 4 / 3
+                elif j == n:
+                        return 4 / 3 * ((n - 1) ** (3 / 2) - n ** (3 / 2)
+                                         + (3 / 2) * np.sqrt(n))
+                else: # 0 &lt; j &lt; n
+                        return 4 / 3 * ((j - 1) ** (3 / 2) + (j + 1) ** (3 / 2) \
+                                         - 2 * j ** (3 / 2))
+
+def compute_alpha(size):
+        r&#34;&#34;&#34;
+        Computes a matrix containing the values of alpha as defined in equation (9)
+        from Daitche (2013),
+        $$\alpha_j^n = \frac{4}{3} \begin{cases}
+                1 &amp; j = 0 \\
+                (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+                (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n,
+                \end{cases}$$
+        so the value of alpha may be obtained by indexing the array as `arr[j, n]`.
+
+        Parameters
+        ----------
+        size : int
+                The number of rows and columns for the square matrix.
+
+        Returns
+        -------
+        Array
+                The matrix containing the values of the coefficient alpha.
+        &#34;&#34;&#34;
+        print(&#39;Computing matrix of alpha coefficients...&#39;, end=&#39;&#39;)
+        start = time.time()
+        arr = np.ones((size, size))
+        j, n = np.indices(arr.shape)
+        arr[0, 1:] = 4 / 3 # j == 0
+
+        # 0 &lt; j &lt; n
+        mask = np.where(np.triu(arr, k=1), True, False)
+        mask[0] = False
+        vals = (4 / 3) * ((j[1:-1] - 1) ** (3 / 2) + (j[1:-1] + 1) ** (3 / 2)
+                          - 2 * j[1:-1] ** (3 / 2))
+        vals = vals[np.triu(vals, k=2) != 0]
+        np.place(arr, mask, vals)
+
+        # j == n
+        diagonal = 4 / 3 * ((n[0, 1:] - 1) ** (3 / 2) - n[0, 1:] ** (3 / 2)
+                                 + (3 / 2) * np.sqrt(n[0, 1:]))
+        diagonal = np.insert(diagonal, 0, 0)
+        np.fill_diagonal(arr, diagonal)
+        finish = time.time()
+        print(&#39;done.\t\t{:.2f}s&#39;.format(finish - start))
+        return np.triu(arr)
+
+def beta(j, n):
+        &#34;&#34;&#34;
+        Computes the coefficient beta for the specified *j* and *n* as outlined in
+        Section 2 of Daitche (2013).
+        &#34;&#34;&#34;
+        if n == 1:
+                return alpha(j, 1)
+        elif n == 2:
+                if j == 0:
+                        return 12 / 15 * np.sqrt(2)
+                elif j == 1:
+                        return 16 / 15 * np.sqrt(2)
+                else:
+                        return 2 / 15 * np.sqrt(2)
+        elif n == 3:
+                if j == 0:
+                        return 4 / 5 * np.sqrt(2)
+                elif j == 1:
+                        return 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+                elif j == 2:
+                        return -(8 / 5) * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+                else:
+                        return 4 / 5 * np.sqrt(3) - 4 / 5 * np.sqrt(2)
+        else:
+                if j == 0:
+                        return 4 / 5 * np.sqrt(2)
+                elif j == 1:
+                        return 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+                elif j == 2:
+                        return 176 / 15 - 42 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+                elif j == n - 1:
+                        return 8 / 15 * (-2 * n ** (5 / 2) + 3 * (n - 1) ** (5 / 2)
+                                         - (n - 2) ** (5 / 2)) + 2 / 3 * (4 * n ** (3 / 2)
+                                         - 3 * (n - 1) ** (3 / 2) + (n - 2) ** (3 / 2))
+                elif j == n:
+                        return 8 / 15 * (n ** (5 / 2) - (n - 1) ** (5 / 2)) + 2 / 3 \
+                                         * (-3 * n ** (3 / 2) + (n - 1) ** (3 / 2)) + 2 * np.sqrt(n)
+                else:
+                        return 8 / 15 * ((j + 2) ** (5 / 2) - 3 * (j + 1) ** (5 / 2)
+                                         + 3 * j ** (5 / 2) - (j - 1) ** (5 / 2)) \
+                                         + 2 / 3 * (-(j + 2) ** (3 / 2) + 3 * (j + 1) ** (3 / 2) \
+                                         - 3 * j ** (3 / 2) + (j - 1) ** (3 / 2))
+
+def compute_beta(size, alpha):
+        r&#34;&#34;&#34;
+        Computes a matrix containing the values of beta as defined in Section 2 of
+        Daitche (2013). The value $$\beta_j^n$$
+        may be obtained by indexing the array as `arr[j, n]`.
+
+        Parameters
+        ----------
+        size : int
+                The number of rows and columns for the square matrix.
+        alpha : array-like
+                The values of the coefficient alpha at n = 1.
+
+        Returns
+        -------
+        Array
+                The matrix containing the values of the coefficient beta.
+        &#34;&#34;&#34;
+        print(&#39;Computing matrix of beta coefficients...&#39;, end=&#39;&#39;)
+        start = time.time()
+        arr = np.ones((size, size))
+        j, n = np.indices(arr.shape)
+        arr[:, 0] = 0     # n = 0 (should never be called for beta)
+        arr[:, 1] = alpha # n = 1
+
+        # n = 2
+        arr[0, 2] = 12 / 15 * np.sqrt(2)
+        arr[1, 2] = 16 / 15 * np.sqrt(2)
+        arr[2, 2] = 2 / 15 * np.sqrt(2)
+
+        # n = 3
+        arr[0, 3] = 4 / 5 * np.sqrt(2) 
+        arr[1, 3] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+        arr[2, 3] = -(8 / 5) * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+        arr[3, 3] = 4 / 5 * np.sqrt(3) - 4 / 5 * np.sqrt(2)
+
+        # n &gt;= 4
+        arr[0, 4:] = 4 / 5 * np.sqrt(2)
+        arr[1, 4:] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+        arr[2, 4:] = 176 / 15 - 42 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+        
+        # j = n - 1
+        mask = np.where(np.eye(size, k=1), True, False)
+        mask[:, :4] = False
+        vals = 8 / 15 * (-2 * n[0, 4:] ** (5 / 2) + 3 * (n[0, 4:] - 1) ** (5 / 2)
+                         - (n[0, 4:] - 2) ** (5 / 2)) + 2 / 3 * (4 * n[0, 4:] ** (3 / 2)
+                         - 3 * (n[0, 4:] - 1) ** (3 / 2) + (n[0, 4:] - 2) ** (3 / 2))
+        np.place(arr, mask, vals)
+
+        # j = n
+        mask = np.where(np.eye(size), True, False)
+        mask[:, :4] = False
+        vals = 8 / 15 * (n[0, 4:] ** (5 / 2) - (n[0, 4:] - 1) ** (5 / 2)) \
+                         + 2 / 3 * (-3 * n[0, 4:] ** (3 / 2) 
+                         + (n[0, 4:] - 1) ** (3 / 2)) + 2 * np.sqrt(n[0, 4:])
+        np.place(arr, mask, vals)
+
+        # 2 &lt; j &lt; n - 1
+        mask = np.where(np.triu(arr) == 1, True, False)
+        vals = 8 / 15 * ((j[3:-2, 5:] + 2) ** (5 / 2) \
+                         - 3 * (j[3:-2, 5:] + 1) ** (5 / 2)
+                         + 3 * j[3:-2, 5:] ** (5 / 2) - (j[3:-2, 5:] - 1) ** (5 / 2)) \
+                         + 2 / 3 * (-(j[3:-2, 5:] + 2) ** (3 / 2) \
+                         + 3 * (j[3:-2, 5:] + 1) ** (3 / 2) \
+                         - 3 * j[3:-2, 5:] ** (3 / 2) + (j[3:-2, 5:] - 1) ** (3 / 2))
+        vals = vals[np.triu(vals) != 0]
+        np.place(arr, mask, vals)
+        finish = time.time()
+        print(&#39;done.\t\t{:.2f}s&#39;.format(finish - start))
+        return np.triu(arr)
+
+def gamma(j, n):
+        &#34;&#34;&#34;
+        Computes the coefficient gamma for the specified *j* and *n* as outlined in
+        Section 2 of Daitche (2013).
+        &#34;&#34;&#34;
+        if n == 2:
+                return beta(j, 2)
+        elif n == 3:
+                if j == 0:
+                        return 68 / 105 * np.sqrt(3)
+                elif j == 1:
+                        return 6 / 7 * np.sqrt(3)
+                elif j == 2:
+                        return 12 / 35 * np.sqrt(3)
+                else:
+                        return 16 / 105 * np.sqrt(3)
+        elif n == 4:
+                if j == 0:
+                        return 244 / 315 * np.sqrt(2)
+                elif j == 1:
+                        return 1888 / 315 - 976 / 315 * np.sqrt(2)
+                elif j == 2:
+                        return -(656 / 105) + 488 / 105 * np.sqrt(2)
+                elif j == 3:
+                        return 544 / 105 - 976 / 315 * np.sqrt(2)
+                else:
+                        return -(292 / 315) + 244 / 315 * np.sqrt(2)
+        elif n == 5:
+                if j == 0:
+                        return 244 / 315 * np.sqrt(2)
+                elif j == 1:
+                        return 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+                elif j == 2:
+                        return 500 / 63 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 488 / 105 \
+                                           * np.sqrt(2)
+                elif j == 3:
+                        return -(290 / 21) * np.sqrt(5) + 724 / 35 * np.sqrt(3) - 976 / 315\
+                                                           * np.sqrt(2)
+                elif j == 4:
+                        return 220 / 21 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 244 / 315 \
+                                           * np.sqrt(2)
+                else:
+                        return -(164 / 63) * np.sqrt(5) + 362 / 105 * np.sqrt(3)
+        elif n == 6:
+                if j == 0:
+                        return 244 / 315 * np.sqrt(2)
+                elif j == 1:
+                        return 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+                elif j == 2:
+                        return 5584 / 315 - 1448 / 105 * np.sqrt(3) + 488 / 105 * np.sqrt(2)
+                elif j == 3:
+                        return 344 / 21 * np.sqrt(6) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
+                                           - 976 / 315 * np.sqrt(2)
+                elif j == 4:
+                        return -(1188 / 35) * np.sqrt(6) + 11168 / 105 - 1448 / 105 \
+                                                                * np.sqrt(3) + 244 / 315 * np.sqrt(2)
+                elif j == 5:
+                        return 936 / 35 * np.sqrt(6) - 22336 / 315 + 362 / 105 * np.sqrt(3)
+                else:
+                        return -(754 / 105) * np.sqrt(6) + 5584 / 315
+        else:
+                if j == 0:
+                        return 244 / 315 * np.sqrt(2)
+                elif j == 1:
+                        return 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+                elif j == 2:
+                        return 5584 / 315 - 1448 / 105 * np.sqrt(3) + 448 / 105 * np.sqrt(2)
+                elif j == 3:
+                        return 1130 / 63 * np.sqrt(5) - 22336 / 315 + 724 / 35 * np.sqrt(3)\
+                                                - 976 / 315 * np.sqrt(2)
+                elif j == n - 3:
+                        return 16 / 105 * (n ** (7 / 2) - 4 * (n - 2) ** (7 / 2)
+                                          + 6 * (n - 3) ** (7 / 2) - 4 * (n - 4) ** (7 / 2)
+                                          + (n - 5) ** (7 / 2)) - 8 / 15 * n ** (5 / 2) \
+                                          + 4 / 9 * n ** (3 / 2) + 8 / 9 * (n - 2) ** (3 / 2) \
+                                          - 4 / 3 * (n - 3) ** (3 / 2) + 8 / 9 * (n - 4) ** (3 / 2)\
+                                          - 2 / 9 * (n - 5) ** (3 / 2)
+                elif j == n - 2:
+                        return 16 / 105 * ((n - 4) ** (7 / 2) - 4 * (n - 3) ** (7 / 2)
+                                          + 6 * (n - 2) ** (7 / 2) - 3 * n ** (7 / 2)) \
+                                          + 32 / 15 * n ** (5 / 2) - 2 * n ** (3 / 2) \
+                                          - 4 / 3 * (n - 2) ** (3 / 2) + 8 / 9 * (n - 3) ** (3 / 2)\
+                                          - 2 / 9 * (n - 4) ** (3 / 2)
+                elif j == n - 1:
+                        return 16 / 105 * (3 * n ** (7 / 2) - 4 * (n - 2) ** (7 / 2)
+                                          + (n - 3) ** (7 / 2)) - 8 / 3 * n ** (5 / 2) \
+                                          + 4 * n ** (3 / 2) + 8 / 9 * (n - 2) ** (3 / 2) \
+                                          - 2 / 9 * (n - 3) ** (3 / 2)
+                elif j == n:
+                        return 16 / 105 * ((n - 2) ** (7 / 2) - n ** (7 / 2)) \
+                                          + 16 / 15 * n ** (5 / 2) - 22 / 9 * n ** (3 / 2) \
+                                          - 2 / 9 * (n - 2) ** (3 / 2) + 2 * np.sqrt(n)
+                else:
+                        return 16 / 105 * ((j + 2) ** (7 / 2) + (j - 2) ** (7 / 2)
+                                          - 4 * (j + 1) ** (7 / 2) - 4 * (j - 1) ** (7 / 2) 
+                                          + 6 * j ** (7 / 2)) + 2 / 9 * (4 * (j + 1) ** (3 / 2)
+                                          + 4 * (j - 1) ** (3 / 2) - (j + 2) ** (3 / 2)
+                                          - (j - 2) ** (3 / 2) - 6 * j ** (3 / 2))
+
+def compute_gamma(size, beta):
+        r&#34;&#34;&#34;
+        Computes a matrix containing the values of gamma as defined in Section 2 of
+        Daitche (2013). The value $$\gamma_j^n$$
+        may be obtained by indexing the array as `arr[j, n]`.
+
+        Parameters
+        ----------
+        size : int
+                The number of rows and columns for the square matrix.
+        beta : array-like
+                The values of the coefficient beta at n = 2.
+
+        Returns
+        -------
+        Array
+                The matrix containing the values of the coefficient gamma.
+        &#34;&#34;&#34;
+        print(&#39;Computing matrix of gamma coefficients...&#39;, end=&#39;&#39;)
+        start = time.time()
+        arr = np.ones((size, size))
+        j, n = np.indices(arr.shape)
+        arr[:, :2] = 0          # n = 0 and n = 1 (should never be called for gamma)
+        arr[:, 2] = beta        # n = 2
+        
+        # n = 3
+        arr[0][3] = 68 / 105 * np.sqrt(3)
+        arr[1][3] = 6 / 7 * np.sqrt(3)
+        arr[2][3] = 12 / 35 * np.sqrt(3)
+        arr[3][3] = 16 / 105 * np.sqrt(3)
+
+        # n = 4
+        arr[0][4] = 244 / 315 * np.sqrt(2)
+        arr[1][4] = 1888 / 315 - 976 / 315 * np.sqrt(2)
+        arr[2][4] = -(656 / 105) + 488 / 105 * np.sqrt(2)
+        arr[3][4] = 544 / 105 - 976 / 315 * np.sqrt(2)
+        arr[4][4] = -(292 / 315) + 244 / 315 * np.sqrt(2)
+
+        # n = 5
+        arr[0][5] = 244 / 315 * np.sqrt(2)
+        arr[1][5] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+        arr[2][5] = 500 / 63 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 488 / 105 \
+                                        * np.sqrt(2)
+        arr[3][5] = -(290 / 21) * np.sqrt(5) + 724 / 35 * np.sqrt(3) - 976 / 315 \
+                                                        * np.sqrt(2)
+        arr[4][5] = 220 / 21 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 244 / 315 \
+                                        * np.sqrt(2)
+        arr[5][5] = -(164 / 63) * np.sqrt(5) + 362 / 105 * np.sqrt(3)
+
+        # n = 6
+        arr[0][6] = 244 / 315 * np.sqrt(2)
+        arr[1][6] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+        arr[2][6] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 488 / 105 * np.sqrt(2)
+        arr[3][6] = 344 / 21 * np.sqrt(6) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
+                                        - 976 / 315 * np.sqrt(2)
+        arr[4][6] = -(1188 / 35) * np.sqrt(6) + 11168 / 105 - 1448 / 105 \
+                                                         * np.sqrt(3) + 244 / 315 * np.sqrt(2)
+        arr[5][6] = 936 / 35 * np.sqrt(6) - 22336 / 315 + 362 / 105 * np.sqrt(3)
+        arr[6][6] = -(754 / 105) * np.sqrt(6) + 5584 / 315
+
+        # n &gt;= 7
+        arr[0][7:] = 244 / 315 * np.sqrt(2)
+        arr[1][7:] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+        arr[2][7:] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 448 / 105 * np.sqrt(2)
+        arr[3][7:] = 1130 / 63 * np.sqrt(5) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
+                                          - 976 / 315 * np.sqrt(2)
+
+        # j = n - 3
+        mask = np.where(np.eye(size, k=3), True, False)
+        mask[:, :7] = False
+        vals = 16 / 105 * (n[0, 7:] ** (7 / 2) - 4 * (n[0, 7:] - 2) ** (7 / 2)
+                          + 6 * (n[0, 7:] - 3) ** (7 / 2) - 4 * (n[0, 7:] - 4) ** (7 / 2)
+                          + (n[0, 7:] - 5) ** (7 / 2)) - 8 / 15 * n[0, 7:] ** (5 / 2) \
+                          + 4 / 9 * n[0, 7:] ** (3 / 2) + 8 / 9 * (n[0, 7:] - 2) ** (3 / 2)\
+                          - 4 / 3 * (n[0, 7:] - 3) ** (3 / 2) \
+                          + 8 / 9 * (n[0, 7:] - 4) ** (3 / 2) \
+                          - 2 / 9 * (n[0, 7:] - 5) ** (3 / 2)
+        np.place(arr, mask, vals)
+
+        # j = n - 2
+        mask = np.where(np.eye(size, k=2), True, False)
+        mask[:, :7] = False
+        vals = 16 / 105 * ((n[0, 7:] - 4) ** (7 / 2) - 4 * (n[0, 7:] - 3) ** (7 / 2)
+                          + 6 * (n[0, 7:] - 2) ** (7 / 2) - 3 * n[0, 7:] ** (7 / 2)) \
+                          + 32 / 15 * n[0, 7:] ** (5 / 2) - 2 * n[0, 7:] ** (3 / 2) \
+                          - 4 / 3 * (n[0, 7:] - 2) ** (3 / 2) \
+                          + 8 / 9 * (n[0, 7:] - 3) ** (3 / 2) \
+                          - 2 / 9 * (n[0, 7:] - 4) ** (3 / 2)
+        np.place(arr, mask, vals)
+
+        # j = n - 1
+        mask = np.where(np.eye(size, k=1), True, False)
+        mask[:, :7] = False
+        vals = 16 / 105 * (3 * n[0, 7:] ** (7 / 2) - 4 * (n[0, 7:] - 2) ** (7 / 2)
+                          + (n[0, 7:] - 3) ** (7 / 2)) - 8 / 3 * n[0, 7:] ** (5 / 2) \
+                          + 4 * n[0, 7:] ** (3 / 2) + 8 / 9 * (n[0, 7:] - 2) ** (3 / 2) \
+                          - 2 / 9 * (n[0, 7:] - 3) ** (3 / 2)
+        np.place(arr, mask, vals)
+
+        # j = n
+        mask = np.where(np.eye(size, k=1), True, False)
+        mask[:, :7] = False
+        vals = 16 / 105 * ((n[0, 7:] - 2) ** (7 / 2) - n[0, 7:] ** (7 / 2)) \
+                          + 16 / 15 * n[0, 7:] ** (5 / 2) - 22 / 9 * n[0, 7:] ** (3 / 2) \
+                          - 2 / 9 * (n[0, 7:] - 2) ** (3 / 2) + 2 * np.sqrt(n[0, 7:])
+        np.place(arr, mask, vals)
+
+        # 3 &lt; j &lt; n - 3
+        mask = np.where(np.triu(arr) == 1, True, False)
+        vals = 16 / 105 * ((j[4:-4, 8:] + 2) ** (7 / 2) \
+                          + (j[4:-4, 8:] - 2) ** (7 / 2)
+                          - 4 * (j[4:-4, 8:] + 1) ** (7 / 2) 
+                          - 4 * (j[4:-4, 8:] - 1) ** (7 / 2) 
+                          + 6 * j[4:-4, 8:] ** (7 / 2)) \
+                          + 2 / 9 * (4 * (j[4:-4, 8:] + 1) ** (3 / 2)
+                          + 4 * (j[4:-4, 8:] - 1) ** (3 / 2) - (j[4:-4, 8:] + 2) ** (3 / 2)
+                          - (j[4:-4, 8:] - 2) ** (3 / 2) - 6 * j[4:-4, 8:] ** (3 / 2))
+        vals = vals[np.triu(vals) != 0]
+        np.place(arr, mask, vals)
+        finish = time.time()
+        print(&#39;done.\t\t{:.2f}s&#39;.format(finish - start))
+        return np.triu(arr)</code></pre>
 </details>
 </section>
 <section>
@@ -274,6 +654,532 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="modelling-microplastics-transport.models.relaxing_system.alpha"><code class="name flex">
+<span>def <span class="ident">alpha</span></span>(<span>j, n)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the coefficient alpha for the specified <em>j</em> and <em>n</em>,
+<span><span class="MathJax_Preview">\alpha_j^n = \frac{4}{3} \begin{cases}
+1 &amp; j = 0 \\
+(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n,
+\end{cases}</span><script type="math/tex; mode=display">\alpha_j^n = \frac{4}{3} \begin{cases}
+1 & j = 0 \\
+(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
+(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n,
+\end{cases}</script></span>
+as in equation (9) from Daitche (2013).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def alpha(j, n):
+        r&#34;&#34;&#34;
+        Computes the coefficient alpha for the specified *j* and *n*,
+        $$\alpha_j^n = \frac{4}{3} \begin{cases}
+                1 &amp; j = 0 \\
+                (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+                (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n,
+                \end{cases}$$
+        as in equation (9) from Daitche (2013).
+        &#34;&#34;&#34;
+        if n == 0:
+                return 0
+        else:
+                if j == 0:
+                        return 4 / 3
+                elif j == n:
+                        return 4 / 3 * ((n - 1) ** (3 / 2) - n ** (3 / 2)
+                                         + (3 / 2) * np.sqrt(n))
+                else: # 0 &lt; j &lt; n
+                        return 4 / 3 * ((j - 1) ** (3 / 2) + (j + 1) ** (3 / 2) \
+                                         - 2 * j ** (3 / 2))</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.relaxing_system.beta"><code class="name flex">
+<span>def <span class="ident">beta</span></span>(<span>j, n)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the coefficient beta for the specified <em>j</em> and <em>n</em> as outlined in
+Section 2 of Daitche (2013).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def beta(j, n):
+        &#34;&#34;&#34;
+        Computes the coefficient beta for the specified *j* and *n* as outlined in
+        Section 2 of Daitche (2013).
+        &#34;&#34;&#34;
+        if n == 1:
+                return alpha(j, 1)
+        elif n == 2:
+                if j == 0:
+                        return 12 / 15 * np.sqrt(2)
+                elif j == 1:
+                        return 16 / 15 * np.sqrt(2)
+                else:
+                        return 2 / 15 * np.sqrt(2)
+        elif n == 3:
+                if j == 0:
+                        return 4 / 5 * np.sqrt(2)
+                elif j == 1:
+                        return 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+                elif j == 2:
+                        return -(8 / 5) * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+                else:
+                        return 4 / 5 * np.sqrt(3) - 4 / 5 * np.sqrt(2)
+        else:
+                if j == 0:
+                        return 4 / 5 * np.sqrt(2)
+                elif j == 1:
+                        return 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+                elif j == 2:
+                        return 176 / 15 - 42 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+                elif j == n - 1:
+                        return 8 / 15 * (-2 * n ** (5 / 2) + 3 * (n - 1) ** (5 / 2)
+                                         - (n - 2) ** (5 / 2)) + 2 / 3 * (4 * n ** (3 / 2)
+                                         - 3 * (n - 1) ** (3 / 2) + (n - 2) ** (3 / 2))
+                elif j == n:
+                        return 8 / 15 * (n ** (5 / 2) - (n - 1) ** (5 / 2)) + 2 / 3 \
+                                         * (-3 * n ** (3 / 2) + (n - 1) ** (3 / 2)) + 2 * np.sqrt(n)
+                else:
+                        return 8 / 15 * ((j + 2) ** (5 / 2) - 3 * (j + 1) ** (5 / 2)
+                                         + 3 * j ** (5 / 2) - (j - 1) ** (5 / 2)) \
+                                         + 2 / 3 * (-(j + 2) ** (3 / 2) + 3 * (j + 1) ** (3 / 2) \
+                                         - 3 * j ** (3 / 2) + (j - 1) ** (3 / 2))</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.relaxing_system.compute_alpha"><code class="name flex">
+<span>def <span class="ident">compute_alpha</span></span>(<span>size)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes a matrix containing the values of alpha as defined in equation (9)
+from Daitche (2013),
+<span><span class="MathJax_Preview">\alpha_j^n = \frac{4}{3} \begin{cases}
+1 &amp; j = 0 \\
+(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n,
+\end{cases}</span><script type="math/tex; mode=display">\alpha_j^n = \frac{4}{3} \begin{cases}
+1 & j = 0 \\
+(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
+(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n,
+\end{cases}</script></span>
+so the value of alpha may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>size</code></strong> :&ensp;<code>int</code></dt>
+<dd>The number of rows and columns for the square matrix.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Array</code></dt>
+<dd>The matrix containing the values of the coefficient alpha.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_alpha(size):
+        r&#34;&#34;&#34;
+        Computes a matrix containing the values of alpha as defined in equation (9)
+        from Daitche (2013),
+        $$\alpha_j^n = \frac{4}{3} \begin{cases}
+                1 &amp; j = 0 \\
+                (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
+                (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n,
+                \end{cases}$$
+        so the value of alpha may be obtained by indexing the array as `arr[j, n]`.
+
+        Parameters
+        ----------
+        size : int
+                The number of rows and columns for the square matrix.
+
+        Returns
+        -------
+        Array
+                The matrix containing the values of the coefficient alpha.
+        &#34;&#34;&#34;
+        print(&#39;Computing matrix of alpha coefficients...&#39;, end=&#39;&#39;)
+        start = time.time()
+        arr = np.ones((size, size))
+        j, n = np.indices(arr.shape)
+        arr[0, 1:] = 4 / 3 # j == 0
+
+        # 0 &lt; j &lt; n
+        mask = np.where(np.triu(arr, k=1), True, False)
+        mask[0] = False
+        vals = (4 / 3) * ((j[1:-1] - 1) ** (3 / 2) + (j[1:-1] + 1) ** (3 / 2)
+                          - 2 * j[1:-1] ** (3 / 2))
+        vals = vals[np.triu(vals, k=2) != 0]
+        np.place(arr, mask, vals)
+
+        # j == n
+        diagonal = 4 / 3 * ((n[0, 1:] - 1) ** (3 / 2) - n[0, 1:] ** (3 / 2)
+                                 + (3 / 2) * np.sqrt(n[0, 1:]))
+        diagonal = np.insert(diagonal, 0, 0)
+        np.fill_diagonal(arr, diagonal)
+        finish = time.time()
+        print(&#39;done.\t\t{:.2f}s&#39;.format(finish - start))
+        return np.triu(arr)</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.relaxing_system.compute_beta"><code class="name flex">
+<span>def <span class="ident">compute_beta</span></span>(<span>size, alpha)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes a matrix containing the values of beta as defined in Section 2 of
+Daitche (2013). The value <span><span class="MathJax_Preview">\beta_j^n</span><script type="math/tex; mode=display">\beta_j^n</script></span>
+may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>size</code></strong> :&ensp;<code>int</code></dt>
+<dd>The number of rows and columns for the square matrix.</dd>
+<dt><strong><code>alpha</code></strong> :&ensp;<code>array-like</code></dt>
+<dd>The values of the coefficient alpha at n = 1.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Array</code></dt>
+<dd>The matrix containing the values of the coefficient beta.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_beta(size, alpha):
+        r&#34;&#34;&#34;
+        Computes a matrix containing the values of beta as defined in Section 2 of
+        Daitche (2013). The value $$\beta_j^n$$
+        may be obtained by indexing the array as `arr[j, n]`.
+
+        Parameters
+        ----------
+        size : int
+                The number of rows and columns for the square matrix.
+        alpha : array-like
+                The values of the coefficient alpha at n = 1.
+
+        Returns
+        -------
+        Array
+                The matrix containing the values of the coefficient beta.
+        &#34;&#34;&#34;
+        print(&#39;Computing matrix of beta coefficients...&#39;, end=&#39;&#39;)
+        start = time.time()
+        arr = np.ones((size, size))
+        j, n = np.indices(arr.shape)
+        arr[:, 0] = 0     # n = 0 (should never be called for beta)
+        arr[:, 1] = alpha # n = 1
+
+        # n = 2
+        arr[0, 2] = 12 / 15 * np.sqrt(2)
+        arr[1, 2] = 16 / 15 * np.sqrt(2)
+        arr[2, 2] = 2 / 15 * np.sqrt(2)
+
+        # n = 3
+        arr[0, 3] = 4 / 5 * np.sqrt(2) 
+        arr[1, 3] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+        arr[2, 3] = -(8 / 5) * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+        arr[3, 3] = 4 / 5 * np.sqrt(3) - 4 / 5 * np.sqrt(2)
+
+        # n &gt;= 4
+        arr[0, 4:] = 4 / 5 * np.sqrt(2)
+        arr[1, 4:] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+        arr[2, 4:] = 176 / 15 - 42 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+        
+        # j = n - 1
+        mask = np.where(np.eye(size, k=1), True, False)
+        mask[:, :4] = False
+        vals = 8 / 15 * (-2 * n[0, 4:] ** (5 / 2) + 3 * (n[0, 4:] - 1) ** (5 / 2)
+                         - (n[0, 4:] - 2) ** (5 / 2)) + 2 / 3 * (4 * n[0, 4:] ** (3 / 2)
+                         - 3 * (n[0, 4:] - 1) ** (3 / 2) + (n[0, 4:] - 2) ** (3 / 2))
+        np.place(arr, mask, vals)
+
+        # j = n
+        mask = np.where(np.eye(size), True, False)
+        mask[:, :4] = False
+        vals = 8 / 15 * (n[0, 4:] ** (5 / 2) - (n[0, 4:] - 1) ** (5 / 2)) \
+                         + 2 / 3 * (-3 * n[0, 4:] ** (3 / 2) 
+                         + (n[0, 4:] - 1) ** (3 / 2)) + 2 * np.sqrt(n[0, 4:])
+        np.place(arr, mask, vals)
+
+        # 2 &lt; j &lt; n - 1
+        mask = np.where(np.triu(arr) == 1, True, False)
+        vals = 8 / 15 * ((j[3:-2, 5:] + 2) ** (5 / 2) \
+                         - 3 * (j[3:-2, 5:] + 1) ** (5 / 2)
+                         + 3 * j[3:-2, 5:] ** (5 / 2) - (j[3:-2, 5:] - 1) ** (5 / 2)) \
+                         + 2 / 3 * (-(j[3:-2, 5:] + 2) ** (3 / 2) \
+                         + 3 * (j[3:-2, 5:] + 1) ** (3 / 2) \
+                         - 3 * j[3:-2, 5:] ** (3 / 2) + (j[3:-2, 5:] - 1) ** (3 / 2))
+        vals = vals[np.triu(vals) != 0]
+        np.place(arr, mask, vals)
+        finish = time.time()
+        print(&#39;done.\t\t{:.2f}s&#39;.format(finish - start))
+        return np.triu(arr)</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.relaxing_system.compute_gamma"><code class="name flex">
+<span>def <span class="ident">compute_gamma</span></span>(<span>size, beta)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes a matrix containing the values of gamma as defined in Section 2 of
+Daitche (2013). The value <span><span class="MathJax_Preview">\gamma_j^n</span><script type="math/tex; mode=display">\gamma_j^n</script></span>
+may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>size</code></strong> :&ensp;<code>int</code></dt>
+<dd>The number of rows and columns for the square matrix.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>array-like</code></dt>
+<dd>The values of the coefficient beta at n = 2.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Array</code></dt>
+<dd>The matrix containing the values of the coefficient gamma.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_gamma(size, beta):
+        r&#34;&#34;&#34;
+        Computes a matrix containing the values of gamma as defined in Section 2 of
+        Daitche (2013). The value $$\gamma_j^n$$
+        may be obtained by indexing the array as `arr[j, n]`.
+
+        Parameters
+        ----------
+        size : int
+                The number of rows and columns for the square matrix.
+        beta : array-like
+                The values of the coefficient beta at n = 2.
+
+        Returns
+        -------
+        Array
+                The matrix containing the values of the coefficient gamma.
+        &#34;&#34;&#34;
+        print(&#39;Computing matrix of gamma coefficients...&#39;, end=&#39;&#39;)
+        start = time.time()
+        arr = np.ones((size, size))
+        j, n = np.indices(arr.shape)
+        arr[:, :2] = 0          # n = 0 and n = 1 (should never be called for gamma)
+        arr[:, 2] = beta        # n = 2
+        
+        # n = 3
+        arr[0][3] = 68 / 105 * np.sqrt(3)
+        arr[1][3] = 6 / 7 * np.sqrt(3)
+        arr[2][3] = 12 / 35 * np.sqrt(3)
+        arr[3][3] = 16 / 105 * np.sqrt(3)
+
+        # n = 4
+        arr[0][4] = 244 / 315 * np.sqrt(2)
+        arr[1][4] = 1888 / 315 - 976 / 315 * np.sqrt(2)
+        arr[2][4] = -(656 / 105) + 488 / 105 * np.sqrt(2)
+        arr[3][4] = 544 / 105 - 976 / 315 * np.sqrt(2)
+        arr[4][4] = -(292 / 315) + 244 / 315 * np.sqrt(2)
+
+        # n = 5
+        arr[0][5] = 244 / 315 * np.sqrt(2)
+        arr[1][5] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+        arr[2][5] = 500 / 63 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 488 / 105 \
+                                        * np.sqrt(2)
+        arr[3][5] = -(290 / 21) * np.sqrt(5) + 724 / 35 * np.sqrt(3) - 976 / 315 \
+                                                        * np.sqrt(2)
+        arr[4][5] = 220 / 21 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 244 / 315 \
+                                        * np.sqrt(2)
+        arr[5][5] = -(164 / 63) * np.sqrt(5) + 362 / 105 * np.sqrt(3)
+
+        # n = 6
+        arr[0][6] = 244 / 315 * np.sqrt(2)
+        arr[1][6] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+        arr[2][6] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 488 / 105 * np.sqrt(2)
+        arr[3][6] = 344 / 21 * np.sqrt(6) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
+                                        - 976 / 315 * np.sqrt(2)
+        arr[4][6] = -(1188 / 35) * np.sqrt(6) + 11168 / 105 - 1448 / 105 \
+                                                         * np.sqrt(3) + 244 / 315 * np.sqrt(2)
+        arr[5][6] = 936 / 35 * np.sqrt(6) - 22336 / 315 + 362 / 105 * np.sqrt(3)
+        arr[6][6] = -(754 / 105) * np.sqrt(6) + 5584 / 315
+
+        # n &gt;= 7
+        arr[0][7:] = 244 / 315 * np.sqrt(2)
+        arr[1][7:] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+        arr[2][7:] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 448 / 105 * np.sqrt(2)
+        arr[3][7:] = 1130 / 63 * np.sqrt(5) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
+                                          - 976 / 315 * np.sqrt(2)
+
+        # j = n - 3
+        mask = np.where(np.eye(size, k=3), True, False)
+        mask[:, :7] = False
+        vals = 16 / 105 * (n[0, 7:] ** (7 / 2) - 4 * (n[0, 7:] - 2) ** (7 / 2)
+                          + 6 * (n[0, 7:] - 3) ** (7 / 2) - 4 * (n[0, 7:] - 4) ** (7 / 2)
+                          + (n[0, 7:] - 5) ** (7 / 2)) - 8 / 15 * n[0, 7:] ** (5 / 2) \
+                          + 4 / 9 * n[0, 7:] ** (3 / 2) + 8 / 9 * (n[0, 7:] - 2) ** (3 / 2)\
+                          - 4 / 3 * (n[0, 7:] - 3) ** (3 / 2) \
+                          + 8 / 9 * (n[0, 7:] - 4) ** (3 / 2) \
+                          - 2 / 9 * (n[0, 7:] - 5) ** (3 / 2)
+        np.place(arr, mask, vals)
+
+        # j = n - 2
+        mask = np.where(np.eye(size, k=2), True, False)
+        mask[:, :7] = False
+        vals = 16 / 105 * ((n[0, 7:] - 4) ** (7 / 2) - 4 * (n[0, 7:] - 3) ** (7 / 2)
+                          + 6 * (n[0, 7:] - 2) ** (7 / 2) - 3 * n[0, 7:] ** (7 / 2)) \
+                          + 32 / 15 * n[0, 7:] ** (5 / 2) - 2 * n[0, 7:] ** (3 / 2) \
+                          - 4 / 3 * (n[0, 7:] - 2) ** (3 / 2) \
+                          + 8 / 9 * (n[0, 7:] - 3) ** (3 / 2) \
+                          - 2 / 9 * (n[0, 7:] - 4) ** (3 / 2)
+        np.place(arr, mask, vals)
+
+        # j = n - 1
+        mask = np.where(np.eye(size, k=1), True, False)
+        mask[:, :7] = False
+        vals = 16 / 105 * (3 * n[0, 7:] ** (7 / 2) - 4 * (n[0, 7:] - 2) ** (7 / 2)
+                          + (n[0, 7:] - 3) ** (7 / 2)) - 8 / 3 * n[0, 7:] ** (5 / 2) \
+                          + 4 * n[0, 7:] ** (3 / 2) + 8 / 9 * (n[0, 7:] - 2) ** (3 / 2) \
+                          - 2 / 9 * (n[0, 7:] - 3) ** (3 / 2)
+        np.place(arr, mask, vals)
+
+        # j = n
+        mask = np.where(np.eye(size, k=1), True, False)
+        mask[:, :7] = False
+        vals = 16 / 105 * ((n[0, 7:] - 2) ** (7 / 2) - n[0, 7:] ** (7 / 2)) \
+                          + 16 / 15 * n[0, 7:] ** (5 / 2) - 22 / 9 * n[0, 7:] ** (3 / 2) \
+                          - 2 / 9 * (n[0, 7:] - 2) ** (3 / 2) + 2 * np.sqrt(n[0, 7:])
+        np.place(arr, mask, vals)
+
+        # 3 &lt; j &lt; n - 3
+        mask = np.where(np.triu(arr) == 1, True, False)
+        vals = 16 / 105 * ((j[4:-4, 8:] + 2) ** (7 / 2) \
+                          + (j[4:-4, 8:] - 2) ** (7 / 2)
+                          - 4 * (j[4:-4, 8:] + 1) ** (7 / 2) 
+                          - 4 * (j[4:-4, 8:] - 1) ** (7 / 2) 
+                          + 6 * j[4:-4, 8:] ** (7 / 2)) \
+                          + 2 / 9 * (4 * (j[4:-4, 8:] + 1) ** (3 / 2)
+                          + 4 * (j[4:-4, 8:] - 1) ** (3 / 2) - (j[4:-4, 8:] + 2) ** (3 / 2)
+                          - (j[4:-4, 8:] - 2) ** (3 / 2) - 6 * j[4:-4, 8:] ** (3 / 2))
+        vals = vals[np.triu(vals) != 0]
+        np.place(arr, mask, vals)
+        finish = time.time()
+        print(&#39;done.\t\t{:.2f}s&#39;.format(finish - start))
+        return np.triu(arr)</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.relaxing_system.gamma"><code class="name flex">
+<span>def <span class="ident">gamma</span></span>(<span>j, n)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the coefficient gamma for the specified <em>j</em> and <em>n</em> as outlined in
+Section 2 of Daitche (2013).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def gamma(j, n):
+        &#34;&#34;&#34;
+        Computes the coefficient gamma for the specified *j* and *n* as outlined in
+        Section 2 of Daitche (2013).
+        &#34;&#34;&#34;
+        if n == 2:
+                return beta(j, 2)
+        elif n == 3:
+                if j == 0:
+                        return 68 / 105 * np.sqrt(3)
+                elif j == 1:
+                        return 6 / 7 * np.sqrt(3)
+                elif j == 2:
+                        return 12 / 35 * np.sqrt(3)
+                else:
+                        return 16 / 105 * np.sqrt(3)
+        elif n == 4:
+                if j == 0:
+                        return 244 / 315 * np.sqrt(2)
+                elif j == 1:
+                        return 1888 / 315 - 976 / 315 * np.sqrt(2)
+                elif j == 2:
+                        return -(656 / 105) + 488 / 105 * np.sqrt(2)
+                elif j == 3:
+                        return 544 / 105 - 976 / 315 * np.sqrt(2)
+                else:
+                        return -(292 / 315) + 244 / 315 * np.sqrt(2)
+        elif n == 5:
+                if j == 0:
+                        return 244 / 315 * np.sqrt(2)
+                elif j == 1:
+                        return 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+                elif j == 2:
+                        return 500 / 63 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 488 / 105 \
+                                           * np.sqrt(2)
+                elif j == 3:
+                        return -(290 / 21) * np.sqrt(5) + 724 / 35 * np.sqrt(3) - 976 / 315\
+                                                           * np.sqrt(2)
+                elif j == 4:
+                        return 220 / 21 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 244 / 315 \
+                                           * np.sqrt(2)
+                else:
+                        return -(164 / 63) * np.sqrt(5) + 362 / 105 * np.sqrt(3)
+        elif n == 6:
+                if j == 0:
+                        return 244 / 315 * np.sqrt(2)
+                elif j == 1:
+                        return 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+                elif j == 2:
+                        return 5584 / 315 - 1448 / 105 * np.sqrt(3) + 488 / 105 * np.sqrt(2)
+                elif j == 3:
+                        return 344 / 21 * np.sqrt(6) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
+                                           - 976 / 315 * np.sqrt(2)
+                elif j == 4:
+                        return -(1188 / 35) * np.sqrt(6) + 11168 / 105 - 1448 / 105 \
+                                                                * np.sqrt(3) + 244 / 315 * np.sqrt(2)
+                elif j == 5:
+                        return 936 / 35 * np.sqrt(6) - 22336 / 315 + 362 / 105 * np.sqrt(3)
+                else:
+                        return -(754 / 105) * np.sqrt(6) + 5584 / 315
+        else:
+                if j == 0:
+                        return 244 / 315 * np.sqrt(2)
+                elif j == 1:
+                        return 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
+                elif j == 2:
+                        return 5584 / 315 - 1448 / 105 * np.sqrt(3) + 448 / 105 * np.sqrt(2)
+                elif j == 3:
+                        return 1130 / 63 * np.sqrt(5) - 22336 / 315 + 724 / 35 * np.sqrt(3)\
+                                                - 976 / 315 * np.sqrt(2)
+                elif j == n - 3:
+                        return 16 / 105 * (n ** (7 / 2) - 4 * (n - 2) ** (7 / 2)
+                                          + 6 * (n - 3) ** (7 / 2) - 4 * (n - 4) ** (7 / 2)
+                                          + (n - 5) ** (7 / 2)) - 8 / 15 * n ** (5 / 2) \
+                                          + 4 / 9 * n ** (3 / 2) + 8 / 9 * (n - 2) ** (3 / 2) \
+                                          - 4 / 3 * (n - 3) ** (3 / 2) + 8 / 9 * (n - 4) ** (3 / 2)\
+                                          - 2 / 9 * (n - 5) ** (3 / 2)
+                elif j == n - 2:
+                        return 16 / 105 * ((n - 4) ** (7 / 2) - 4 * (n - 3) ** (7 / 2)
+                                          + 6 * (n - 2) ** (7 / 2) - 3 * n ** (7 / 2)) \
+                                          + 32 / 15 * n ** (5 / 2) - 2 * n ** (3 / 2) \
+                                          - 4 / 3 * (n - 2) ** (3 / 2) + 8 / 9 * (n - 3) ** (3 / 2)\
+                                          - 2 / 9 * (n - 4) ** (3 / 2)
+                elif j == n - 1:
+                        return 16 / 105 * (3 * n ** (7 / 2) - 4 * (n - 2) ** (7 / 2)
+                                          + (n - 3) ** (7 / 2)) - 8 / 3 * n ** (5 / 2) \
+                                          + 4 * n ** (3 / 2) + 8 / 9 * (n - 2) ** (3 / 2) \
+                                          - 2 / 9 * (n - 3) ** (3 / 2)
+                elif j == n:
+                        return 16 / 105 * ((n - 2) ** (7 / 2) - n ** (7 / 2)) \
+                                          + 16 / 15 * n ** (5 / 2) - 22 / 9 * n ** (3 / 2) \
+                                          - 2 / 9 * (n - 2) ** (3 / 2) + 2 * np.sqrt(n)
+                else:
+                        return 16 / 105 * ((j + 2) ** (7 / 2) + (j - 2) ** (7 / 2)
+                                          - 4 * (j + 1) ** (7 / 2) - 4 * (j - 1) ** (7 / 2) 
+                                          + 6 * j ** (7 / 2)) + 2 / 9 * (4 * (j + 1) ** (3 / 2)
+                                          + 4 * (j - 1) ** (3 / 2) - (j + 2) ** (3 / 2)
+                                          - (j - 2) ** (3 / 2) - 6 * j ** (3 / 2))</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -371,7 +1277,7 @@ used to compute the asymptotic behavior of the system.</dd>
                 return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
                                  / (2 * self.alpha ** 2))
 
-        def maxey_riley(self, t, y, delta_t, include_history, t_final):
+        def maxey_riley(self, t, y):
                 r&#34;&#34;&#34;
                 Evaluates the Maxey-Riley equation,
                 $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
@@ -391,12 +1297,6 @@ used to compute the asymptotic behavior of the system.</dd>
                         The time to use in the computations.
                 y : list (array-like)
                         A list containing the x, z, xdot, zdot values to use.
-                delta_t : float
-                        The size of the time steps used for integration.
-                include_history : boolean
-                        Whether to include history effects.
-                t_final : float
-                        The final value in the integration timespan.
 
                 Returns
                 -------
@@ -408,93 +1308,73 @@ used to compute the asymptotic behavior of the system.</dd>
                 x, z = y[:2]
                 particle_velocity = y[2:]
                 fluid_velocity = self.flow.velocity(x, z, t)
-                history = 0
 
-                if include_history:
-                        self.update_history(fluid_velocity, particle_velocity)
-                        history = self.compute_history(t, delta_t)
-
-                # compute non-history terms on the RHS of the M-R equation
+                # compute terms on the RHS of the M-R equation
                 stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
                 fluid_pressure_gradient = 3 * R / 2 \
                                                                         * self.flow.material_derivative(x, z, t)
 
                 # M-R equation
-                particle_acceleration = stokes_drag + fluid_pressure_gradient + history
-#               print(&#39;t = {:f}&#39;.format(t))
-                print(&#39;{:.0%}&#39;.format(t / t_final), end=&#39;\r&#39;)
+                particle_acceleration = stokes_drag + fluid_pressure_gradient
                 return np.concatenate((particle_velocity, particle_acceleration))
 
-        def update_history(self, fluid_velocity, particle_velocity):
-                &#34;&#34;&#34;
-                Updates the history of the fluid velocity **u** and particle velocity
-                **v**.
-
-                Parameters
-                ----------
-                fluid_velocity : array
-                        The components of the fluid velocity **u**.
-                particle_velocity : array
-                        The components of the particle velocity **v**.
-                &#34;&#34;&#34;
-                self.flow.history.append(fluid_velocity)
-                self.particle.history.append(particle_velocity)
-
-        def compute_history(self, t, delta_t):
+        def full_maxey_riley(self, t, y, order):
                 r&#34;&#34;&#34;
-                Computes the Basset-Boussinesq history term,
-                $$-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                        \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-                        \frac{\mathrm{d}}{\mathrm{d}s},$$
-                using the quadrature scheme,
-                $$\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-                        \frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
-                        \sum_{j=0}^{n}
-                        \alpha_j^n f(s_{n-j}),$$
-                with
-                $$f(s) = \textbf{v} - \textbf{u},$$
-                *n* steps, and
-                $$\alpha_j^n = \frac{4}{3} \begin{cases}
-                        1 &amp; j = 0 \\
-                        (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
-                        (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n.
-                        \end{cases}$$
+                Implements the integration scheme for the full Maxey-Riley equation with
+                history effects, as outlined in Daitche (2013) Section 3.
 
                 Parameters
                 ----------
-                t : float
-                        The time at which to evaluate the history term.
-                delta_t : float
-                        The size of the time steps used for integration.
+                t : array
+                        The times when the Maxey-Riley equation should be evaluated.
+                y : list (array-like)
+                        A list containing the initial particle position and velocity.
+                order : int
+                        The order of the integration scheme.
 
                 Returns
                 -------
                 Array
-                        The components of the history term.
+                        The components of the particle&#39;s position and velocity.
                 &#34;&#34;&#34;
-                # initialize local variables
-                integrand = np.empty(2,)
-                coefficient = -np.sqrt(9 / (2 * np.pi)) * self.density_ratio \
-                                          / np.sqrt(self.particle.stokes_num)
-                f_s = np.array(self.particle.history) - np.array(self.flow.history)
-                alpha = 4 / 3
-                n = int(t / delta_t)
+                # initialize local variables and set initial conditions
+                R = self.density_ratio
+                St = self.particle.stokes_num
+                delta_t = t[1] - t[0]
+                xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+                num_steps = t.size - 1
+                x = np.empty((t.size, 2))
+                v = np.empty((t.size, 2))
+                x[0] = y[:2]
+                v[0] = y[2:]
+                alpha = compute_alpha(t.size)
+                beta = compute_beta(t.size, alpha[:, 1])
+                gamma = compute_gamma(t.size, beta[:, 2])
 
-                # compute the sum
-                for j in range(n + 1):
-                        if j == 0:
-                                alpha *= 1
-                        elif j == n:
-                                alpha *= (n - 1) ** (3 / 2) - n ** (3 / 2) \
-                                                                  + (3 / 2) * np.sqrt(n)
-                        else: # 0 &lt; j &lt; n
-                                alpha *= (j - 1) ** (3 / 2) + (j + 1) ** (3 / 2) \
-                                                                                        - 2 * j ** (3 / 2)
-                        integrand += alpha * f_s[n - j]
-#                       print(&#39;t = {:f}, n = {:d}, j = {:d}, f size = {:d}&#39;.format(t, n, j,
-#                               len(f_s)))
-                integrand *= np.sqrt(delta_t)
-                return coefficient * integrand
+                for n in tqdm(range(num_steps)):
+                        G = -R / St * v
+                        sum_term = 0
+                        if order == 1 or n == 0:
+                                for j in range(n + 1):
+                                        sum_term += v[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
+                                x[n + 1] = x[n] + delta_t * v[n]
+                                v[n + 1] = (v[n] + delta_t * G[n] - xi * sum_term) \
+                                                                 / (1 + xi * alpha[0, n + 1])
+                        elif order == 2 or n == 1:
+                                for j in range(n + 1):
+                                        sum_term += v[n - j] * (beta[j + 1, n + 1] - beta[j, n])
+                                x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
+                                v[n + 1] = (v[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+                                                                 - xi * sum_term) / (1 + xi * beta[0, n + 1])
+                        else: # order is 3 and n &gt; 1
+                                for j in range(n + 1):
+                                        sum_term += v[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
+                                x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
+                                                                + 5 * v[n - 2])
+                                v[n + 1] = (v[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                                 + 5 * G[n - 2]) - xi * sum_term) \
+                                                                 / (1 + xi * gamma[0, n + 1])
+                return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
         def run_numerics(self, include_history, x_0=0, z_0=0, xdot_0=1, zdot_0=1,
                                          num_periods=50, delta_t=5e-3, method=&#39;BDF&#39;):
@@ -514,7 +1394,7 @@ used to compute the asymptotic behavior of the system.</dd>
                 delta_t : float, default=5e-3
                         The size of the time steps used for integration.
                 method : str, default=&#39;BDF&#39;
-                        The method of integration to use.
+                        The method of integration to use when neglecting history effects.
 
                 Returns
                 -------
@@ -533,16 +1413,18 @@ used to compute the asymptotic behavior of the system.</dd>
                 t_final = num_periods * self.flow.period
                 t_span = (0, t_final)
                 t_eval = np.arange(0, t_final, delta_t)
-                args = (delta_t, include_history, t_final)
+                y = [x_0, z_0, xdot_0, zdot_0]
 
                 # run computations
-                sols = integrate.solve_ivp(self.maxey_riley, t_span,
-                                                                   [x_0, z_0, xdot_0, zdot_0],
-                                                                   method=method, t_eval=t_eval,
-                                                                   rtol=1e-8, atol=1e-10, args=args)
-                # unpack and return solutions
-                x, z, xdot, zdot = sols.y
-                t = sols.t
+                if include_history:     
+                        x, z, xdot, zdot, t = self.full_maxey_riley(t_eval, y, order=3)
+                else:
+                        sols = integrate.solve_ivp(self.maxey_riley, t_span, y,
+                                                                           method=method, t_eval=t_eval,
+                                                                           rtol=1e-8, atol=1e-10)
+                        # unpack solutions
+                        x, z, xdot, zdot = sols.y
+                        t = sols.t
                 return x, z, xdot, zdot, t</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -600,111 +1482,91 @@ with a sign change on the singular term.</p>
                          / (2 * self.alpha ** 2))</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.compute_history"><code class="name flex">
-<span>def <span class="ident">compute_history</span></span>(<span>self, t, delta_t)</span>
+<dt id="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.full_maxey_riley"><code class="name flex">
+<span>def <span class="ident">full_maxey_riley</span></span>(<span>self, t, y, order)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the Basset-Boussinesq history term,
-<span><span class="MathJax_Preview">-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-\frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-\frac{\mathrm{d}}{\mathrm{d}s},</span><script type="math/tex; mode=display">-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-\frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-\frac{\mathrm{d}}{\mathrm{d}s},</script></span>
-using the quadrature scheme,
-<span><span class="MathJax_Preview">\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-\frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
-\sum_{j=0}^{n}
-\alpha_j^n f(s_{n-j}),</span><script type="math/tex; mode=display">\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-\frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
-\sum_{j=0}^{n}
-\alpha_j^n f(s_{n-j}),</script></span>
-with
-<span><span class="MathJax_Preview">f(s) = \textbf{v} - \textbf{u},</span><script type="math/tex; mode=display">f(s) = \textbf{v} - \textbf{u},</script></span>
-<em>n</em> steps, and
-<span><span class="MathJax_Preview">\alpha_j^n = \frac{4}{3} \begin{cases}
-1 &amp; j = 0 \\
-(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
-(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n.
-\end{cases}</span><script type="math/tex; mode=display">\alpha_j^n = \frac{4}{3} \begin{cases}
-1 & j = 0 \\
-(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
-(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n.
-\end{cases}</script></span></p>
+<div class="desc"><p>Implements the integration scheme for the full Maxey-Riley equation with
+history effects, as outlined in Daitche (2013) Section 3.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
-<dd>The time at which to evaluate the history term.</dd>
-<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
-<dd>The size of the time steps used for integration.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>array</code></dt>
+<dd>The times when the Maxey-Riley equation should be evaluated.</dd>
+<dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
+<dd>A list containing the initial particle position and velocity.</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>int</code></dt>
+<dd>The order of the integration scheme.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>Array</code></dt>
-<dd>The components of the history term.</dd>
+<dd>The components of the particle's position and velocity.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">        def compute_history(self, t, delta_t):
-                r&#34;&#34;&#34;
-                Computes the Basset-Boussinesq history term,
-                $$-\sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                        \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-                        \frac{\mathrm{d}}{\mathrm{d}s},$$
-                using the quadrature scheme,
-                $$\int_0^t \frac{1}{\sqrt{t - s}} \mathrm{d}s [\textbf{v} - \textbf{u}]
-                        \frac{\mathrm{d}}{\mathrm{d}s} \approx \sqrt{\Delta t}
-                        \sum_{j=0}^{n}
-                        \alpha_j^n f(s_{n-j}),$$
-                with
-                $$f(s) = \textbf{v} - \textbf{u},$$
-                *n* steps, and
-                $$\alpha_j^n = \frac{4}{3} \begin{cases}
-                        1 &amp; j = 0 \\
-                        (j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} &amp; 0 &lt; j &lt; n \\
-                        (n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} &amp; j = n.
-                        \end{cases}$$
+<pre><code class="python">def full_maxey_riley(self, t, y, order):
+        r&#34;&#34;&#34;
+        Implements the integration scheme for the full Maxey-Riley equation with
+        history effects, as outlined in Daitche (2013) Section 3.
 
-                Parameters
-                ----------
-                t : float
-                        The time at which to evaluate the history term.
-                delta_t : float
-                        The size of the time steps used for integration.
+        Parameters
+        ----------
+        t : array
+                The times when the Maxey-Riley equation should be evaluated.
+        y : list (array-like)
+                A list containing the initial particle position and velocity.
+        order : int
+                The order of the integration scheme.
 
-                Returns
-                -------
-                Array
-                        The components of the history term.
-                &#34;&#34;&#34;
-                # initialize local variables
-                integrand = np.empty(2,)
-                coefficient = -np.sqrt(9 / (2 * np.pi)) * self.density_ratio \
-                                          / np.sqrt(self.particle.stokes_num)
-                f_s = np.array(self.particle.history) - np.array(self.flow.history)
-                alpha = 4 / 3
-                n = int(t / delta_t)
+        Returns
+        -------
+        Array
+                The components of the particle&#39;s position and velocity.
+        &#34;&#34;&#34;
+        # initialize local variables and set initial conditions
+        R = self.density_ratio
+        St = self.particle.stokes_num
+        delta_t = t[1] - t[0]
+        xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+        num_steps = t.size - 1
+        x = np.empty((t.size, 2))
+        v = np.empty((t.size, 2))
+        x[0] = y[:2]
+        v[0] = y[2:]
+        alpha = compute_alpha(t.size)
+        beta = compute_beta(t.size, alpha[:, 1])
+        gamma = compute_gamma(t.size, beta[:, 2])
 
-                # compute the sum
-                for j in range(n + 1):
-                        if j == 0:
-                                alpha *= 1
-                        elif j == n:
-                                alpha *= (n - 1) ** (3 / 2) - n ** (3 / 2) \
-                                                                  + (3 / 2) * np.sqrt(n)
-                        else: # 0 &lt; j &lt; n
-                                alpha *= (j - 1) ** (3 / 2) + (j + 1) ** (3 / 2) \
-                                                                                        - 2 * j ** (3 / 2)
-                        integrand += alpha * f_s[n - j]
-#                       print(&#39;t = {:f}, n = {:d}, j = {:d}, f size = {:d}&#39;.format(t, n, j,
-#                               len(f_s)))
-                integrand *= np.sqrt(delta_t)
-                return coefficient * integrand</code></pre>
+        for n in tqdm(range(num_steps)):
+                G = -R / St * v
+                sum_term = 0
+                if order == 1 or n == 0:
+                        for j in range(n + 1):
+                                sum_term += v[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
+                        x[n + 1] = x[n] + delta_t * v[n]
+                        v[n + 1] = (v[n] + delta_t * G[n] - xi * sum_term) \
+                                                         / (1 + xi * alpha[0, n + 1])
+                elif order == 2 or n == 1:
+                        for j in range(n + 1):
+                                sum_term += v[n - j] * (beta[j + 1, n + 1] - beta[j, n])
+                        x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
+                        v[n + 1] = (v[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+                                                         - xi * sum_term) / (1 + xi * beta[0, n + 1])
+                else: # order is 3 and n &gt; 1
+                        for j in range(n + 1):
+                                sum_term += v[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
+                        x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
+                                                        + 5 * v[n - 2])
+                        v[n + 1] = (v[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                         + 5 * G[n - 2]) - xi * sum_term) \
+                                                         / (1 + xi * gamma[0, n + 1])
+        return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.maxey_riley"><code class="name flex">
-<span>def <span class="ident">maxey_riley</span></span>(<span>self, t, y, delta_t, include_history, t_final)</span>
+<span>def <span class="ident">maxey_riley</span></span>(<span>self, t, y)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Evaluates the Maxey-Riley equation,
@@ -731,12 +1593,6 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <dd>The time to use in the computations.</dd>
 <dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
 <dd>A list containing the x, z, xdot, zdot values to use.</dd>
-<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
-<dd>The size of the time steps used for integration.</dd>
-<dt><strong><code>include_history</code></strong> :&ensp;<code>boolean</code></dt>
-<dd>Whether to include history effects.</dd>
-<dt><strong><code>t_final</code></strong> :&ensp;<code>float</code></dt>
-<dd>The final value in the integration timespan.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -747,59 +1603,46 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">        def maxey_riley(self, t, y, delta_t, include_history, t_final):
-                r&#34;&#34;&#34;
-                Evaluates the Maxey-Riley equation,
-                $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
-                $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
-                        - \textbf{v}}{\epsilon}
-                        + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                        + (1 - \frac{3R}{2}) \textbf{g}
-                        - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                        \frac{1}{\sqrt{t - s}} \mathrm{d}s
-                        [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
-                with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
-                        \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
-                
-                Parameters
-                ----------
-                t : float
-                        The time to use in the computations.
-                y : list (array-like)
-                        A list containing the x, z, xdot, zdot values to use.
-                delta_t : float
-                        The size of the time steps used for integration.
-                include_history : boolean
-                        Whether to include history effects.
-                t_final : float
-                        The final value in the integration timespan.
+<pre><code class="python">def maxey_riley(self, t, y):
+        r&#34;&#34;&#34;
+        Evaluates the Maxey-Riley equation,
+        $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
+        $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
+                - \textbf{v}}{\epsilon}
+                + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+                + (1 - \frac{3R}{2}) \textbf{g}
+                - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
+                \frac{1}{\sqrt{t - s}} \mathrm{d}s
+                [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
+        with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
+                \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
+        
+        Parameters
+        ----------
+        t : float
+                The time to use in the computations.
+        y : list (array-like)
+                A list containing the x, z, xdot, zdot values to use.
 
-                Returns
-                -------
-                Array
-                        The components of the particle&#39;s velocity and acceleration.
-                &#34;&#34;&#34;
-                # initialize local variables and update the particle and fluid histories
-                R = self.density_ratio
-                x, z = y[:2]
-                particle_velocity = y[2:]
-                fluid_velocity = self.flow.velocity(x, z, t)
-                history = 0
+        Returns
+        -------
+        Array
+                The components of the particle&#39;s velocity and acceleration.
+        &#34;&#34;&#34;
+        # initialize local variables and update the particle and fluid histories
+        R = self.density_ratio
+        x, z = y[:2]
+        particle_velocity = y[2:]
+        fluid_velocity = self.flow.velocity(x, z, t)
 
-                if include_history:
-                        self.update_history(fluid_velocity, particle_velocity)
-                        history = self.compute_history(t, delta_t)
+        # compute terms on the RHS of the M-R equation
+        stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
+        fluid_pressure_gradient = 3 * R / 2 \
+                                                                * self.flow.material_derivative(x, z, t)
 
-                # compute non-history terms on the RHS of the M-R equation
-                stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
-                fluid_pressure_gradient = 3 * R / 2 \
-                                                                        * self.flow.material_derivative(x, z, t)
-
-                # M-R equation
-                particle_acceleration = stokes_drag + fluid_pressure_gradient + history
-#               print(&#39;t = {:f}&#39;.format(t))
-                print(&#39;{:.0%}&#39;.format(t / t_final), end=&#39;\r&#39;)
-                return np.concatenate((particle_velocity, particle_acceleration))</code></pre>
+        # M-R equation
+        particle_acceleration = stokes_drag + fluid_pressure_gradient
+        return np.concatenate((particle_velocity, particle_acceleration))</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.run_numerics"><code class="name flex">
@@ -820,7 +1663,7 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code>, default=<code>5e-3</code></dt>
 <dd>The size of the time steps used for integration.</dd>
 <dt><strong><code>method</code></strong> :&ensp;<code>str</code>, default=<code>'BDF'</code></dt>
-<dd>The method of integration to use.</dd>
+<dd>The method of integration to use when neglecting history effects.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -857,7 +1700,7 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
         delta_t : float, default=5e-3
                 The size of the time steps used for integration.
         method : str, default=&#39;BDF&#39;
-                The method of integration to use.
+                The method of integration to use when neglecting history effects.
 
         Returns
         -------
@@ -876,50 +1719,19 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
         t_final = num_periods * self.flow.period
         t_span = (0, t_final)
         t_eval = np.arange(0, t_final, delta_t)
-        args = (delta_t, include_history, t_final)
+        y = [x_0, z_0, xdot_0, zdot_0]
 
         # run computations
-        sols = integrate.solve_ivp(self.maxey_riley, t_span,
-                                                           [x_0, z_0, xdot_0, zdot_0],
-                                                           method=method, t_eval=t_eval,
-                                                           rtol=1e-8, atol=1e-10, args=args)
-        # unpack and return solutions
-        x, z, xdot, zdot = sols.y
-        t = sols.t
+        if include_history:     
+                x, z, xdot, zdot, t = self.full_maxey_riley(t_eval, y, order=3)
+        else:
+                sols = integrate.solve_ivp(self.maxey_riley, t_span, y,
+                                                                   method=method, t_eval=t_eval,
+                                                                   rtol=1e-8, atol=1e-10)
+                # unpack solutions
+                x, z, xdot, zdot = sols.y
+                t = sols.t
         return x, z, xdot, zdot, t</code></pre>
-</details>
-</dd>
-<dt id="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.update_history"><code class="name flex">
-<span>def <span class="ident">update_history</span></span>(<span>self, fluid_velocity, particle_velocity)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Updates the history of the fluid velocity <strong>u</strong> and particle velocity
-<strong>v</strong>.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>fluid_velocity</code></strong> :&ensp;<code>array</code></dt>
-<dd>The components of the fluid velocity <strong>u</strong>.</dd>
-<dt><strong><code>particle_velocity</code></strong> :&ensp;<code>array</code></dt>
-<dd>The components of the particle velocity <strong>v</strong>.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def update_history(self, fluid_velocity, particle_velocity):
-        &#34;&#34;&#34;
-        Updates the history of the fluid velocity **u** and particle velocity
-        **v**.
-
-        Parameters
-        ----------
-        fluid_velocity : array
-                The components of the fluid velocity **u**.
-        particle_velocity : array
-                The components of the particle velocity **v**.
-        &#34;&#34;&#34;
-        self.flow.history.append(fluid_velocity)
-        self.particle.history.append(particle_velocity)</code></pre>
 </details>
 </dd>
 </dl>
@@ -938,16 +1750,25 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <li><code><a title="modelling-microplastics-transport.models" href="index.html">modelling-microplastics-transport.models</a></code></li>
 </ul>
 </li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="two-column">
+<li><code><a title="modelling-microplastics-transport.models.relaxing_system.alpha" href="#modelling-microplastics-transport.models.relaxing_system.alpha">alpha</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.relaxing_system.beta" href="#modelling-microplastics-transport.models.relaxing_system.beta">beta</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.relaxing_system.compute_alpha" href="#modelling-microplastics-transport.models.relaxing_system.compute_alpha">compute_alpha</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.relaxing_system.compute_beta" href="#modelling-microplastics-transport.models.relaxing_system.compute_beta">compute_beta</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.relaxing_system.compute_gamma" href="#modelling-microplastics-transport.models.relaxing_system.compute_gamma">compute_gamma</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.relaxing_system.gamma" href="#modelling-microplastics-transport.models.relaxing_system.gamma">gamma</a></code></li>
+</ul>
+</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
 <h4><code><a title="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem" href="#modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem">RelaxingTransportSystem</a></code></h4>
 <ul class="">
 <li><code><a title="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.asymptotic_velocity" href="#modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.asymptotic_velocity">asymptotic_velocity</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.compute_history" href="#modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.compute_history">compute_history</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.full_maxey_riley" href="#modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.full_maxey_riley">full_maxey_riley</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.maxey_riley" href="#modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.maxey_riley">maxey_riley</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.run_numerics" href="#modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.run_numerics">run_numerics</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.update_history" href="#modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.update_history">update_history</a></code></li>
 </ul>
 </li>
 </ul>

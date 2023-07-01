@@ -13,7 +13,7 @@ def main():
 	quiescent flow, and saves the results to the `data` directory.
 	"""
 	# initialize variables for the transport system
-	t_final = 4
+	t_final = 15
 	R_light = 2 / (1 + 2 * 0.01)
 	R_neutral = 2 / (1 + 2 * 1)
 	R_heavy = 2 / (1 + 2 * 5)
@@ -34,7 +34,6 @@ def main():
 							 'heavy_xdot', 'heavy_zdot'])
 
 	# compute results for the light particle
-	print('Running simulations for the light particle with history effects...')
 	x, z, xdot, zdot, t = light_system.run_numerics(include_history=True,
 													num_periods=t_final)
 	my_dict['t'] = t
@@ -42,47 +41,36 @@ def main():
 	my_dict['light_z_history'] = z
 	my_dict['light_xdot_history'] = xdot
 	my_dict['light_zdot_history'] = zdot
-	print('done. Running simulations for the light particle without history ' \
-		  + 'effects...')
 	x, z, xdot, zdot, t = light_system.run_numerics(include_history=False,
 													num_periods=t_final)
 	my_dict['light_x'] = x
 	my_dict['light_z'] = z
 	my_dict['light_xdot'] = xdot
 	my_dict['light_zdot'] = zdot
-	print('done. Running simulations for the neutral particle with history ' \
-		  + 'effects...')
 	x, z, xdot, zdot, t = neutral_system.run_numerics(include_history=True,
 													  num_periods=t_final)
 	my_dict['neutral_x_history'] = x
 	my_dict['neutral_z_history'] = z
 	my_dict['neutral_xdot_history'] = xdot
 	my_dict['neutral_zdot_history'] = zdot
-	print('done. Running simulations for the neutral particle without ' \
-		  + 'history effects...')
 	x, z, xdot, zdot, t = neutral_system.run_numerics(include_history=False,
 													  num_periods=t_final)
 	my_dict['neutral_x'] = x
 	my_dict['neutral_z'] = z
 	my_dict['neutral_xdot'] = xdot
 	my_dict['neutral_zdot'] = zdot
-	print('done. Running simulations for the heavy particle with history ' \
-		  + 'effects...')
 	x, z, xdot, zdot, t = heavy_system.run_numerics(include_history=True,
 													num_periods=t_final)
 	my_dict['heavy_x_history'] = x
 	my_dict['heavy_z_history'] = z
 	my_dict['heavy_xdot_history'] = xdot
 	my_dict['heavy_zdot_history'] = zdot
-	print('done. Running simulations for the heavy particle without history ' \
-		  + 'effects...')
 	x, z, xdot, zdot, t = heavy_system.run_numerics(include_history=False,
 													num_periods=t_final)
 	my_dict['heavy_x'] = x
 	my_dict['heavy_z'] = z
 	my_dict['heavy_xdot'] = xdot
 	my_dict['heavy_zdot'] = zdot
-	print('done.')
 
 	# write results to data file
 	numerics = pd.DataFrame(my_dict)

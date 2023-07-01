@@ -2,6 +2,7 @@ import sys
 sys.path.append('/home/s2182576/Documents/academia/thesis/'
 				+ 'modelling-microplastics-transport')
 import pandas as pd
+import numpy as np
 
 from transport_framework import particle as prt
 from models import quiescent_flow as fl
