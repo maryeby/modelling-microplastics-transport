@@ -5,10 +5,10 @@ import time
 import numpy as np
 import scipy.integrate as integrate
 from tqdm import tqdm
-from models import quiescent_flow
+from models import rotating_flow
 from transport_framework import particle, transport_system
 
-class RelaxingTransportSystem(transport_system.TransportSystem):
+class RotatingTransportSystem(transport_system.TransportSystem):
 	""" 
 	Represents the transport of a relaxing particle in a quiescent fluid flow.
 	"""
@@ -67,6 +67,28 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
 				 / (2 * self.alpha ** 2))
 
+	def derivative_along_trajectory(self, xdot, zdot):
+		r"""
+		Computes the derivative of the fluid along the trajectory of the
+		particle,
+		$$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+			= \frac{\partial \textbf{u}}{\partial t}
+			+ \textbf{v} \cdot \nabla \textbf{u}.$$
+
+		Parameters
+		----------
+		xdot : float or array
+			The value(s) of the horizontal velocity of the particle.
+		zdot : float
+			The value(s) of the vertical velocity of the particle.
+
+		Returns
+		-------
+		Array
+			The horizontal and vertical components of the solution.
+		"""
+		return np.transpose(np.array([-zdot, xdot]))
+
 	def maxey_riley(self, t, y):
 		r"""
 		Evaluates the Maxey-Riley equation,
@@ -97,7 +119,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		R = self.density_ratio
 		x, z = y[:2]
 		particle_velocity = y[2:]
-		fluid_velocity = self.flow.velocity(x, z, t)
+		fluid_velocity = self.flow.velocity(x, z)
 
 		# compute terms on the RHS of the M-R equation
 		stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
@@ -127,7 +149,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		Array
 			The components of the particle's position and velocity.
 		"""
-		# initialize local variables and set initial conditions
+		# initialize local variables
 		R = self.density_ratio
 		St = self.particle.stokes_num
 		delta_t = t[1] - t[0]
@@ -135,43 +157,58 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		num_steps = t.size - 1
 		x = np.empty((t.size, 2))
 		v = np.empty((t.size, 2))
+		u = np.empty((t.size, 2))
+
+		# set initial conditions
 		x[0] = y[:2]
 		v[0] = y[2:]
+		u[0] = self.flow.velocity(x[0, 0], x[0, 1])
+
+		# compute matrices for coefficients
 		alpha = compute_alpha(t.size)
 		if order == 2:
 			beta = compute_beta(t.size, alpha[:, 1])
 		elif order == 3:
 			beta = compute_beta(t.size, alpha[:, 1])
 			gamma = compute_gamma(t.size, beta[:, 2])
+#			print('gamma[4, 8] = ', gamma[4, 8])
 
+		# compute the solutions for each time step
 		for n in tqdm(range(num_steps)):
-			G = -R / St * v
+			w = v - u
+			G = (3 / 2 * R - 1) \
+				   * self.derivative_along_trajectory(v[:, 0], v[:, 1]) \
+				   - 3 / 2 * R * np.transpose(np.array([-w[:, 1], w[:, 0]])) \
+				   - R / St * w
 			sum_term = 0
 			if order == 1 or n == 0:
 				for j in range(n + 1):
-					sum_term += v[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
+					sum_term += w[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
 				x[n + 1] = x[n] + delta_t * v[n]
-				v[n + 1] = (v[n] + delta_t * G[n] - xi * sum_term) \
-								 / (1 + xi * alpha[0, n + 1])
+				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
+				v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
+								 / (1 + xi * alpha[0, n + 1]) + u[n + 1]
 			elif order == 2 or n == 1:
 				for j in range(n + 1):
-					sum_term += v[n - j] * (beta[j + 1, n + 1] - beta[j, n])
+					sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
 				x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
-				v[n + 1] = (v[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
-								 - xi * sum_term) / (1 + xi * beta[0, n + 1])
+				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
+				v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+								 - xi * sum_term) / (1 + xi * beta[0, n + 1]) \
+								 + u[n + 1]
 			else: # order is 3 and n > 1
 				for j in range(n + 1):
-					sum_term += v[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
+					sum_term += w[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
 				x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
 								+ 5 * v[n - 2])
-				v[n + 1] = (v[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
+				v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
 								 + 5 * G[n - 2]) - xi * sum_term) \
-								 / (1 + xi * gamma[0, n + 1])
+								 / (1 + xi * gamma[0, n + 1]) + u[n + 1]
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-	def run_numerics(self, include_history, order=3,
-					 x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50,
-					 delta_t=5e-3, method='BDF'):
+	def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
+					 zdot_0=1, num_periods=50, delta_t=5e-3, method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -212,7 +249,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		# initialize parameters for the solver
 		t_final = num_periods * self.flow.period
 		t_span = (0, t_final)
-		t_eval = np.arange(0, t_final, delta_t)
+		t_eval = np.arange(0, t_final + delta_t, delta_t)
 		y = [x_0, z_0, xdot_0, zdot_0]
 
 		# run computations
@@ -304,7 +341,7 @@ def compute_beta(size, alpha):
 	# n = 3
 	arr[0, 3] = 4 / 5 * np.sqrt(2) 
 	arr[1, 3] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
-	arr[2, 3] = -(8 / 5) * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+	arr[2, 3] = -8 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
 	arr[3, 3] = 4 / 5 * np.sqrt(3) - 4 / 5 * np.sqrt(2)
 
 	# n >= 4
@@ -376,20 +413,20 @@ def compute_gamma(size, beta):
 	# n = 4
 	arr[0][4] = 244 / 315 * np.sqrt(2)
 	arr[1][4] = 1888 / 315 - 976 / 315 * np.sqrt(2)
-	arr[2][4] = -(656 / 105) + 488 / 105 * np.sqrt(2)
+	arr[2][4] = -656 / 105 + 488 / 105 * np.sqrt(2)
 	arr[3][4] = 544 / 105 - 976 / 315 * np.sqrt(2)
-	arr[4][4] = -(292 / 315) + 244 / 315 * np.sqrt(2)
+	arr[4][4] = -292 / 315 + 244 / 315 * np.sqrt(2)
 
 	# n = 5
 	arr[0][5] = 244 / 315 * np.sqrt(2)
 	arr[1][5] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
 	arr[2][5] = 500 / 63 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 488 / 105 \
 					* np.sqrt(2)
-	arr[3][5] = -(290 / 21) * np.sqrt(5) + 724 / 35 * np.sqrt(3) - 976 / 315 \
-							* np.sqrt(2)
+	arr[3][5] = -290 / 21 * np.sqrt(5) + 724 / 35 * np.sqrt(3) - 976 / 315 \
+					 * np.sqrt(2)
 	arr[4][5] = 220 / 21 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 244 / 315 \
 					* np.sqrt(2)
-	arr[5][5] = -(164 / 63) * np.sqrt(5) + 362 / 105 * np.sqrt(3)
+	arr[5][5] = -164 / 63 * np.sqrt(5) + 362 / 105 * np.sqrt(3)
 
 	# n = 6
 	arr[0][6] = 244 / 315 * np.sqrt(2)
@@ -397,10 +434,10 @@ def compute_gamma(size, beta):
 	arr[2][6] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 488 / 105 * np.sqrt(2)
 	arr[3][6] = 344 / 21 * np.sqrt(6) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
 					- 976 / 315 * np.sqrt(2)
-	arr[4][6] = -(1188 / 35) * np.sqrt(6) + 11168 / 105 - 1448 / 105 \
-							 * np.sqrt(3) + 244 / 315 * np.sqrt(2)
+	arr[4][6] = -1188 / 35 * np.sqrt(6) + 11168 / 105 - 1448 / 105 \
+						   * np.sqrt(3) + 244 / 315 * np.sqrt(2)
 	arr[5][6] = 936 / 35 * np.sqrt(6) - 22336 / 315 + 362 / 105 * np.sqrt(3)
-	arr[6][6] = -(754 / 105) * np.sqrt(6) + 5584 / 315
+	arr[6][6] = -754 / 105 * np.sqrt(6) + 5584 / 315
 
 	# n >= 7
 	arr[0][7:] = 244 / 315 * np.sqrt(2)

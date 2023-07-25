@@ -18,8 +18,6 @@ class Wave(flow.Flow):
 			The amplitude of the wave *A*.
 		wavelength : float
 			The wavelength lambda.
-		history : list (array-like)
-			The history of the velocity of the flow **u**.
 		wavenum : float
 			The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
 		gravity : float
