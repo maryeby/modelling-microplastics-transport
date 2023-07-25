@@ -171,7 +171,6 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		elif order == 3:
 			beta = compute_beta(t.size, alpha[:, 1])
 			gamma = compute_gamma(t.size, beta[:, 2])
-#			print('gamma[4, 8] = ', gamma[4, 8])
 
 		# compute the solutions for each time step
 		for n in tqdm(range(num_steps)):
