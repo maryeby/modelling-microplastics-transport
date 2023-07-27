@@ -441,7 +441,7 @@ def compute_gamma(size, beta):
 	# n >= 7
 	arr[0][7:] = 244 / 315 * np.sqrt(2)
 	arr[1][7:] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
-	arr[2][7:] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 448 / 105 * np.sqrt(2)
+	arr[2][7:] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 488 / 105 * np.sqrt(2)
 	arr[3][7:] = 1130 / 63 * np.sqrt(5) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
 					  - 976 / 315 * np.sqrt(2)
 
