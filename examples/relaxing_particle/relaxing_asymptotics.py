@@ -24,7 +24,7 @@ def main():
 	heavy_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_heavy)
 
 	# get time t from numerics
-	numerics = pd.read_csv('data/relaxing_numerics.csv')	
+	numerics = pd.read_csv('../data/relaxing_numerics.csv')	
 	t = numerics['t'][1:]
 
 	# compute asymptotics
@@ -35,7 +35,7 @@ def main():
 	# store results and write to a csv file
 	asymptotics = pd.DataFrame({'t': t, 'light': light, 'neutral': neutral,
 								'heavy': heavy})
-	asymptotics.to_csv('data/relaxing_asymptotics.csv',
+	asymptotics.to_csv('../data/relaxing_asymptotics.csv',
 					   index=False)
 if __name__ == '__main__':
 	main()

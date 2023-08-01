@@ -10,9 +10,9 @@ def main():
 	particle in a quiescent flow.
 	"""
 	# read data
-	numerics = pd.read_csv('data/relaxing_numerics.csv')
-	asymptotics = pd.read_csv('data/relaxing_asymptotics.csv')
-	prasath = pd.read_csv('data/prasath_fig4.csv')
+	numerics = pd.read_csv('../data/relaxing_numerics.csv')
+	asymptotics = pd.read_csv('../data/relaxing_asymptotics.csv')
+	prasath = pd.read_csv('../data/prasath_fig4.csv')
 
 	# generate plots
 	plt.figure()

@@ -1,9 +1,9 @@
 import sys
 sys.path.append('/home/s2182576/Documents/academia/thesis/'
 				+ 'modelling-microplastics-transport')
-import time
 import numpy as np
 import scipy.integrate as integrate
+from time import time
 from tqdm import tqdm
 from models import rotating_flow
 from transport_framework import particle, transport_system
@@ -284,8 +284,8 @@ def compute_alpha(size):
 	Array
 		The matrix containing the values of the coefficient alpha.
 	"""
-	print('Computing matrix of alpha coefficients...', end='')
-	start = time.time()
+	print('Computing matrix of alpha coefficients...', end='', flush=True)
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[0, 1:] = 4 / 3 # j == 0
@@ -303,8 +303,8 @@ def compute_alpha(size):
 				 + (3 / 2) * np.sqrt(n[0, 1:]))
 	diagonal = np.insert(diagonal, 0, 0)
 	np.fill_diagonal(arr, diagonal)
-	finish = time.time()
-	print('done.\t\t{:.2f}s'.format(finish - start))
+	finish = time()
+	print('done.\t\t{:5.2f}s'.format(finish - start))
 	return np.triu(arr)
 
 def compute_beta(size, alpha):
@@ -325,8 +325,8 @@ def compute_beta(size, alpha):
 	Array
 		The matrix containing the values of the coefficient beta.
 	"""
-	print('Computing matrix of beta coefficients...', end='')
-	start = time.time()
+	print('Computing matrix of beta coefficients...', end='', flush=True)
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[:, 0] = 0 	  # n = 0 (should never be called for beta)
@@ -374,8 +374,8 @@ def compute_beta(size, alpha):
 			 - 3 * j[3:-2, 5:] ** (3 / 2) + (j[3:-2, 5:] - 1) ** (3 / 2))
 	vals = vals[np.triu(vals) != 0]
 	np.place(arr, mask, vals)
-	finish = time.time()
-	print('done.\t\t{:.2f}s'.format(finish - start))
+	finish = time()
+	print('done.\t\t{:5.2f}s'.format(finish - start))
 	return np.triu(arr)
 
 def compute_gamma(size, beta):
@@ -396,8 +396,8 @@ def compute_gamma(size, beta):
 	Array
 		The matrix containing the values of the coefficient gamma.
 	"""
-	print('Computing matrix of gamma coefficients...', end='')
-	start = time.time()
+	print('Computing matrix of gamma coefficients...', end='', flush=True)
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[:, :2] = 0		# n = 0 and n = 1 (should never be called for gamma)
@@ -497,6 +497,6 @@ def compute_gamma(size, beta):
 			  - (j[4:-4, 8:] - 2) ** (3 / 2) - 6 * j[4:-4, 8:] ** (3 / 2))
 	vals = vals[np.triu(vals) != 0]
 	np.place(arr, mask, vals)
-	finish = time.time()
-	print('done.\t\t{:.2f}s'.format(finish - start))
+	finish = time()
+	print('done.\t\t{:5.2f}s'.format(finish - start))
 	return np.triu(arr)

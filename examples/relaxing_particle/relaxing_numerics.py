@@ -74,7 +74,7 @@ def main():
 
 	# write results to data file
 	numerics = pd.DataFrame(my_dict)
-	numerics.to_csv('data/relaxing_numerics.csv', index=False)
+	numerics.to_csv('../data/relaxing_numerics.csv', index=False)
 		
 if __name__ == '__main__':
 	main()
