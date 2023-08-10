@@ -2,6 +2,7 @@ import sys
 sys.path.append('/home/s2182576/Documents/academia/thesis/'
 				+ 'modelling-microplastics-transport')
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
@@ -16,7 +17,7 @@ def main():
 	rel_error = pd.read_csv('../data/rotating_rel_error.csv')
 	global_error = pd.read_csv('../data/rotating_global_error.csv')
 	computation_times = pd.read_csv('../data/rotating_computation_times.csv')
-	daitche = pd.read_csv('../data/daitche_fig3a.csv')
+	daitche = pd.read_csv('../data/daitche_fig3.csv')
 
 #	trajectory_numerics = numerics
 #	trajectory_analytics = analytics
@@ -59,13 +60,16 @@ def main():
 	plt.yticks(fontsize=14)
 	plt.yscale('log')
 	plt.minorticks_on()
-#	plt.axis([0, 100, 1e-7, 1e0])
+	plt.axis([0, 100, 1e-7, 1e0])
 
-	plt.plot('t', 'e_rel1', 'o--k', mfc='none', data=rel_error,
+	plt.plot('t1', 'rel_error1', c='grey', data=daitche, label='')
+	plt.plot('t2', 'rel_error2', c='grey', data=daitche, label='')
+	plt.plot('t3', 'rel_error3', c='grey', data=daitche, label='')
+	plt.plot('t', 'e_rel1', '--k', mfc='none', data=rel_error,
 			 label='first order')
-	plt.plot('t', 'e_rel2', 'x-.k', data=rel_error,
+	plt.plot('t', 'e_rel2', '-.k', data=rel_error,
 			 label='second order')
-	plt.plot('t', 'e_rel3', '^:k', mfc='none', data=rel_error,
+	plt.plot('t', 'e_rel3', ':k', mfc='none', data=rel_error,
 			 label='third order')
 	plt.legend(fontsize=14)
 	plt.tight_layout()
@@ -80,7 +84,12 @@ def main():
 	plt.xscale('log')
 	plt.yscale('log')
 	plt.minorticks_on()
-#	plt.axis([1e-5, 1e-1, 1e-11, 1e3])
+	plt.axis([1e-3, 1e-1, 1e-11, 1e3])
+	h_scale = np.linspace(2e-3, 5e-2, 10)
+
+	plt.plot(h_scale, h_scale, c='grey', ls='--', label=r'~$h$')
+	plt.plot(h_scale, h_scale ** 2, c='grey', ls='-.', label=r'~$h^2$')
+	plt.plot(h_scale, h_scale ** 3, c='grey', ls=':', label='~$h^3$')
 	plt.plot('delta_t', 'global_error1', '.--k', data=global_error,
 			 label='first order')
 	plt.plot('delta_t', 'global_error2', '.-.k', data=global_error,
