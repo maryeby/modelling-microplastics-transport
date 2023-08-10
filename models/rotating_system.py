@@ -154,6 +154,14 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		St = self.particle.stokes_num
 		delta_t = t[1] - t[0]
 		xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+
+		# compute the number of time steps and create arrays to store solutions
+		mini_steps = 2 * int(np.sqrt(2) / delta_t)
+		mini_step = delta_t / (mini_steps / 2)
+		mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
+		mini_x = np.empty((mini_steps + 1, 2)) 
+		mini_v = np.empty((mini_steps + 1, 2))
+		mini_u = np.empty((mini_steps + 1, 2))
 		num_steps = t.size - 1
 		x = np.empty((t.size, 2))
 		v = np.empty((t.size, 2))
@@ -163,17 +171,94 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		x[0] = y[:2]
 		v[0] = y[2:]
 		u[0] = self.flow.velocity(x[0, 0], x[0, 1])
+		mini_x[0] = x[0]
+		mini_v[0] = v[0]
+		mini_u[0] = u[0]
 
-		# compute matrices for coefficients
-		alpha = compute_alpha(t.size)
-		if order == 2:
+		# compute matrices containing the values of alpha, beta, and gamma
+		if order == 1:
+			mini_alpha = compute_alpha(mini_steps + 1)
+			alpha = compute_alpha(t.size)
+		elif order == 2:
+			mini_alpha = compute_alpha(2)
+			mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1]) 
+			alpha = mini_alpha
 			beta = compute_beta(t.size, alpha[:, 1])
-		elif order == 3:
-			beta = compute_beta(t.size, alpha[:, 1])
+		else: # order == 3
+			mini_alpha = compute_alpha(2)
+			mini_beta = compute_beta(3, mini_alpha[:, 1]) 
+			mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2]) 
+			alpha = mini_alpha
+			beta = mini_beta
 			gamma = compute_gamma(t.size, beta[:, 2])
 
-		# compute the solutions for each time step
-		for n in tqdm(range(num_steps)):
+		# compute solutions for the first two intervals using finer time steps
+		for n_prime in range(mini_steps):
+			mini_w = mini_v - mini_u
+			G = (3 / 2 * R - 1) \
+				* self.derivative_along_trajectory(mini_v[:, 0], mini_v[:, 1]) \
+				- 3 / 2 * R \
+				* np.transpose(np.array([-mini_w[:, 1], mini_w[:, 0]])) \
+				- R / St * mini_w
+			sum_term = 0
+			if order == 1 or n_prime == 0:
+				for j in range(n_prime + 1):
+					sum_term += mini_w[n_prime - j] \
+							  * (mini_alpha[j + 1, n_prime + 1] \
+							  - mini_alpha[j, n_prime])
+				mini_x[n_prime + 1] = mini_x[n_prime] + mini_step \
+													  * mini_v[n_prime]
+				mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
+														 mini_x[n_prime + 1, 1])
+				mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step * G[n_prime]\
+										- mini_xi * sum_term) \
+								 		/ (1 + mini_xi
+										* mini_alpha[0, n_prime + 1]) \
+										+ mini_u[n_prime + 1]
+			elif order == 2 or n_prime == 1:
+				for j in range(n_prime + 1):
+					sum_term += mini_w[n_prime - j] \
+							  * (mini_beta[j + 1, n_prime + 1]
+							  - mini_beta[j, n_prime])
+				mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 2 \
+										* (3 * mini_v[n_prime]
+										- mini_v[n_prime - 1])
+				mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
+														 mini_x[n_prime + 1, 1])
+				mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
+										* (3 * G[n_prime] - G[n_prime - 1])
+								 		- mini_xi * sum_term) / (1 + mini_xi
+										* mini_beta[0, n_prime + 1]) \
+								 		+ mini_u[n_prime + 1]
+			else: # order is 3 and n_prime > 1
+				for j in range(n_prime + 1):
+					sum_term += mini_w[n_prime - j] \
+							  * (mini_gamma[j + 1, n_prime + 1] \
+							  - mini_gamma[j, n_prime])
+				mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 12 \
+										* (23 * mini_v[n_prime]
+										- 16 * mini_v[n_prime - 1]
+										+ 5 * mini_v[n_prime - 2])
+				mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
+														 mini_x[n_prime + 1, 1])
+				mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
+										* (23 * G[n_prime] - 16 * G[n_prime - 1]
+								 		+ 5 * G[n_prime - 2]) \
+										- mini_xi * sum_term) \
+								 		/ (1 + mini_xi
+										* mini_gamma[0, n_prime + 1]) \
+										+ mini_u[n_prime + 1]
+
+		# store solutions for the first two intervals
+		x[1] = mini_x[int(mini_steps / 2)]
+		v[1] = mini_v[int(mini_steps / 2)]
+		u[1] = mini_u[int(mini_steps / 2)]
+		x[2] = mini_x[-1]
+		v[2] = mini_v[-1]
+		u[2] = mini_u[-1]
+
+		# compute solutions for the remaining intervals
+		for n in tqdm(range(2, num_steps)):
 			w = v - u
 			G = (3 / 2 * R - 1) \
 				   * self.derivative_along_trajectory(v[:, 0], v[:, 1]) \
@@ -287,24 +372,31 @@ def compute_alpha(size):
 	print('Computing matrix of alpha coefficients...', end='', flush=True)
 	start = time()
 	arr = np.ones((size, size))
-	j, n = np.indices(arr.shape)
-	arr[0, 1:] = 4 / 3 # j == 0
+	j, n = np.indices(arr.shape, dtype='float128')
+
+	# initialize variables for frequently used values
+	coeff = np.float128(4) / np.float128(3)
+	exp = np.float128(3) / np.float128(2)
+	one = np.float128(1)
+
+	# j == 0
+	arr[0, 1:] = coeff
 
 	# 0 < j < n
 	mask = np.where(np.triu(arr, k=1), True, False)
 	mask[0] = False
-	vals = (4 / 3) * ((j[1:-1] - 1) ** (3 / 2) + (j[1:-1] + 1) ** (3 / 2)
-			  - 2 * j[1:-1] ** (3 / 2))
+	vals = (coeff) * ((j[1:-1] - one) ** exp + (j[1:-1] + one) ** exp
+				   - np.float128(2) * j[1:-1] ** exp)
 	vals = vals[np.triu(vals, k=2) != 0]
-	np.place(arr, mask, vals)
+	np.place(arr, mask, vals.astype('float64'))
 
 	# j == n
-	diagonal = 4 / 3 * ((n[0, 1:] - 1) ** (3 / 2) - n[0, 1:] ** (3 / 2)
-				 + (3 / 2) * np.sqrt(n[0, 1:]))
+	diagonal = coeff * ((n[0, 1:] - one) ** exp - n[0, 1:] ** exp
+					 + exp * np.sqrt(n[0, 1:]))
 	diagonal = np.insert(diagonal, 0, 0)
-	np.fill_diagonal(arr, diagonal)
+	np.fill_diagonal(arr, diagonal.astype('float64'))
 	finish = time()
-	print('done.\t\t{:5.2f}s'.format(finish - start))
+	print('done.\t\t{:7.2f}s'.format(finish - start))
 	return np.triu(arr)
 
 def compute_beta(size, alpha):
@@ -328,54 +420,73 @@ def compute_beta(size, alpha):
 	print('Computing matrix of beta coefficients...', end='', flush=True)
 	start = time()
 	arr = np.ones((size, size))
-	j, n = np.indices(arr.shape)
-	arr[:, 0] = 0 	  # n = 0 (should never be called for beta)
-	arr[:, 1] = alpha # n = 1
+	j, n = np.indices(arr.shape, dtype='float128')
+	arr[:, 0] = 0		# n = 0 (should never be called for beta)
+	arr[:2, 1] = alpha	# n = 1
+
+	root2 = np.sqrt(np.float128(2))
+	root3 = np.sqrt(np.float128(3))
 
 	# n = 2
-	arr[0, 2] = 12 / 15 * np.sqrt(2)
-	arr[1, 2] = 16 / 15 * np.sqrt(2)
-	arr[2, 2] = 2 / 15 * np.sqrt(2)
+	arr[0, 2] = np.float128(12) / np.float128(15) * root2
+	arr[1, 2] = np.float128(16) / np.float128(15) * root2
+	arr[2, 2] = np.float128(2) / np.float128(15) * root2
 
-	# n = 3
-	arr[0, 3] = 4 / 5 * np.sqrt(2) 
-	arr[1, 3] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
-	arr[2, 3] = -8 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
-	arr[3, 3] = 4 / 5 * np.sqrt(3) - 4 / 5 * np.sqrt(2)
+	if 3 < size:
+		coeff1 = np.float128(4) / np.float128(5)
+		coeff2 = np.float128(12) / np.float128(5)
+		coeff3 = np.float128(8) / np.float128(15)
+		exp1 = np.float128(3) / np.float128(2)
+		exp2 = np.float128(5) / np.float128(2)
+		one = np.float128(1)
+		two = np.float128(2)
+		three = np.float128(3)
 
-	# n >= 4
-	arr[0, 4:] = 4 / 5 * np.sqrt(2)
-	arr[1, 4:] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
-	arr[2, 4:] = 176 / 15 - 42 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
-	
-	# j = n - 1
-	mask = np.where(np.eye(size, k=1), True, False)
-	mask[:, :4] = False
-	vals = 8 / 15 * (-2 * n[0, 4:] ** (5 / 2) + 3 * (n[0, 4:] - 1) ** (5 / 2)
-			 - (n[0, 4:] - 2) ** (5 / 2)) + 2 / 3 * (4 * n[0, 4:] ** (3 / 2)
-			 - 3 * (n[0, 4:] - 1) ** (3 / 2) + (n[0, 4:] - 2) ** (3 / 2))
-	np.place(arr, mask, vals)
+		# n = 3
+		arr[0, 3] = coeff1 * root2 
+		arr[1, 3] = np.float128(14) / np.float128(5) * root3 - coeff2 * root2
+		arr[2, 3] = -np.float128(8) / np.float128(5) * root3 + coeff2 * root2
+		arr[3, 3] = coeff1 * root3 - coeff1 * root2
 
-	# j = n
-	mask = np.where(np.eye(size), True, False)
-	mask[:, :4] = False
-	vals = 8 / 15 * (n[0, 4:] ** (5 / 2) - (n[0, 4:] - 1) ** (5 / 2)) \
-			 + 2 / 3 * (-3 * n[0, 4:] ** (3 / 2) 
-			 + (n[0, 4:] - 1) ** (3 / 2)) + 2 * np.sqrt(n[0, 4:])
-	np.place(arr, mask, vals)
+		# n >= 4
+		arr[0, 4:] = arr[0, 3]
+		arr[1, 4:] = arr[1, 3]
+		arr[2, 4:] = np.float128(176) / np.float128(15) \
+						- np.float128(42) / np.float128(5) * root3 \
+						+ coeff2 * root2
+		# j = n - 1
+		mask = np.where(np.eye(size, k=1), True, False)
+		mask[:, :4] = False
+		vals = coeff3 * (-two * n[0, 4:] ** exp2
+					  + three * (n[0, 4:] - one) ** exp2
+					  - (n[0, 4:] - two) ** exp2) \
+					  + two / three * (np.float128(4) * n[0, 4:] ** exp1 
+					  - three * (n[0, 4:] - one) ** exp1
+					  + (n[0, 4:] - two) ** exp1)
+		np.place(arr, mask, vals.astype('float64'))
 
-	# 2 < j < n - 1
-	mask = np.where(np.triu(arr) == 1, True, False)
-	vals = 8 / 15 * ((j[3:-2, 5:] + 2) ** (5 / 2) \
-			 - 3 * (j[3:-2, 5:] + 1) ** (5 / 2)
-			 + 3 * j[3:-2, 5:] ** (5 / 2) - (j[3:-2, 5:] - 1) ** (5 / 2)) \
-			 + 2 / 3 * (-(j[3:-2, 5:] + 2) ** (3 / 2) \
-			 + 3 * (j[3:-2, 5:] + 1) ** (3 / 2) \
-			 - 3 * j[3:-2, 5:] ** (3 / 2) + (j[3:-2, 5:] - 1) ** (3 / 2))
-	vals = vals[np.triu(vals) != 0]
-	np.place(arr, mask, vals)
+		# j = n
+		mask = np.where(np.eye(size), True, False)
+		mask[:, :4] = False
+		vals = coeff3 * (n[0, 4:] ** exp2 - (n[0, 4:] - one) ** exp2) \
+					  + two / three * (-three * n[0, 4:] ** exp1
+					  + (n[0, 4:] - one) ** exp1) + two * np.sqrt(n[0, 4:])
+		np.place(arr, mask, vals.astype('float64'))
+
+		# 2 < j < n - 1
+		mask = np.where(np.triu(arr) == 1, True, False)
+		vals = coeff3 * ((j[3:-2, 5:] + two) ** exp2
+					  - three * (j[3:-2, 5:] + one) ** exp2
+					  + three * j[3:-2, 5:] ** exp2
+					  - (j[3:-2, 5:] - one) ** exp2) \
+					  + two / three * (-(j[3:-2, 5:] + two) ** exp1
+					  + three * (j[3:-2, 5:] + one) ** exp1
+					  - three * j[3:-2, 5:] ** exp1
+					  + (j[3:-2, 5:] - one) ** exp1)
+		vals = vals[np.triu(vals) != 0]
+		np.place(arr, mask, vals.astype('float64'))
 	finish = time()
-	print('done.\t\t{:5.2f}s'.format(finish - start))
+	print('done.\t\t{:7.2f}s'.format(finish - start))
 	return np.triu(arr)
 
 def compute_gamma(size, beta):
@@ -401,102 +512,148 @@ def compute_gamma(size, beta):
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[:, :2] = 0		# n = 0 and n = 1 (should never be called for gamma)
-	arr[:, 2] = beta	# n = 2
+	arr[:3, 2] = beta	# n = 2
 	
+	coeff = np.float128(16) / np.float128(105)
+	exp1 = np.float128(3) / np.float128(2)
+	exp2 = np.float128(5) / np.float128(2)
+	exp3 = np.float128(7) / np.float128(2)
+	one = np.float128(1)
+	two = np.float128(2)
+	three = np.float128(3)
+	four = np.float128(4)
+	five = np.float128(5)
+	six = np.float128(6)
+	eight = np.float128(8)
+	nine = np.float128(9)
+	root2 = np.sqrt(two)
+	root3 = np.sqrt(three)
+	root5 = np.sqrt(five)
+	root6 = np.sqrt(six)
+
 	# n = 3
-	arr[0][3] = 68 / 105 * np.sqrt(3)
-	arr[1][3] = 6 / 7 * np.sqrt(3)
-	arr[2][3] = 12 / 35 * np.sqrt(3)
-	arr[3][3] = 16 / 105 * np.sqrt(3)
+	arr[0, 3] = np.float128(68) / np.float128(105) * root3
+	arr[1, 3] = np.float128(6) / np.float128(7) * root3
+	arr[2, 3] = np.float128(12) / np.float128(35) * root3
+	arr[3, 3] = np.float128(16) / np.float128(105) * root3
 
 	# n = 4
-	arr[0][4] = 244 / 315 * np.sqrt(2)
-	arr[1][4] = 1888 / 315 - 976 / 315 * np.sqrt(2)
-	arr[2][4] = -656 / 105 + 488 / 105 * np.sqrt(2)
-	arr[3][4] = 544 / 105 - 976 / 315 * np.sqrt(2)
-	arr[4][4] = -292 / 315 + 244 / 315 * np.sqrt(2)
+	arr[0, 4] = np.float128(244) / np.float128(315) * root2
+	arr[1, 4] = np.float128(1888) / np.float128(315) \
+				- np.float128(976) / np.float128(315) * root2
+	arr[2, 4] = -np.float128(656) / np.float128(105) \
+				+ np.float128(488) / np.float128(105) * root2
+	arr[3, 4] = np.float128(544) / np.float128(105) \
+				- np.float128(976) / np.float128(315) * root2
+	arr[4, 4] = -np.float128(292) / np.float128(315) \
+				+ np.float128(244) / np.float128(315) * root2
 
 	# n = 5
-	arr[0][5] = 244 / 315 * np.sqrt(2)
-	arr[1][5] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
-	arr[2][5] = 500 / 63 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 488 / 105 \
-					* np.sqrt(2)
-	arr[3][5] = -290 / 21 * np.sqrt(5) + 724 / 35 * np.sqrt(3) - 976 / 315 \
-					 * np.sqrt(2)
-	arr[4][5] = 220 / 21 * np.sqrt(5) - 1448 / 105 * np.sqrt(3) + 244 / 315 \
-					* np.sqrt(2)
-	arr[5][5] = -164 / 63 * np.sqrt(5) + 362 / 105 * np.sqrt(3)
+	arr[0, 5] = arr[0, 4]
+	arr[1, 5] = np.float128(362) / np.float128(105) * root3 \
+				- np.float128(976) / np.float128(315) * root2
+	arr[2, 5] = np.float128(500) / np.float128(63) * root5 \
+				- np.float128(1448) / np.float128(105) * root3 \
+				+ np.float128(488) / np.float128(105) * root2
+	arr[3, 5] = -np.float128(290) / np.float128(21) * root5 \
+				+ np.float128(724) / np.float128(35) * root3 \
+				- np.float128(976) / np.float128(315) * root2
+	arr[4, 5] = np.float128(220) / np.float128(21) * root5 \
+				- np.float128(1448) / np.float128(105) * root3 \
+				+ np.float128(244) / np.float128(315) * root2
+	arr[5, 5] = -np.float128(164) / np.float128(63) * root5 \
+				+ np.float128(362) / np.float128(105) * root3
 
 	# n = 6
-	arr[0][6] = 244 / 315 * np.sqrt(2)
-	arr[1][6] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
-	arr[2][6] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 488 / 105 * np.sqrt(2)
-	arr[3][6] = 344 / 21 * np.sqrt(6) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
-					- 976 / 315 * np.sqrt(2)
-	arr[4][6] = -1188 / 35 * np.sqrt(6) + 11168 / 105 - 1448 / 105 \
-						   * np.sqrt(3) + 244 / 315 * np.sqrt(2)
-	arr[5][6] = 936 / 35 * np.sqrt(6) - 22336 / 315 + 362 / 105 * np.sqrt(3)
-	arr[6][6] = -754 / 105 * np.sqrt(6) + 5584 / 315
+	arr[0, 6] = arr[0, 4]
+	arr[1, 6] = arr[1, 5]
+	arr[2, 6] = np.float128(5584) / np.float128(315) \
+				- np.float128(1448) / np.float128(105) * root3 \
+				+ np.float128(488) / np.float128(105) * root2
+	arr[3, 6] = np.float128(344) / np.float128(21) * root6 \
+				- np.float128(22336) / np.float128(315) \
+				+ np.float128(724) / np.float128(35) * root3 \
+				- np.float128(976) / np.float128(315) * root2
+	arr[4, 6] = -np.float128(1188) / np.float128(35) * root6 \
+				+ np.float128(11168) / np.float128(105) \
+				- np.float128(1448) / np.float128(105) * root3 \
+				+ np.float128(244) / np.float128(315) * root2
+	arr[5, 6] = np.float128(936) / np.float128(35) * root6 \
+				- np.float128(22336) / np.float128(315) \
+				+ np.float128(362) / np.float128(105) * root3
+	arr[6, 6] = -np.float128(754) / np.float128(105) * root6 \
+				+ np.float128(5584) / np.float128(315)
 
 	# n >= 7
-	arr[0][7:] = 244 / 315 * np.sqrt(2)
-	arr[1][7:] = 362 / 105 * np.sqrt(3) - 976 / 315 * np.sqrt(2)
-	arr[2][7:] = 5584 / 315 - 1448 / 105 * np.sqrt(3) + 488 / 105 * np.sqrt(2)
-	arr[3][7:] = 1130 / 63 * np.sqrt(5) - 22336 / 315 + 724 / 35 * np.sqrt(3) \
-					  - 976 / 315 * np.sqrt(2)
+	arr[0, 7:] = arr[0, 4]
+	arr[1, 7:] = arr[1, 5]
+	arr[2, 7:] = arr[2, 6]
+	arr[3, 7:] = np.float128(1130) / np.float128(63) * root5 \
+					- np.float128(22336) / np.float128(315) \
+					+ np.float128(724) / np.float128(35) * root3 \
+					- np.float128(976) / np.float128(315) * root2
 
 	# j = n - 3
 	mask = np.where(np.eye(size, k=3), True, False)
 	mask[:, :7] = False
-	vals = 16 / 105 * (n[0, 7:] ** (7 / 2) - 4 * (n[0, 7:] - 2) ** (7 / 2)
-			  + 6 * (n[0, 7:] - 3) ** (7 / 2) - 4 * (n[0, 7:] - 4) ** (7 / 2)
-			  + (n[0, 7:] - 5) ** (7 / 2)) - 8 / 15 * n[0, 7:] ** (5 / 2) \
-			  + 4 / 9 * n[0, 7:] ** (3 / 2) + 8 / 9 * (n[0, 7:] - 2) ** (3 / 2)\
-			  - 4 / 3 * (n[0, 7:] - 3) ** (3 / 2) \
-			  + 8 / 9 * (n[0, 7:] - 4) ** (3 / 2) \
-			  - 2 / 9 * (n[0, 7:] - 5) ** (3 / 2)
-	np.place(arr, mask, vals)
+	vals = coeff * (n[0, 7:] ** exp3 - four * (n[0, 7:] - two) ** exp3
+				 + six * (n[0, 7:] - three) ** exp3
+				 - four * (n[0, 7:] - four) ** exp3
+			  	 + (n[0, 7:] - five) ** exp3) \
+				 - eight / np.float128(15) * n[0, 7:] ** exp2 \
+				 + four / nine * n[0, 7:] ** exp1 \
+				 + eight / nine * (n[0, 7:] - two) ** exp1 \
+				 - four / three * (n[0, 7:] - three) ** exp1 \
+				 + eight / nine * (n[0, 7:] - four) ** exp1 \
+				 - two / nine * (n[0, 7:] - five) ** exp1
+	np.place(arr, mask, vals.astype('float64'))
 
 	# j = n - 2
 	mask = np.where(np.eye(size, k=2), True, False)
 	mask[:, :7] = False
-	vals = 16 / 105 * ((n[0, 7:] - 4) ** (7 / 2) - 4 * (n[0, 7:] - 3) ** (7 / 2)
-			  + 6 * (n[0, 7:] - 2) ** (7 / 2) - 3 * n[0, 7:] ** (7 / 2)) \
-			  + 32 / 15 * n[0, 7:] ** (5 / 2) - 2 * n[0, 7:] ** (3 / 2) \
-			  - 4 / 3 * (n[0, 7:] - 2) ** (3 / 2) \
-			  + 8 / 9 * (n[0, 7:] - 3) ** (3 / 2) \
-			  - 2 / 9 * (n[0, 7:] - 4) ** (3 / 2)
-	np.place(arr, mask, vals)
+	vals = coeff * ((n[0, 7:] - four) ** exp3 
+				 - four * (n[0, 7:] - three) ** exp3
+				 + six * (n[0, 7:] - two) ** exp3 - three * n[0, 7:] ** exp3) \
+				 + np.float128(32) / np.float128(15) * n[0, 7:] ** exp2 \
+				 - two * n[0, 7:] ** exp1 \
+				 - four / three * (n[0, 7:] - two) ** exp1 \
+			  	 + eight / nine * (n[0, 7:] - three) ** exp1 \
+				 - two / nine * (n[0, 7:] - four) ** exp1
+	np.place(arr, mask, vals.astype('float64'))
 
 	# j = n - 1
 	mask = np.where(np.eye(size, k=1), True, False)
 	mask[:, :7] = False
-	vals = 16 / 105 * (3 * n[0, 7:] ** (7 / 2) - 4 * (n[0, 7:] - 2) ** (7 / 2)
-			  + (n[0, 7:] - 3) ** (7 / 2)) - 8 / 3 * n[0, 7:] ** (5 / 2) \
-			  + 4 * n[0, 7:] ** (3 / 2) + 8 / 9 * (n[0, 7:] - 2) ** (3 / 2) \
-			  - 2 / 9 * (n[0, 7:] - 3) ** (3 / 2)
-	np.place(arr, mask, vals)
+	vals = coeff * (three * n[0, 7:] ** exp3 - four * (n[0, 7:] - two) ** exp3
+				 + (n[0, 7:] - three) ** exp3) \
+				 - eight / three * n[0, 7:] ** exp2 \
+				 + four * n[0, 7:] ** exp1 \
+				 + eight / nine * (n[0, 7:] - two) ** exp1 \
+			  	 - two / nine * (n[0, 7:] - three) ** exp1
+	np.place(arr, mask, vals.astype('float64'))
 
 	# j = n
 	mask = np.where(np.eye(size), True, False)
 	mask[:, :7] = False
-	vals = 16 / 105 * ((n[0, 7:] - 2) ** (7 / 2) - n[0, 7:] ** (7 / 2)) \
-			  + 16 / 15 * n[0, 7:] ** (5 / 2) - 22 / 9 * n[0, 7:] ** (3 / 2) \
-			  - 2 / 9 * (n[0, 7:] - 2) ** (3 / 2) + 2 * np.sqrt(n[0, 7:])
-	np.place(arr, mask, vals)
+	vals = coeff * ((n[0, 7:] - two) ** exp3 - n[0, 7:] ** exp3) \
+				 + np.float128(16) / np.float128(15) * n[0, 7:] ** exp2 \
+				 - np.float128(22) / nine * n[0, 7:] ** exp1 \
+				 - two / nine * (n[0, 7:] - two) ** exp1 \
+				 + two * np.sqrt(n[0, 7:])
+	np.place(arr, mask, vals.astype('float64'))
 
 	# 3 < j < n - 3
 	mask = np.where(np.triu(arr) == 1, True, False)
-	vals = 16 / 105 * ((j[4:-4, 8:] + 2) ** (7 / 2) \
-			  + (j[4:-4, 8:] - 2) ** (7 / 2)
-			  - 4 * (j[4:-4, 8:] + 1) ** (7 / 2) 
-			  - 4 * (j[4:-4, 8:] - 1) ** (7 / 2) 
-			  + 6 * j[4:-4, 8:] ** (7 / 2)) \
-			  + 2 / 9 * (4 * (j[4:-4, 8:] + 1) ** (3 / 2)
-			  + 4 * (j[4:-4, 8:] - 1) ** (3 / 2) - (j[4:-4, 8:] + 2) ** (3 / 2)
-			  - (j[4:-4, 8:] - 2) ** (3 / 2) - 6 * j[4:-4, 8:] ** (3 / 2))
+	vals = coeff * ((j[4:-4, 8:] + two) ** exp3 + (j[4:-4, 8:] - two) ** exp3
+				 - four * (j[4:-4, 8:] + one) ** exp3
+				 - four * (j[4:-4, 8:] - one) ** exp3
+				 + six * j[4:-4, 8:] ** exp3) \
+				 + two / nine * (four * (j[4:-4, 8:] + one) ** exp1
+				 + four * (j[4:-4, 8:] - one) ** exp1
+				 - (j[4:-4, 8:] + two) ** exp1
+				 - (j[4:-4, 8:] - two) ** exp1 - six * j[4:-4, 8:] ** exp1)
 	vals = vals[np.triu(vals) != 0]
-	np.place(arr, mask, vals)
+	np.place(arr, mask, vals.astype('float64'))
 	finish = time()
-	print('done.\t\t{:5.2f}s'.format(finish - start))
+	print('done.\t\t{:7.2f}s'.format(finish - start))
 	return np.triu(arr)

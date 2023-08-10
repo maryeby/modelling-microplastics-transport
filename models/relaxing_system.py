@@ -127,24 +127,93 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		Array
 			The components of the particle's position and velocity.
 		"""
-		# initialize local variables and set initial conditions
+		# initialize local variables
 		R = self.density_ratio
 		St = self.particle.stokes_num
 		delta_t = t[1] - t[0]
 		xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+
+		# compute the number of time steps and create arrays to store x, v data
+		mini_steps = 2 * int(np.sqrt(2) / delta_t)
+		mini_step = delta_t / (mini_steps / 2)
+		mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
+		mini_x = np.empty((mini_steps + 1, 2))
+		mini_v = np.empty((mini_steps + 1, 2))
 		num_steps = t.size - 1
 		x = np.empty((t.size, 2))
 		v = np.empty((t.size, 2))
-		x[0] = y[:2]
-		v[0] = y[2:]
-		alpha = compute_alpha(t.size)
-		if order == 2:
+		x[0] = y[:2]	# initial particle position
+		v[0] = y[2:]	# initial particle velocity
+		mini_x[0] = x[0]
+		mini_v[0] = v[0]
+
+		# compute matrices containing the values of alpha, beta, and gamma
+		if order == 1:
+			mini_alpha = compute_alpha(mini_steps + 1)
+			alpha = compute_alpha(t.size)
+		elif order == 2:
+			mini_alpha = compute_alpha(2)
+			mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1])
+			alpha = mini_alpha
 			beta = compute_beta(t.size, alpha[:, 1])
-		elif order == 3:
-			beta = compute_beta(t.size, alpha[:, 1])
+		else: # order == 3
+			mini_alpha = compute_alpha(2)
+			mini_beta = compute_beta(3, mini_alpha[:, 1])
+			mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2])
+			alpha = mini_alpha
+			beta = mini_beta
 			gamma = compute_gamma(t.size, beta[:, 2])
 
-		for n in tqdm(range(num_steps)):
+		# compute solutions for the first two intervals using finer time steps
+		for n_prime in range(mini_steps):
+			G = -R / St * mini_v
+			sum_term = 0
+			if order == 1 or n_prime == 0:
+				for j in range(n_prime + 1):
+					sum_term += mini_v[n_prime - j] \
+							  * (mini_alpha[j + 1, n_prime + 1] \
+							  - mini_alpha[j, n_prime])
+				mini_x[n_prime + 1] = x[n_prime] + mini_step * mini_v[n_prime]
+				mini_v[n_prime + 1] = (v[n_prime] + mini_step * G[n_prime]
+												  - mini_xi * sum_term) \
+												  / (1 + mini_xi
+												  * mini_alpha[0, n_prime + 1])
+			elif order == 2 or n_prime == 1:
+				for j in range(n_prime + 1):
+					sum_term += mini_v[n_prime - j] \
+							  * (mini_beta[j + 1, n_prime + 1] 
+							  - mini_beta[j, n_prime])
+				mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 2 \
+										* (3 * mini_v[n_prime]
+										- mini_v[n_prime - 1])
+				mini_v[n_prime + 1] = (mini_v[n_prime] + mini_step / 2 \
+										* (3 * G[n_prime] - G[n_prime - 1]) \
+								 		- mini_xi * sum_term) \
+										/ (1 + mini_xi * mini_beta[0,
+																   n_prime + 1])
+			else: # order is 3 and n_prime > 1
+				for j in range(n_prime + 1):
+					sum_term += mini_v[n_prime - j] \
+							  * (mini_gamma[j + 1, n_prime + 1]
+							  - mini_gamma[j, n_prime])
+				mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 12 \
+										* (23 * mini_v[n_prime]
+										- 16 * mini_v[n_prime - 1]
+										+ 5 * mini_v[n_prime - 2])
+				mini_v[n_prime + 1] = (mini_v[n_prime] + mini_step / 12 \
+										* (23 * G[n_prime] - 16 * G[n_prime - 1]
+								 		+ 5 * G[n_prime - 2]) \
+										- mini_xi * sum_term) \
+								 		/ (1 + mini_xi * gamma[0, n_prime + 1])
+
+		# store solutions for the first two intervals
+		x[1] = mini_x[int(mini_steps / 2)]
+		v[1] = mini_v[int(mini_steps / 2)]
+		x[2] = mini_x[-1]
+		v[2] = mini_v[-1]
+		
+		# compute solutions for the remaining intervals
+		for n in tqdm(range(2, num_steps)):
 			G = -R / St * v
 			sum_term = 0
 			if order == 1 or n == 0:
@@ -293,51 +362,53 @@ def compute_beta(size, alpha):
 	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
-	arr[:, 0] = 0 	  # n = 0 (should never be called for beta)
-	arr[:, 1] = alpha # n = 1
+	arr[:, 0] = 0				# n = 0 (should never be called for beta)
+	arr[:alpha.size, 1] = alpha	# n = 1
 
 	# n = 2
 	arr[0, 2] = 12 / 15 * np.sqrt(2)
 	arr[1, 2] = 16 / 15 * np.sqrt(2)
 	arr[2, 2] = 2 / 15 * np.sqrt(2)
 
-	# n = 3
-	arr[0, 3] = 4 / 5 * np.sqrt(2) 
-	arr[1, 3] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
-	arr[2, 3] = -(8 / 5) * np.sqrt(3) + 12 / 5 * np.sqrt(2)
-	arr[3, 3] = 4 / 5 * np.sqrt(3) - 4 / 5 * np.sqrt(2)
+	if 3 < size:
+		# n = 3
+		arr[0, 3] = 4 / 5 * np.sqrt(2) 
+		arr[1, 3] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+		arr[2, 3] = -(8 / 5) * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+		arr[3, 3] = 4 / 5 * np.sqrt(3) - 4 / 5 * np.sqrt(2)
 
-	# n >= 4
-	arr[0, 4:] = 4 / 5 * np.sqrt(2)
-	arr[1, 4:] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
-	arr[2, 4:] = 176 / 15 - 42 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
+		# n >= 4
+		arr[0, 4:] = 4 / 5 * np.sqrt(2)
+		arr[1, 4:] = 14 / 5 * np.sqrt(3) - 12 / 5 * np.sqrt(2)
+		arr[2, 4:] = 176 / 15 - 42 / 5 * np.sqrt(3) + 12 / 5 * np.sqrt(2)
 	
-	# j = n - 1
-	mask = np.where(np.eye(size, k=1), True, False)
-	mask[:, :4] = False
-	vals = 8 / 15 * (-2 * n[0, 4:] ** (5 / 2) + 3 * (n[0, 4:] - 1) ** (5 / 2)
-			 - (n[0, 4:] - 2) ** (5 / 2)) + 2 / 3 * (4 * n[0, 4:] ** (3 / 2)
-			 - 3 * (n[0, 4:] - 1) ** (3 / 2) + (n[0, 4:] - 2) ** (3 / 2))
-	np.place(arr, mask, vals)
+		# j = n - 1
+		mask = np.where(np.eye(size, k=1), True, False)
+		mask[:, :4] = False
+		vals = 8 / 15 * (-2 * n[0, 4:] ** (5 / 2)
+				 + 3 * (n[0, 4:] - 1) ** (5 / 2) - (n[0, 4:] - 2) ** (5 / 2)) \
+				 + 2 / 3 * (4 * n[0, 4:] ** (3 / 2)
+				 - 3 * (n[0, 4:] - 1) ** (3 / 2) + (n[0, 4:] - 2) ** (3 / 2))
+		np.place(arr, mask, vals)
 
-	# j = n
-	mask = np.where(np.eye(size), True, False)
-	mask[:, :4] = False
-	vals = 8 / 15 * (n[0, 4:] ** (5 / 2) - (n[0, 4:] - 1) ** (5 / 2)) \
-			 + 2 / 3 * (-3 * n[0, 4:] ** (3 / 2) 
-			 + (n[0, 4:] - 1) ** (3 / 2)) + 2 * np.sqrt(n[0, 4:])
-	np.place(arr, mask, vals)
+		# j = n
+		mask = np.where(np.eye(size), True, False)
+		mask[:, :4] = False
+		vals = 8 / 15 * (n[0, 4:] ** (5 / 2) - (n[0, 4:] - 1) ** (5 / 2)) \
+				 + 2 / 3 * (-3 * n[0, 4:] ** (3 / 2) 
+				 + (n[0, 4:] - 1) ** (3 / 2)) + 2 * np.sqrt(n[0, 4:])
+		np.place(arr, mask, vals)
 
-	# 2 < j < n - 1
-	mask = np.where(np.triu(arr) == 1, True, False)
-	vals = 8 / 15 * ((j[3:-2, 5:] + 2) ** (5 / 2) \
-			 - 3 * (j[3:-2, 5:] + 1) ** (5 / 2)
-			 + 3 * j[3:-2, 5:] ** (5 / 2) - (j[3:-2, 5:] - 1) ** (5 / 2)) \
-			 + 2 / 3 * (-(j[3:-2, 5:] + 2) ** (3 / 2) \
-			 + 3 * (j[3:-2, 5:] + 1) ** (3 / 2) \
-			 - 3 * j[3:-2, 5:] ** (3 / 2) + (j[3:-2, 5:] - 1) ** (3 / 2))
-	vals = vals[np.triu(vals) != 0]
-	np.place(arr, mask, vals)
+		# 2 < j < n - 1
+		mask = np.where(np.triu(arr) == 1, True, False)
+		vals = 8 / 15 * ((j[3:-2, 5:] + 2) ** (5 / 2) \
+				 - 3 * (j[3:-2, 5:] + 1) ** (5 / 2)
+				 + 3 * j[3:-2, 5:] ** (5 / 2) - (j[3:-2, 5:] - 1) ** (5 / 2)) \
+				 + 2 / 3 * (-(j[3:-2, 5:] + 2) ** (3 / 2) \
+				 + 3 * (j[3:-2, 5:] + 1) ** (3 / 2) \
+				 - 3 * j[3:-2, 5:] ** (3 / 2) + (j[3:-2, 5:] - 1) ** (3 / 2))
+		vals = vals[np.triu(vals) != 0]
+		np.place(arr, mask, vals)
 	finish = time()
 	print('done.\t\t{:5.2f}s'.format(finish - start))
 	return np.triu(arr)
@@ -365,7 +436,7 @@ def compute_gamma(size, beta):
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[:, :2] = 0		# n = 0 and n = 1 (should never be called for gamma)
-	arr[:, 2] = beta	# n = 2
+	arr[:3, 2] = beta	# n = 2
 	
 	# n = 3
 	arr[0][3] = 68 / 105 * np.sqrt(3)
