@@ -10,7 +10,7 @@ from transport_framework import particle, transport_system
 
 class RotatingTransportSystem(transport_system.TransportSystem):
 	""" 
-	Represents the transport of a relaxing particle in a quiescent fluid flow.
+	Represents the transport of a rigid particle in a rotating fluid flow.
 	"""
 
 	def __init__(self, particle, flow, density_ratio):
