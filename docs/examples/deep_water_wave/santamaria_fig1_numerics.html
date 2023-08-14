@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>modelling-microplastics-transport.examples.sm_figure1_reproduction API documentation</title>
+<title>modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig1_numerics API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>modelling-microplastics-transport.examples.sm_figure1_reproduction</code></h1>
+<h1 class="title">Module <code>modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig1_numerics</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -32,20 +32,21 @@ sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from transport_framework import particle as prt
 from models import dim_deep_water_wave as dim_fl
 from models import deep_water_wave as fl
 from models import santamaria_system as sm
-from models import haller_system as h
+from models import my_system as my
 
 def main():
         &#34;&#34;&#34;
-        This program reproduces Figure 1 from Santamaria et al. (2013), comparing my
-        results (emulating the Santamaria and Haller systems) to Cathal&#39;s results 
-        to ensure our solutions agree.
+        This program reproduces Figure 1 from Santamaria et al. (2013).
         &#34;&#34;&#34;
+        my_dict = dict.fromkeys([&#39;sm_heavy_x&#39;, &#39;sm_heavy_z&#39;, &#39;sm_light_x&#39;,
+                                                         &#39;sm_light_z&#39;, &#39;my_heavy_x&#39;, &#39;my_heavy_z&#39;,
+                                                         &#39;my_light_x&#39;, &#39;my_light_z&#39;])
+
         # initialize variables for the Santamaria system
         heavy_beta = 0.96
         light_beta = 1.04
@@ -58,65 +59,47 @@ def main():
                                                                                                    light_beta)
         k = sm_flow.wavenum
 
-        # initialize variables for the Haller system
+        # initialize variables for the Daitche system
         heavy_R = 2 / 3 * 0.96
         light_R = 2 / 3 * 1.04
         x_0 = k * 0.13
         z_0 = k * -0.4
-        haller_flow = fl.DeepWaterWave(amplitude=0.026, wavelength=0.5)
-        heavy_st = haller_flow.epsilon * heavy_R * 0.5
-        light_st = haller_flow.epsilon * light_R * 0.5
-        haller_heavy_particle = prt.Particle(stokes_num=heavy_st)
-        haller_light_particle = prt.Particle(stokes_num=light_st)
-        haller_heavy_system = h.HallerTransportSystem(haller_heavy_particle,
-                                                                                                  haller_flow, heavy_R)
-        haller_light_system = h.HallerTransportSystem(haller_light_particle,
-                                                                                                  haller_flow, light_R)
+        my_flow = fl.DeepWaterWave(amplitude=0.026, wavelength=0.5)
+        heavy_st = my_flow.epsilon * heavy_R * 0.5
+        light_st = my_flow.epsilon * light_R * 0.5
+        my_heavy_particle = prt.Particle(stokes_num=heavy_st)
+        my_light_particle = prt.Particle(stokes_num=light_st)
+        my_heavy_system = my.MyTransportSystem(my_heavy_particle, my_flow, heavy_R)
+        my_light_system = my.MyTransportSystem(my_light_particle, my_flow, light_R)
 
         # generate results for the heavy and light particles
         x, z, _, _, _ = sm_heavy_system.run_numerics(sm_heavy_system.maxey_riley,
                                                                                                  num_periods=100)
-        sm_heavy = {&#39;x&#39;: k * x, &#39;z&#39;: k * z}
+        my_dict[&#39;sm_heavy_x&#39;] = k * x
+        my_dict[&#39;sm_heavy_z&#39;] = k * z
         x, z, _, _, _ = sm_light_system.run_numerics(sm_light_system.maxey_riley,
                                                                                                  x_0=0.13, z_0=-0.4,
                                                                                                  num_periods=100)
-        sm_light = {&#39;x&#39;: k * x, &#39;z&#39;: k * z}
-        x, z, _, _, _ = haller_heavy_system.run_numerics(
-                                        haller_heavy_system.maxey_riley, num_periods=100)
-        haller_heavy = {&#39;x&#39;: x, &#39;z&#39;: z}
-        x, z, _, _, _ = haller_light_system.run_numerics(
-                                        haller_light_system.maxey_riley, x_0=x_0, z_0=z_0,
-                                        num_periods=100)
-        haller_light = {&#39;x&#39;: x, &#39;z&#39;: z}
+        my_dict[&#39;sm_light_x&#39;] = k * x
+        my_dict[&#39;sm_light_z&#39;] = k * z
+        x, z, _, _, _ = my_heavy_system.run_numerics(include_history=False,
+                                                                                                 xdot_0=1, zdot_0=0,
+                                                                                                 num_periods=100 / my_flow.epsilon)
+#                                                                                                num_periods=100)
+        my_dict[&#39;my_heavy_x&#39;] = x
+        my_dict[&#39;my_heavy_z&#39;] = z
+        x, z, _, _, _ = my_light_system.run_numerics(include_history=False, x_0=x_0,
+                                                                                                 z_0=z_0, xdot_0=0, zdot_0=0,
+                                                 num_periods=100 / my_flow.epsilon)
+#                                                                                                num_periods=150)
+        my_dict[&#39;my_light_x&#39;] = x
+        my_dict[&#39;my_light_z&#39;] = z
 
-        # read data from Cathal&#39;s plot
-        cathals_data = pd.read_csv(&#39;data/cathals_sm_fig1_recreation.csv&#39;)
-
-        # plot results
-        plt.figure()
-        plt.title(&#39;Recreation of Santamaria Fig. 1 with &#39; \
-                          + r&#39;$\beta = ${:.2f} and $\beta = ${:.2f}&#39;.format(heavy_beta,
-                                                                                                                                light_beta))
-        plt.xlabel(&#39;kx&#39;, fontsize=16)
-        plt.ylabel(&#39;kz&#39;, fontsize=16)
-        plt.axis([0, 3.2, -4, 0])
-        plt.xticks(fontsize=14)
-        plt.yticks([-3, -2, -1, 0], fontsize=14)
-
-        if __name__ == &#39;__main__&#39;:
-                plt.plot(&#39;heavy_x&#39;, &#39;heavy_z&#39;, c=&#39;mediumpurple&#39;, lw=3,
-                                 data=cathals_data, label=&#39;Cathal\&#39;s data (heavy)&#39;)
-                plt.plot(&#39;light_x&#39;, &#39;light_z&#39;, c=&#39;hotpink&#39;, data=cathals_data,
-                                 label=&#39;Cathal\&#39;s data (light)&#39;)
-
-        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, data=sm_heavy, label=&#39;my SM data (heavy)&#39;)
-        plt.plot(&#39;x&#39;, &#39;z&#39;, &#39;k:&#39;, data=sm_light, label=&#39;my SM data (light)&#39;)
-        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;cornflowerblue&#39;, ls=&#39;--&#39;,
-                         data=haller_heavy, label=&#39;my Haller data (heavy)&#39;)
-        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;grey&#39;, ls=&#39;-.&#39;,
-                         data=haller_light, label=&#39;my Haller data (light)&#39;)
-        plt.legend()
-        plt.show()
+        # write results to data file
+        my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
+        numerics = pd.DataFrame(my_dict)
+        numerics.to_csv(&#39;../data/deep_water_wave/santamaria_fig1_recreation.csv&#39;,
+                                        index=False)
 if __name__ == &#39;__main__&#39;:
         main()</code></pre>
 </details>
@@ -128,23 +111,23 @@ if __name__ == &#39;__main__&#39;:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="modelling-microplastics-transport.examples.sm_figure1_reproduction.main"><code class="name flex">
+<dt id="modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig1_numerics.main"><code class="name flex">
 <span>def <span class="ident">main</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>This program reproduces Figure 1 from Santamaria et al. (2013), comparing my
-results (emulating the Santamaria and Haller systems) to Cathal's results
-to ensure our solutions agree.</p></div>
+<div class="desc"><p>This program reproduces Figure 1 from Santamaria et al. (2013).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
         &#34;&#34;&#34;
-        This program reproduces Figure 1 from Santamaria et al. (2013), comparing my
-        results (emulating the Santamaria and Haller systems) to Cathal&#39;s results 
-        to ensure our solutions agree.
+        This program reproduces Figure 1 from Santamaria et al. (2013).
         &#34;&#34;&#34;
+        my_dict = dict.fromkeys([&#39;sm_heavy_x&#39;, &#39;sm_heavy_z&#39;, &#39;sm_light_x&#39;,
+                                                         &#39;sm_light_z&#39;, &#39;my_heavy_x&#39;, &#39;my_heavy_z&#39;,
+                                                         &#39;my_light_x&#39;, &#39;my_light_z&#39;])
+
         # initialize variables for the Santamaria system
         heavy_beta = 0.96
         light_beta = 1.04
@@ -157,65 +140,47 @@ to ensure our solutions agree.</p></div>
                                                                                                    light_beta)
         k = sm_flow.wavenum
 
-        # initialize variables for the Haller system
+        # initialize variables for the Daitche system
         heavy_R = 2 / 3 * 0.96
         light_R = 2 / 3 * 1.04
         x_0 = k * 0.13
         z_0 = k * -0.4
-        haller_flow = fl.DeepWaterWave(amplitude=0.026, wavelength=0.5)
-        heavy_st = haller_flow.epsilon * heavy_R * 0.5
-        light_st = haller_flow.epsilon * light_R * 0.5
-        haller_heavy_particle = prt.Particle(stokes_num=heavy_st)
-        haller_light_particle = prt.Particle(stokes_num=light_st)
-        haller_heavy_system = h.HallerTransportSystem(haller_heavy_particle,
-                                                                                                  haller_flow, heavy_R)
-        haller_light_system = h.HallerTransportSystem(haller_light_particle,
-                                                                                                  haller_flow, light_R)
+        my_flow = fl.DeepWaterWave(amplitude=0.026, wavelength=0.5)
+        heavy_st = my_flow.epsilon * heavy_R * 0.5
+        light_st = my_flow.epsilon * light_R * 0.5
+        my_heavy_particle = prt.Particle(stokes_num=heavy_st)
+        my_light_particle = prt.Particle(stokes_num=light_st)
+        my_heavy_system = my.MyTransportSystem(my_heavy_particle, my_flow, heavy_R)
+        my_light_system = my.MyTransportSystem(my_light_particle, my_flow, light_R)
 
         # generate results for the heavy and light particles
         x, z, _, _, _ = sm_heavy_system.run_numerics(sm_heavy_system.maxey_riley,
                                                                                                  num_periods=100)
-        sm_heavy = {&#39;x&#39;: k * x, &#39;z&#39;: k * z}
+        my_dict[&#39;sm_heavy_x&#39;] = k * x
+        my_dict[&#39;sm_heavy_z&#39;] = k * z
         x, z, _, _, _ = sm_light_system.run_numerics(sm_light_system.maxey_riley,
                                                                                                  x_0=0.13, z_0=-0.4,
                                                                                                  num_periods=100)
-        sm_light = {&#39;x&#39;: k * x, &#39;z&#39;: k * z}
-        x, z, _, _, _ = haller_heavy_system.run_numerics(
-                                        haller_heavy_system.maxey_riley, num_periods=100)
-        haller_heavy = {&#39;x&#39;: x, &#39;z&#39;: z}
-        x, z, _, _, _ = haller_light_system.run_numerics(
-                                        haller_light_system.maxey_riley, x_0=x_0, z_0=z_0,
-                                        num_periods=100)
-        haller_light = {&#39;x&#39;: x, &#39;z&#39;: z}
+        my_dict[&#39;sm_light_x&#39;] = k * x
+        my_dict[&#39;sm_light_z&#39;] = k * z
+        x, z, _, _, _ = my_heavy_system.run_numerics(include_history=False,
+                                                                                                 xdot_0=1, zdot_0=0,
+                                                                                                 num_periods=100 / my_flow.epsilon)
+#                                                                                                num_periods=100)
+        my_dict[&#39;my_heavy_x&#39;] = x
+        my_dict[&#39;my_heavy_z&#39;] = z
+        x, z, _, _, _ = my_light_system.run_numerics(include_history=False, x_0=x_0,
+                                                                                                 z_0=z_0, xdot_0=0, zdot_0=0,
+                                                 num_periods=100 / my_flow.epsilon)
+#                                                                                                num_periods=150)
+        my_dict[&#39;my_light_x&#39;] = x
+        my_dict[&#39;my_light_z&#39;] = z
 
-        # read data from Cathal&#39;s plot
-        cathals_data = pd.read_csv(&#39;data/cathals_sm_fig1_recreation.csv&#39;)
-
-        # plot results
-        plt.figure()
-        plt.title(&#39;Recreation of Santamaria Fig. 1 with &#39; \
-                          + r&#39;$\beta = ${:.2f} and $\beta = ${:.2f}&#39;.format(heavy_beta,
-                                                                                                                                light_beta))
-        plt.xlabel(&#39;kx&#39;, fontsize=16)
-        plt.ylabel(&#39;kz&#39;, fontsize=16)
-        plt.axis([0, 3.2, -4, 0])
-        plt.xticks(fontsize=14)
-        plt.yticks([-3, -2, -1, 0], fontsize=14)
-
-        if __name__ == &#39;__main__&#39;:
-                plt.plot(&#39;heavy_x&#39;, &#39;heavy_z&#39;, c=&#39;mediumpurple&#39;, lw=3,
-                                 data=cathals_data, label=&#39;Cathal\&#39;s data (heavy)&#39;)
-                plt.plot(&#39;light_x&#39;, &#39;light_z&#39;, c=&#39;hotpink&#39;, data=cathals_data,
-                                 label=&#39;Cathal\&#39;s data (light)&#39;)
-
-        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, data=sm_heavy, label=&#39;my SM data (heavy)&#39;)
-        plt.plot(&#39;x&#39;, &#39;z&#39;, &#39;k:&#39;, data=sm_light, label=&#39;my SM data (light)&#39;)
-        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;cornflowerblue&#39;, ls=&#39;--&#39;,
-                         data=haller_heavy, label=&#39;my Haller data (heavy)&#39;)
-        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;grey&#39;, ls=&#39;-.&#39;,
-                         data=haller_light, label=&#39;my Haller data (light)&#39;)
-        plt.legend()
-        plt.show()</code></pre>
+        # write results to data file
+        my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
+        numerics = pd.DataFrame(my_dict)
+        numerics.to_csv(&#39;../data/deep_water_wave/santamaria_fig1_recreation.csv&#39;,
+                                        index=False)</code></pre>
 </details>
 </dd>
 </dl>
@@ -231,12 +196,12 @@ to ensure our solutions agree.</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="modelling-microplastics-transport.examples" href="index.html">modelling-microplastics-transport.examples</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave" href="index.html">modelling-microplastics-transport.examples.deep_water_wave</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="modelling-microplastics-transport.examples.sm_figure1_reproduction.main" href="#modelling-microplastics-transport.examples.sm_figure1_reproduction.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig1_numerics.main" href="#modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig1_numerics.main">main</a></code></li>
 </ul>
 </li>
 </ul>

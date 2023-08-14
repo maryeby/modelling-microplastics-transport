@@ -76,22 +76,63 @@ class QuiescentFlow(flow.Flow):
                 &#34;&#34;&#34;
                 return np.array([0, 0])
 
-        def material_derivative(self, x, z, t):
-                &#34;&#34;&#34;
-                Computes the Lagrangian derivative.
+        def partial_t(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to time.
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
+                        The x position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
+                        The z position(s) at which to evaluate the derivative.
                 t : float or array
-                        The time(s) at which to evaluate the velocity.
+                        The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the material derivative vector components.
+                Array containing the partial time derivative vector components.
+                &#34;&#34;&#34;
+                return np.array([0, 0])
+
+        def partial_x(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the horizontal position _x_.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial x derivative vector components.
+                &#34;&#34;&#34;
+                return np.array([0, 0])
+
+        def partial_z(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the vertical position _z_.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial z derivative vector components.
                 &#34;&#34;&#34;
                 return np.array([0, 0])
 
@@ -189,22 +230,63 @@ integrate.</dd>
                 &#34;&#34;&#34;
                 return np.array([0, 0])
 
-        def material_derivative(self, x, z, t):
-                &#34;&#34;&#34;
-                Computes the Lagrangian derivative.
+        def partial_t(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to time.
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
+                        The x position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
+                        The z position(s) at which to evaluate the derivative.
                 t : float or array
-                        The time(s) at which to evaluate the velocity.
+                        The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the material derivative vector components.
+                Array containing the partial time derivative vector components.
+                &#34;&#34;&#34;
+                return np.array([0, 0])
+
+        def partial_x(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the horizontal position _x_.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial x derivative vector components.
+                &#34;&#34;&#34;
+                return np.array([0, 0])
+
+        def partial_z(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the vertical position _z_.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial z derivative vector components.
                 &#34;&#34;&#34;
                 return np.array([0, 0])
 
@@ -234,46 +316,6 @@ integrate.</dd>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.material_derivative"><code class="name flex">
-<span>def <span class="ident">material_derivative</span></span>(<span>self, x, z, t)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Computes the Lagrangian derivative.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the fluid velocity.</dd>
-<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the velocity and derivative.</dd>
-<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The time(s) at which to evaluate the velocity.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>Array containing the material derivative vector components.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def material_derivative(self, x, z, t):
-        &#34;&#34;&#34;
-        Computes the Lagrangian derivative.
-
-        Parameters
-        ----------
-        x : float or array
-                The x position(s) at which to evaluate the fluid velocity.
-        z : float or array
-                The z position(s) at which to evaluate the velocity and derivative.
-        t : float or array
-                The time(s) at which to evaluate the velocity.
-
-        Returns
-        -------
-        Array containing the material derivative vector components.
-        &#34;&#34;&#34;
-        return np.array([0, 0])</code></pre>
-</details>
-</dd>
 <dt id="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.material_derivative2"><code class="name flex">
 <span>def <span class="ident">material_derivative2</span></span>(<span>self, x, z, t)</span>
 </code></dt>
@@ -310,6 +352,132 @@ integrate.</dd>
         Returns
         -------
         Array containing the second order material derivative vector components.
+        &#34;&#34;&#34;
+        return np.array([0, 0])</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_t"><code class="name flex">
+<span>def <span class="ident">partial_t</span></span>(<span>self, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to time.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the derivative.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the partial time derivative vector components.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def partial_t(self, x, z, t):
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to time.
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the derivative.
+        z : float or array
+                The z position(s) at which to evaluate the derivative.
+        t : float or array
+                The time(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        Array containing the partial time derivative vector components.
+        &#34;&#34;&#34;
+        return np.array([0, 0])</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_x"><code class="name flex">
+<span>def <span class="ident">partial_x</span></span>(<span>self, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to the horizontal position <em>x</em>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the derivative.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the partial x derivative vector components.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def partial_x(self, x, z, t):
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to the horizontal position _x_.
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the derivative.
+        z : float or array
+                The z position(s) at which to evaluate the derivative.
+        t : float or array
+                The time(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        Array containing the partial x derivative vector components.
+        &#34;&#34;&#34;
+        return np.array([0, 0])</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_z"><code class="name flex">
+<span>def <span class="ident">partial_z</span></span>(<span>self, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to the vertical position <em>z</em>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the derivative.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the partial z derivative vector components.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def partial_z(self, x, z, t):
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to the vertical position _z_.
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the derivative.
+        z : float or array
+                The z position(s) at which to evaluate the derivative.
+        t : float or array
+                The time(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        Array containing the partial z derivative vector components.
         &#34;&#34;&#34;
         return np.array([0, 0])</code></pre>
 </details>
@@ -389,8 +557,10 @@ integrate.</dd>
 <li>
 <h4><code><a title="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow" href="#modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow">QuiescentFlow</a></code></h4>
 <ul class="">
-<li><code><a title="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.material_derivative" href="#modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.material_derivative">material_derivative</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.material_derivative2" href="#modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.material_derivative2">material_derivative2</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_t" href="#modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_t">partial_t</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_x" href="#modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_x">partial_x</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_z" href="#modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.partial_z">partial_z</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.set_gravity" href="#modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.set_gravity">set_gravity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.velocity" href="#modelling-microplastics-transport.models.quiescent_flow.QuiescentFlow.velocity">velocity</a></code></li>
 </ul>

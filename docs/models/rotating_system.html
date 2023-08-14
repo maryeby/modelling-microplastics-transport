@@ -31,7 +31,6 @@
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
 import numpy as np
-import scipy.integrate as integrate
 from time import time
 from tqdm import tqdm
 from models import rotating_flow
@@ -39,7 +38,7 @@ from transport_framework import particle, transport_system
 
 class RotatingTransportSystem(transport_system.TransportSystem):
         &#34;&#34;&#34; 
-        Represents the transport of a relaxing particle in a quiescent fluid flow.
+        Represents the transport of a rigid particle in a rotating fluid flow.
         &#34;&#34;&#34;
 
         def __init__(self, particle, flow, density_ratio):
@@ -52,49 +51,8 @@ class RotatingTransportSystem(transport_system.TransportSystem):
                         The flow through which the particle is transported.
                 density_ratio : float
                         The ratio between the particle&#39;s density and the fluid&#39;s density.
-                epsilon : float
-                        A relationship between the Stokes number and density ratio,
-                        $$\epsilon = \frac{St}{R}.$$
-                sigma : float
-                        A parameter related to the density ratio,
-                        $$\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},$$
-                        used to compute the asymptotic behavior of the system.
-                alpha : float
-                        A relationship between the density ratio and Stokes number,
-                        $$\alpha = \frac{R}{St},$$
-                        used to compute the asymptotic behavior of the system.
-                gamma : float
-                        Another relationship between the density ratio and Stokes number,
-                        $$\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},$$
-                        used to compute the asymptotic behavior of the system.
                 &#34;&#34;&#34;
                 super().__init__(particle, flow, density_ratio)
-                self.epsilon = self.particle.stokes_num / self.density_ratio
-                self.alpha = self.density_ratio / self.particle.stokes_num
-                self.gamma = 3 / 2 * self.density_ratio \
-                                           * np.sqrt(2 / self.particle.stokes_num)
-
-        def asymptotic_velocity(self, t):
-                r&#34;&#34;&#34;
-                Computes the leading order asymptotic behavior of the particle velocity
-                based on eq (4.7) from Prasath et al. (2019),
-                $$q^{(2)}(0, t) \approx c(\alpha, \gamma)
-                        - \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
-                        + \mathcal{O}(t^{3 / 2}),$$
-                with a sign change on the singular term.
-
-                Parameters
-                ----------
-                t : float or array
-                        The time(s) to use in the computations.
-
-                Returns
-                -------
-                float or array
-                        The asymptotic particle velocity.
-                &#34;&#34;&#34;
-                return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
-                                 / (2 * self.alpha ** 2))
 
         def derivative_along_trajectory(self, xdot, zdot):
                 r&#34;&#34;&#34;
@@ -118,54 +76,15 @@ class RotatingTransportSystem(transport_system.TransportSystem):
                 &#34;&#34;&#34;
                 return np.transpose(np.array([-zdot, xdot]))
 
-        def maxey_riley(self, t, y):
-                r&#34;&#34;&#34;
-                Evaluates the Maxey-Riley equation,
-                $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
-                $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
-                        - \textbf{v}}{\epsilon}
-                        + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                        + (1 - \frac{3R}{2}) \textbf{g}
-                        - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                        \frac{1}{\sqrt{t - s}} \mathrm{d}s
-                        [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
-                with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
-                        \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
-                
-                Parameters
-                ----------
-                t : float
-                        The time to use in the computations.
-                y : list (array-like)
-                        A list containing the x, z, xdot, zdot values to use.
-
-                Returns
-                -------
-                Array
-                        The components of the particle&#39;s velocity and acceleration.
-                &#34;&#34;&#34;
-                # initialize local variables and update the particle and fluid histories
-                R = self.density_ratio
-                x, z = y[:2]
-                particle_velocity = y[2:]
-                fluid_velocity = self.flow.velocity(x, z)
-
-                # compute terms on the RHS of the M-R equation
-                stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
-                fluid_pressure_gradient = 3 * R / 2 \
-                                                                        * self.flow.material_derivative(x, z, t)
-
-                # M-R equation
-                particle_acceleration = stokes_drag + fluid_pressure_gradient
-                return np.concatenate((particle_velocity, particle_acceleration))
-
-        def full_maxey_riley(self, t, y, order):
+        def maxey_riley(self, include_history, t, y, order):
                 r&#34;&#34;&#34;
                 Implements the integration scheme for the full Maxey-Riley equation with
                 history effects, as outlined in Daitche (2013) Section 3.
 
                 Parameters
                 ----------
+                include_history : boolean
+                        Whether to include history effects.
                 t : array
                         The times when the Maxey-Riley equation should be evaluated.
                 y : list (array-like)
@@ -182,12 +101,10 @@ class RotatingTransportSystem(transport_system.TransportSystem):
                 R = self.density_ratio
                 St = self.particle.stokes_num
                 delta_t = t[1] - t[0]
-                xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
 
                 # compute the number of time steps and create arrays to store solutions
                 mini_steps = 2 * int(np.sqrt(2) / delta_t)
                 mini_step = delta_t / (mini_steps / 2)
-                mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
                 mini_x = np.empty((mini_steps + 1, 2)) 
                 mini_v = np.empty((mini_steps + 1, 2))
                 mini_u = np.empty((mini_steps + 1, 2))
@@ -204,22 +121,27 @@ class RotatingTransportSystem(transport_system.TransportSystem):
                 mini_v[0] = v[0]
                 mini_u[0] = u[0]
 
-                # compute matrices containing the values of alpha, beta, and gamma
-                if order == 1:
-                        mini_alpha = compute_alpha(mini_steps + 1)
-                        alpha = compute_alpha(t.size)
-                elif order == 2:
-                        mini_alpha = compute_alpha(2)
-                        mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1]) 
-                        alpha = mini_alpha
-                        beta = compute_beta(t.size, alpha[:, 1])
-                else: # order == 3
-                        mini_alpha = compute_alpha(2)
-                        mini_beta = compute_beta(3, mini_alpha[:, 1]) 
-                        mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2]) 
-                        alpha = mini_alpha
-                        beta = mini_beta
-                        gamma = compute_gamma(t.size, beta[:, 2])
+                # only compute alpha, beta, gamma, xi if we&#39;re including history effects
+                if include_history:
+                        xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+                        mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
+
+                        # compute matrices containing the values of alpha, beta, and gamma
+                        if order == 1:
+                                mini_alpha = compute_alpha(mini_steps + 1)
+                                alpha = compute_alpha(t.size)
+                        elif order == 2:
+                                mini_alpha = compute_alpha(2)
+                                mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1]) 
+                                alpha = mini_alpha
+                                beta = compute_beta(t.size, alpha[:, 1])
+                        else: # order == 3
+                                mini_alpha = compute_alpha(2)
+                                mini_beta = compute_beta(3, mini_alpha[:, 1]) 
+                                mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2]) 
+                                alpha = mini_alpha
+                                beta = mini_beta
+                                gamma = compute_gamma(t.size, beta[:, 2])
 
                 # compute solutions for the first two intervals using finer time steps
                 for n_prime in range(mini_steps):
@@ -230,53 +152,75 @@ class RotatingTransportSystem(transport_system.TransportSystem):
                                 * np.transpose(np.array([-mini_w[:, 1], mini_w[:, 0]])) \
                                 - R / St * mini_w
                         sum_term = 0
+                        # equation (15)
                         if order == 1 or n_prime == 0:
-                                for j in range(n_prime + 1):
-                                        sum_term += mini_w[n_prime - j] \
-                                                          * (mini_alpha[j + 1, n_prime + 1] \
-                                                          - mini_alpha[j, n_prime])
                                 mini_x[n_prime + 1] = mini_x[n_prime] + mini_step \
                                                                                                           * mini_v[n_prime]
                                 mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                                  mini_x[n_prime + 1, 1])
-                                mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step * G[n_prime]\
-                                                                                - mini_xi * sum_term) \
-                                                                                / (1 + mini_xi
-                                                                                * mini_alpha[0, n_prime + 1]) \
-                                                                                + mini_u[n_prime + 1]
+                                if include_history:
+                                        for j in range(n_prime + 1):
+                                                sum_term += mini_w[n_prime - j] \
+                                                                  * (mini_alpha[j + 1, n_prime + 1] \
+                                                                  - mini_alpha[j, n_prime])
+                                        mini_v[n_prime + 1] = (mini_w[n_prime] \
+                                                                                        + mini_step * G[n_prime] \
+                                                                                        - mini_xi * sum_term) \
+                                                                                        / (1 + mini_xi
+                                                                                        * mini_alpha[0, n_prime + 1]) \
+                                                                                        + mini_u[n_prime + 1]
+                                else:
+                                        mini_v[n_prime + 1] = mini_w[n_prime] \
+                                                                                        + mini_step * G[n_prime] \
+                                                                                        + mini_u[n_prime + 1]
+                        # equation (16)
                         elif order == 2 or n_prime == 1:
-                                for j in range(n_prime + 1):
-                                        sum_term += mini_w[n_prime - j] \
-                                                          * (mini_beta[j + 1, n_prime + 1]
-                                                          - mini_beta[j, n_prime])
                                 mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 2 \
                                                                                 * (3 * mini_v[n_prime]
                                                                                 - mini_v[n_prime - 1])
                                 mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                                  mini_x[n_prime + 1, 1])
-                                mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
-                                                                                * (3 * G[n_prime] - G[n_prime - 1])
-                                                                                - mini_xi * sum_term) / (1 + mini_xi
-                                                                                * mini_beta[0, n_prime + 1]) \
-                                                                                + mini_u[n_prime + 1]
+                                if include_history:
+                                        for j in range(n_prime + 1):
+                                                sum_term += mini_w[n_prime - j] \
+                                                                  * (mini_beta[j + 1, n_prime + 1]
+                                                                  - mini_beta[j, n_prime])
+                                        mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
+                                                                                        * (3 * G[n_prime] - G[n_prime - 1])
+                                                                                        - mini_xi * sum_term) / (1 + mini_xi
+                                                                                        * mini_beta[0, n_prime + 1]) \
+                                                                                        + mini_u[n_prime + 1]
+                                else:
+                                        mini_v[n_prime + 1] = mini_w[n_prime] + mini_step / 2 \
+                                                                                        * (3 * G[n_prime] - G[n_prime - 1])\
+                                                                                        + mini_u[n_prime + 1]
+                        # equation (17)
                         else: # order is 3 and n_prime &gt; 1
-                                for j in range(n_prime + 1):
-                                        sum_term += mini_w[n_prime - j] \
-                                                          * (mini_gamma[j + 1, n_prime + 1] \
-                                                          - mini_gamma[j, n_prime])
                                 mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 12 \
                                                                                 * (23 * mini_v[n_prime]
                                                                                 - 16 * mini_v[n_prime - 1]
                                                                                 + 5 * mini_v[n_prime - 2])
                                 mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                                  mini_x[n_prime + 1, 1])
-                                mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
-                                                                                * (23 * G[n_prime] - 16 * G[n_prime - 1]
-                                                                                + 5 * G[n_prime - 2]) \
-                                                                                - mini_xi * sum_term) \
-                                                                                / (1 + mini_xi
-                                                                                * mini_gamma[0, n_prime + 1]) \
-                                                                                + mini_u[n_prime + 1]
+                                if include_history:
+                                        for j in range(n_prime + 1):
+                                                sum_term += mini_w[n_prime - j] \
+                                                                  * (mini_gamma[j + 1, n_prime + 1] \
+                                                                  - mini_gamma[j, n_prime])
+                                        mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
+                                                                                        * (23 * G[n_prime]
+                                                                                        - 16 * G[n_prime - 1]
+                                                                                        + 5 * G[n_prime - 2]) \
+                                                                                        - mini_xi * sum_term) \
+                                                                                        / (1 + mini_xi
+                                                                                        * mini_gamma[0, n_prime + 1]) \
+                                                                                        + mini_u[n_prime + 1]
+                                else:
+                                        mini_v[n_prime + 1] = mini_w[n_prime] + mini_step / 12 \
+                                                                                        * (23 * G[n_prime]
+                                                                                        - 16 * G[n_prime - 1]
+                                                                                        + 5 * G[n_prime - 2]) \
+                                                                                        + mini_u[n_prime + 1]
 
                 # store solutions for the first two intervals
                 x[1] = mini_x[int(mini_steps / 2)]
@@ -295,33 +239,46 @@ class RotatingTransportSystem(transport_system.TransportSystem):
                                    - R / St * w
                         sum_term = 0
                         if order == 1 or n == 0:
-                                for j in range(n + 1):
-                                        sum_term += w[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
                                 x[n + 1] = x[n] + delta_t * v[n]
                                 u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                                v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
-                                                                 / (1 + xi * alpha[0, n + 1]) + u[n + 1]
+                                if include_history:
+                                        for j in range(n + 1):
+                                                sum_term += w[n - j] * (alpha[j + 1, n + 1]
+                                                                                         - alpha[j, n])
+                                        v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
+                                                                         / (1 + xi * alpha[0, n + 1]) + u[n + 1]
+                                else:
+                                        v[n + 1] = w[n] + delta_t * G[n] + u[n + 1]
                         elif order == 2 or n == 1:
-                                for j in range(n + 1):
-                                        sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
                                 x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
                                 u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                                v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
-                                                                 - xi * sum_term) / (1 + xi * beta[0, n + 1]) \
-                                                                 + u[n + 1]
+                                if include_history:
+                                        for j in range(n + 1):
+                                                sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
+                                        v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+                                                                         - xi * sum_term) \
+                                                                         / (1 + xi * beta[0, n + 1]) + u[n + 1]
+                                else:
+                                        v[n + 1] = w[n] + delta_t / 2 * (3 * G[n] - G[n - 1]) \
+                                                                        + u[n + 1]
                         else: # order is 3 and n &gt; 1
-                                for j in range(n + 1):
-                                        sum_term += w[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
                                 x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
                                                                 + 5 * v[n - 2])
                                 u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                                v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
-                                                                 + 5 * G[n - 2]) - xi * sum_term) \
-                                                                 / (1 + xi * gamma[0, n + 1]) + u[n + 1]
+                                if include_history:
+                                        for j in range(n + 1):
+                                                sum_term += w[n - j] * (gamma[j + 1, n + 1]
+                                                                                         - gamma[j, n])
+                                        v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                                         + 5 * G[n - 2]) - xi * sum_term) \
+                                                                         / (1 + xi * gamma[0, n + 1]) + u[n + 1]
+                                else:
+                                        v[n + 1] = w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                                        + 5 * G[n - 2]) + u[n + 1]
                 return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
         def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
-                                         zdot_0=1, num_periods=50, delta_t=5e-3, method=&#39;BDF&#39;):
+                                         zdot_0=1, num_periods=50, delta_t=5e-3):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
@@ -343,8 +300,6 @@ class RotatingTransportSystem(transport_system.TransportSystem):
                         The number of oscillation periods to integrate over.
                 delta_t : float, default=5e-3
                         The size of the time steps used for integration.
-                method : str, default=&#39;BDF&#39;
-                        The method of integration to use when neglecting history effects.
 
                 Returns
                 -------
@@ -361,21 +316,11 @@ class RotatingTransportSystem(transport_system.TransportSystem):
                 &#34;&#34;&#34;
                 # initialize parameters for the solver
                 t_final = num_periods * self.flow.period
-                t_span = (0, t_final)
                 t_eval = np.arange(0, t_final + delta_t, delta_t)
                 y = [x_0, z_0, xdot_0, zdot_0]
 
                 # run computations
-                if include_history:     
-                        x, z, xdot, zdot, t = self.full_maxey_riley(t_eval, y, order=order)
-                else:
-                        sols = integrate.solve_ivp(self.maxey_riley, t_span, y,
-                                                                           method=method, t_eval=t_eval,
-                                                                           rtol=1e-8, atol=1e-10)
-                        # unpack solutions
-                        x, z, xdot, zdot = sols.y
-                        t = sols.t
-                return x, z, xdot, zdot, t
+                return self.maxey_riley(include_history, t_eval, y, order)
 
 def compute_alpha(size):
         r&#34;&#34;&#34;
@@ -1094,7 +1039,7 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 <span>(</span><span>particle, flow, density_ratio)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Represents the transport of a relaxing particle in a quiescent fluid flow.</p>
+<div class="desc"><p>Represents the transport of a rigid particle in a rotating fluid flow.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
 <dt><strong><code>particle</code></strong> :&ensp;<code>Particle (obj)</code></dt>
@@ -1103,21 +1048,6 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 <dd>The flow through which the particle is transported.</dd>
 <dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
 <dd>The ratio between the particle's density and the fluid's density.</dd>
-<dt><strong><code>epsilon</code></strong> :&ensp;<code>float</code></dt>
-<dd>A relationship between the Stokes number and density ratio,
-<span><span class="MathJax_Preview">\epsilon = \frac{St}{R}.</span><script type="math/tex; mode=display">\epsilon = \frac{St}{R}.</script></span></dd>
-<dt><strong><code>sigma</code></strong> :&ensp;<code>float</code></dt>
-<dd>A parameter related to the density ratio,
-<span><span class="MathJax_Preview">\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},</span><script type="math/tex; mode=display">\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},</script></span>
-used to compute the asymptotic behavior of the system.</dd>
-<dt><strong><code>alpha</code></strong> :&ensp;<code>float</code></dt>
-<dd>A relationship between the density ratio and Stokes number,
-<span><span class="MathJax_Preview">\alpha = \frac{R}{St},</span><script type="math/tex; mode=display">\alpha = \frac{R}{St},</script></span>
-used to compute the asymptotic behavior of the system.</dd>
-<dt><strong><code>gamma</code></strong> :&ensp;<code>float</code></dt>
-<dd>Another relationship between the density ratio and Stokes number,
-<span><span class="MathJax_Preview">\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},</span><script type="math/tex; mode=display">\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},</script></span>
-used to compute the asymptotic behavior of the system.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1125,7 +1055,7 @@ used to compute the asymptotic behavior of the system.</dd>
 </summary>
 <pre><code class="python">class RotatingTransportSystem(transport_system.TransportSystem):
         &#34;&#34;&#34; 
-        Represents the transport of a relaxing particle in a quiescent fluid flow.
+        Represents the transport of a rigid particle in a rotating fluid flow.
         &#34;&#34;&#34;
 
         def __init__(self, particle, flow, density_ratio):
@@ -1138,49 +1068,8 @@ used to compute the asymptotic behavior of the system.</dd>
                         The flow through which the particle is transported.
                 density_ratio : float
                         The ratio between the particle&#39;s density and the fluid&#39;s density.
-                epsilon : float
-                        A relationship between the Stokes number and density ratio,
-                        $$\epsilon = \frac{St}{R}.$$
-                sigma : float
-                        A parameter related to the density ratio,
-                        $$\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},$$
-                        used to compute the asymptotic behavior of the system.
-                alpha : float
-                        A relationship between the density ratio and Stokes number,
-                        $$\alpha = \frac{R}{St},$$
-                        used to compute the asymptotic behavior of the system.
-                gamma : float
-                        Another relationship between the density ratio and Stokes number,
-                        $$\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},$$
-                        used to compute the asymptotic behavior of the system.
                 &#34;&#34;&#34;
                 super().__init__(particle, flow, density_ratio)
-                self.epsilon = self.particle.stokes_num / self.density_ratio
-                self.alpha = self.density_ratio / self.particle.stokes_num
-                self.gamma = 3 / 2 * self.density_ratio \
-                                           * np.sqrt(2 / self.particle.stokes_num)
-
-        def asymptotic_velocity(self, t):
-                r&#34;&#34;&#34;
-                Computes the leading order asymptotic behavior of the particle velocity
-                based on eq (4.7) from Prasath et al. (2019),
-                $$q^{(2)}(0, t) \approx c(\alpha, \gamma)
-                        - \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
-                        + \mathcal{O}(t^{3 / 2}),$$
-                with a sign change on the singular term.
-
-                Parameters
-                ----------
-                t : float or array
-                        The time(s) to use in the computations.
-
-                Returns
-                -------
-                float or array
-                        The asymptotic particle velocity.
-                &#34;&#34;&#34;
-                return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
-                                 / (2 * self.alpha ** 2))
 
         def derivative_along_trajectory(self, xdot, zdot):
                 r&#34;&#34;&#34;
@@ -1204,54 +1093,15 @@ used to compute the asymptotic behavior of the system.</dd>
                 &#34;&#34;&#34;
                 return np.transpose(np.array([-zdot, xdot]))
 
-        def maxey_riley(self, t, y):
-                r&#34;&#34;&#34;
-                Evaluates the Maxey-Riley equation,
-                $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
-                $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
-                        - \textbf{v}}{\epsilon}
-                        + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                        + (1 - \frac{3R}{2}) \textbf{g}
-                        - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                        \frac{1}{\sqrt{t - s}} \mathrm{d}s
-                        [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
-                with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
-                        \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
-                
-                Parameters
-                ----------
-                t : float
-                        The time to use in the computations.
-                y : list (array-like)
-                        A list containing the x, z, xdot, zdot values to use.
-
-                Returns
-                -------
-                Array
-                        The components of the particle&#39;s velocity and acceleration.
-                &#34;&#34;&#34;
-                # initialize local variables and update the particle and fluid histories
-                R = self.density_ratio
-                x, z = y[:2]
-                particle_velocity = y[2:]
-                fluid_velocity = self.flow.velocity(x, z)
-
-                # compute terms on the RHS of the M-R equation
-                stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
-                fluid_pressure_gradient = 3 * R / 2 \
-                                                                        * self.flow.material_derivative(x, z, t)
-
-                # M-R equation
-                particle_acceleration = stokes_drag + fluid_pressure_gradient
-                return np.concatenate((particle_velocity, particle_acceleration))
-
-        def full_maxey_riley(self, t, y, order):
+        def maxey_riley(self, include_history, t, y, order):
                 r&#34;&#34;&#34;
                 Implements the integration scheme for the full Maxey-Riley equation with
                 history effects, as outlined in Daitche (2013) Section 3.
 
                 Parameters
                 ----------
+                include_history : boolean
+                        Whether to include history effects.
                 t : array
                         The times when the Maxey-Riley equation should be evaluated.
                 y : list (array-like)
@@ -1268,12 +1118,10 @@ used to compute the asymptotic behavior of the system.</dd>
                 R = self.density_ratio
                 St = self.particle.stokes_num
                 delta_t = t[1] - t[0]
-                xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
 
                 # compute the number of time steps and create arrays to store solutions
                 mini_steps = 2 * int(np.sqrt(2) / delta_t)
                 mini_step = delta_t / (mini_steps / 2)
-                mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
                 mini_x = np.empty((mini_steps + 1, 2)) 
                 mini_v = np.empty((mini_steps + 1, 2))
                 mini_u = np.empty((mini_steps + 1, 2))
@@ -1290,22 +1138,27 @@ used to compute the asymptotic behavior of the system.</dd>
                 mini_v[0] = v[0]
                 mini_u[0] = u[0]
 
-                # compute matrices containing the values of alpha, beta, and gamma
-                if order == 1:
-                        mini_alpha = compute_alpha(mini_steps + 1)
-                        alpha = compute_alpha(t.size)
-                elif order == 2:
-                        mini_alpha = compute_alpha(2)
-                        mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1]) 
-                        alpha = mini_alpha
-                        beta = compute_beta(t.size, alpha[:, 1])
-                else: # order == 3
-                        mini_alpha = compute_alpha(2)
-                        mini_beta = compute_beta(3, mini_alpha[:, 1]) 
-                        mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2]) 
-                        alpha = mini_alpha
-                        beta = mini_beta
-                        gamma = compute_gamma(t.size, beta[:, 2])
+                # only compute alpha, beta, gamma, xi if we&#39;re including history effects
+                if include_history:
+                        xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+                        mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
+
+                        # compute matrices containing the values of alpha, beta, and gamma
+                        if order == 1:
+                                mini_alpha = compute_alpha(mini_steps + 1)
+                                alpha = compute_alpha(t.size)
+                        elif order == 2:
+                                mini_alpha = compute_alpha(2)
+                                mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1]) 
+                                alpha = mini_alpha
+                                beta = compute_beta(t.size, alpha[:, 1])
+                        else: # order == 3
+                                mini_alpha = compute_alpha(2)
+                                mini_beta = compute_beta(3, mini_alpha[:, 1]) 
+                                mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2]) 
+                                alpha = mini_alpha
+                                beta = mini_beta
+                                gamma = compute_gamma(t.size, beta[:, 2])
 
                 # compute solutions for the first two intervals using finer time steps
                 for n_prime in range(mini_steps):
@@ -1316,53 +1169,75 @@ used to compute the asymptotic behavior of the system.</dd>
                                 * np.transpose(np.array([-mini_w[:, 1], mini_w[:, 0]])) \
                                 - R / St * mini_w
                         sum_term = 0
+                        # equation (15)
                         if order == 1 or n_prime == 0:
-                                for j in range(n_prime + 1):
-                                        sum_term += mini_w[n_prime - j] \
-                                                          * (mini_alpha[j + 1, n_prime + 1] \
-                                                          - mini_alpha[j, n_prime])
                                 mini_x[n_prime + 1] = mini_x[n_prime] + mini_step \
                                                                                                           * mini_v[n_prime]
                                 mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                                  mini_x[n_prime + 1, 1])
-                                mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step * G[n_prime]\
-                                                                                - mini_xi * sum_term) \
-                                                                                / (1 + mini_xi
-                                                                                * mini_alpha[0, n_prime + 1]) \
-                                                                                + mini_u[n_prime + 1]
+                                if include_history:
+                                        for j in range(n_prime + 1):
+                                                sum_term += mini_w[n_prime - j] \
+                                                                  * (mini_alpha[j + 1, n_prime + 1] \
+                                                                  - mini_alpha[j, n_prime])
+                                        mini_v[n_prime + 1] = (mini_w[n_prime] \
+                                                                                        + mini_step * G[n_prime] \
+                                                                                        - mini_xi * sum_term) \
+                                                                                        / (1 + mini_xi
+                                                                                        * mini_alpha[0, n_prime + 1]) \
+                                                                                        + mini_u[n_prime + 1]
+                                else:
+                                        mini_v[n_prime + 1] = mini_w[n_prime] \
+                                                                                        + mini_step * G[n_prime] \
+                                                                                        + mini_u[n_prime + 1]
+                        # equation (16)
                         elif order == 2 or n_prime == 1:
-                                for j in range(n_prime + 1):
-                                        sum_term += mini_w[n_prime - j] \
-                                                          * (mini_beta[j + 1, n_prime + 1]
-                                                          - mini_beta[j, n_prime])
                                 mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 2 \
                                                                                 * (3 * mini_v[n_prime]
                                                                                 - mini_v[n_prime - 1])
                                 mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                                  mini_x[n_prime + 1, 1])
-                                mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
-                                                                                * (3 * G[n_prime] - G[n_prime - 1])
-                                                                                - mini_xi * sum_term) / (1 + mini_xi
-                                                                                * mini_beta[0, n_prime + 1]) \
-                                                                                + mini_u[n_prime + 1]
+                                if include_history:
+                                        for j in range(n_prime + 1):
+                                                sum_term += mini_w[n_prime - j] \
+                                                                  * (mini_beta[j + 1, n_prime + 1]
+                                                                  - mini_beta[j, n_prime])
+                                        mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
+                                                                                        * (3 * G[n_prime] - G[n_prime - 1])
+                                                                                        - mini_xi * sum_term) / (1 + mini_xi
+                                                                                        * mini_beta[0, n_prime + 1]) \
+                                                                                        + mini_u[n_prime + 1]
+                                else:
+                                        mini_v[n_prime + 1] = mini_w[n_prime] + mini_step / 2 \
+                                                                                        * (3 * G[n_prime] - G[n_prime - 1])\
+                                                                                        + mini_u[n_prime + 1]
+                        # equation (17)
                         else: # order is 3 and n_prime &gt; 1
-                                for j in range(n_prime + 1):
-                                        sum_term += mini_w[n_prime - j] \
-                                                          * (mini_gamma[j + 1, n_prime + 1] \
-                                                          - mini_gamma[j, n_prime])
                                 mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 12 \
                                                                                 * (23 * mini_v[n_prime]
                                                                                 - 16 * mini_v[n_prime - 1]
                                                                                 + 5 * mini_v[n_prime - 2])
                                 mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                                  mini_x[n_prime + 1, 1])
-                                mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
-                                                                                * (23 * G[n_prime] - 16 * G[n_prime - 1]
-                                                                                + 5 * G[n_prime - 2]) \
-                                                                                - mini_xi * sum_term) \
-                                                                                / (1 + mini_xi
-                                                                                * mini_gamma[0, n_prime + 1]) \
-                                                                                + mini_u[n_prime + 1]
+                                if include_history:
+                                        for j in range(n_prime + 1):
+                                                sum_term += mini_w[n_prime - j] \
+                                                                  * (mini_gamma[j + 1, n_prime + 1] \
+                                                                  - mini_gamma[j, n_prime])
+                                        mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
+                                                                                        * (23 * G[n_prime]
+                                                                                        - 16 * G[n_prime - 1]
+                                                                                        + 5 * G[n_prime - 2]) \
+                                                                                        - mini_xi * sum_term) \
+                                                                                        / (1 + mini_xi
+                                                                                        * mini_gamma[0, n_prime + 1]) \
+                                                                                        + mini_u[n_prime + 1]
+                                else:
+                                        mini_v[n_prime + 1] = mini_w[n_prime] + mini_step / 12 \
+                                                                                        * (23 * G[n_prime]
+                                                                                        - 16 * G[n_prime - 1]
+                                                                                        + 5 * G[n_prime - 2]) \
+                                                                                        + mini_u[n_prime + 1]
 
                 # store solutions for the first two intervals
                 x[1] = mini_x[int(mini_steps / 2)]
@@ -1381,33 +1256,46 @@ used to compute the asymptotic behavior of the system.</dd>
                                    - R / St * w
                         sum_term = 0
                         if order == 1 or n == 0:
-                                for j in range(n + 1):
-                                        sum_term += w[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
                                 x[n + 1] = x[n] + delta_t * v[n]
                                 u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                                v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
-                                                                 / (1 + xi * alpha[0, n + 1]) + u[n + 1]
+                                if include_history:
+                                        for j in range(n + 1):
+                                                sum_term += w[n - j] * (alpha[j + 1, n + 1]
+                                                                                         - alpha[j, n])
+                                        v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
+                                                                         / (1 + xi * alpha[0, n + 1]) + u[n + 1]
+                                else:
+                                        v[n + 1] = w[n] + delta_t * G[n] + u[n + 1]
                         elif order == 2 or n == 1:
-                                for j in range(n + 1):
-                                        sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
                                 x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
                                 u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                                v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
-                                                                 - xi * sum_term) / (1 + xi * beta[0, n + 1]) \
-                                                                 + u[n + 1]
+                                if include_history:
+                                        for j in range(n + 1):
+                                                sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
+                                        v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+                                                                         - xi * sum_term) \
+                                                                         / (1 + xi * beta[0, n + 1]) + u[n + 1]
+                                else:
+                                        v[n + 1] = w[n] + delta_t / 2 * (3 * G[n] - G[n - 1]) \
+                                                                        + u[n + 1]
                         else: # order is 3 and n &gt; 1
-                                for j in range(n + 1):
-                                        sum_term += w[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
                                 x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
                                                                 + 5 * v[n - 2])
                                 u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                                v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
-                                                                 + 5 * G[n - 2]) - xi * sum_term) \
-                                                                 / (1 + xi * gamma[0, n + 1]) + u[n + 1]
+                                if include_history:
+                                        for j in range(n + 1):
+                                                sum_term += w[n - j] * (gamma[j + 1, n + 1]
+                                                                                         - gamma[j, n])
+                                        v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                                         + 5 * G[n - 2]) - xi * sum_term) \
+                                                                         / (1 + xi * gamma[0, n + 1]) + u[n + 1]
+                                else:
+                                        v[n + 1] = w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                                        + 5 * G[n - 2]) + u[n + 1]
                 return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
         def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
-                                         zdot_0=1, num_periods=50, delta_t=5e-3, method=&#39;BDF&#39;):
+                                         zdot_0=1, num_periods=50, delta_t=5e-3):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
@@ -1429,8 +1317,6 @@ used to compute the asymptotic behavior of the system.</dd>
                         The number of oscillation periods to integrate over.
                 delta_t : float, default=5e-3
                         The size of the time steps used for integration.
-                method : str, default=&#39;BDF&#39;
-                        The method of integration to use when neglecting history effects.
 
                 Returns
                 -------
@@ -1447,21 +1333,11 @@ used to compute the asymptotic behavior of the system.</dd>
                 &#34;&#34;&#34;
                 # initialize parameters for the solver
                 t_final = num_periods * self.flow.period
-                t_span = (0, t_final)
                 t_eval = np.arange(0, t_final + delta_t, delta_t)
                 y = [x_0, z_0, xdot_0, zdot_0]
 
                 # run computations
-                if include_history:     
-                        x, z, xdot, zdot, t = self.full_maxey_riley(t_eval, y, order=order)
-                else:
-                        sols = integrate.solve_ivp(self.maxey_riley, t_span, y,
-                                                                           method=method, t_eval=t_eval,
-                                                                           rtol=1e-8, atol=1e-10)
-                        # unpack solutions
-                        x, z, xdot, zdot = sols.y
-                        t = sols.t
-                return x, z, xdot, zdot, t</code></pre>
+                return self.maxey_riley(include_history, t_eval, y, order)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -1469,55 +1345,6 @@ used to compute the asymptotic behavior of the system.</dd>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.asymptotic_velocity"><code class="name flex">
-<span>def <span class="ident">asymptotic_velocity</span></span>(<span>self, t)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Computes the leading order asymptotic behavior of the particle velocity
-based on eq (4.7) from Prasath et al. (2019),
-<span><span class="MathJax_Preview">q^{(2)}(0, t) \approx c(\alpha, \gamma)
-- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
-+ \mathcal{O}(t^{3 / 2}),</span><script type="math/tex; mode=display">q^{(2)}(0, t) \approx c(\alpha, \gamma)
-- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
-+ \mathcal{O}(t^{3 / 2}),</script></span>
-with a sign change on the singular term.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The time(s) to use in the computations.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>float</code> or <code>array</code></dt>
-<dd>The asymptotic particle velocity.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def asymptotic_velocity(self, t):
-        r&#34;&#34;&#34;
-        Computes the leading order asymptotic behavior of the particle velocity
-        based on eq (4.7) from Prasath et al. (2019),
-        $$q^{(2)}(0, t) \approx c(\alpha, \gamma)
-                - \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
-                + \mathcal{O}(t^{3 / 2}),$$
-        with a sign change on the singular term.
-
-        Parameters
-        ----------
-        t : float or array
-                The time(s) to use in the computations.
-
-        Returns
-        -------
-        float or array
-                The asymptotic particle velocity.
-        &#34;&#34;&#34;
-        return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
-                         / (2 * self.alpha ** 2))</code></pre>
-</details>
-</dd>
 <dt id="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.derivative_along_trajectory"><code class="name flex">
 <span>def <span class="ident">derivative_along_trajectory</span></span>(<span>self, xdot, zdot)</span>
 </code></dt>
@@ -1568,14 +1395,16 @@ particle,
         return np.transpose(np.array([-zdot, xdot]))</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.full_maxey_riley"><code class="name flex">
-<span>def <span class="ident">full_maxey_riley</span></span>(<span>self, t, y, order)</span>
+<dt id="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.maxey_riley"><code class="name flex">
+<span>def <span class="ident">maxey_riley</span></span>(<span>self, include_history, t, y, order)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Implements the integration scheme for the full Maxey-Riley equation with
 history effects, as outlined in Daitche (2013) Section 3.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
+<dt><strong><code>include_history</code></strong> :&ensp;<code>boolean</code></dt>
+<dd>Whether to include history effects.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>array</code></dt>
 <dd>The times when the Maxey-Riley equation should be evaluated.</dd>
 <dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
@@ -1592,13 +1421,15 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def full_maxey_riley(self, t, y, order):
+<pre><code class="python">def maxey_riley(self, include_history, t, y, order):
         r&#34;&#34;&#34;
         Implements the integration scheme for the full Maxey-Riley equation with
         history effects, as outlined in Daitche (2013) Section 3.
 
         Parameters
         ----------
+        include_history : boolean
+                Whether to include history effects.
         t : array
                 The times when the Maxey-Riley equation should be evaluated.
         y : list (array-like)
@@ -1615,12 +1446,10 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
         R = self.density_ratio
         St = self.particle.stokes_num
         delta_t = t[1] - t[0]
-        xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
 
         # compute the number of time steps and create arrays to store solutions
         mini_steps = 2 * int(np.sqrt(2) / delta_t)
         mini_step = delta_t / (mini_steps / 2)
-        mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
         mini_x = np.empty((mini_steps + 1, 2)) 
         mini_v = np.empty((mini_steps + 1, 2))
         mini_u = np.empty((mini_steps + 1, 2))
@@ -1637,22 +1466,27 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
         mini_v[0] = v[0]
         mini_u[0] = u[0]
 
-        # compute matrices containing the values of alpha, beta, and gamma
-        if order == 1:
-                mini_alpha = compute_alpha(mini_steps + 1)
-                alpha = compute_alpha(t.size)
-        elif order == 2:
-                mini_alpha = compute_alpha(2)
-                mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1]) 
-                alpha = mini_alpha
-                beta = compute_beta(t.size, alpha[:, 1])
-        else: # order == 3
-                mini_alpha = compute_alpha(2)
-                mini_beta = compute_beta(3, mini_alpha[:, 1]) 
-                mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2]) 
-                alpha = mini_alpha
-                beta = mini_beta
-                gamma = compute_gamma(t.size, beta[:, 2])
+        # only compute alpha, beta, gamma, xi if we&#39;re including history effects
+        if include_history:
+                xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+                mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
+
+                # compute matrices containing the values of alpha, beta, and gamma
+                if order == 1:
+                        mini_alpha = compute_alpha(mini_steps + 1)
+                        alpha = compute_alpha(t.size)
+                elif order == 2:
+                        mini_alpha = compute_alpha(2)
+                        mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1]) 
+                        alpha = mini_alpha
+                        beta = compute_beta(t.size, alpha[:, 1])
+                else: # order == 3
+                        mini_alpha = compute_alpha(2)
+                        mini_beta = compute_beta(3, mini_alpha[:, 1]) 
+                        mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2]) 
+                        alpha = mini_alpha
+                        beta = mini_beta
+                        gamma = compute_gamma(t.size, beta[:, 2])
 
         # compute solutions for the first two intervals using finer time steps
         for n_prime in range(mini_steps):
@@ -1663,53 +1497,75 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
                         * np.transpose(np.array([-mini_w[:, 1], mini_w[:, 0]])) \
                         - R / St * mini_w
                 sum_term = 0
+                # equation (15)
                 if order == 1 or n_prime == 0:
-                        for j in range(n_prime + 1):
-                                sum_term += mini_w[n_prime - j] \
-                                                  * (mini_alpha[j + 1, n_prime + 1] \
-                                                  - mini_alpha[j, n_prime])
                         mini_x[n_prime + 1] = mini_x[n_prime] + mini_step \
                                                                                                   * mini_v[n_prime]
                         mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                          mini_x[n_prime + 1, 1])
-                        mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step * G[n_prime]\
-                                                                        - mini_xi * sum_term) \
-                                                                        / (1 + mini_xi
-                                                                        * mini_alpha[0, n_prime + 1]) \
-                                                                        + mini_u[n_prime + 1]
+                        if include_history:
+                                for j in range(n_prime + 1):
+                                        sum_term += mini_w[n_prime - j] \
+                                                          * (mini_alpha[j + 1, n_prime + 1] \
+                                                          - mini_alpha[j, n_prime])
+                                mini_v[n_prime + 1] = (mini_w[n_prime] \
+                                                                                + mini_step * G[n_prime] \
+                                                                                - mini_xi * sum_term) \
+                                                                                / (1 + mini_xi
+                                                                                * mini_alpha[0, n_prime + 1]) \
+                                                                                + mini_u[n_prime + 1]
+                        else:
+                                mini_v[n_prime + 1] = mini_w[n_prime] \
+                                                                                + mini_step * G[n_prime] \
+                                                                                + mini_u[n_prime + 1]
+                # equation (16)
                 elif order == 2 or n_prime == 1:
-                        for j in range(n_prime + 1):
-                                sum_term += mini_w[n_prime - j] \
-                                                  * (mini_beta[j + 1, n_prime + 1]
-                                                  - mini_beta[j, n_prime])
                         mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 2 \
                                                                         * (3 * mini_v[n_prime]
                                                                         - mini_v[n_prime - 1])
                         mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                          mini_x[n_prime + 1, 1])
-                        mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
-                                                                        * (3 * G[n_prime] - G[n_prime - 1])
-                                                                        - mini_xi * sum_term) / (1 + mini_xi
-                                                                        * mini_beta[0, n_prime + 1]) \
-                                                                        + mini_u[n_prime + 1]
+                        if include_history:
+                                for j in range(n_prime + 1):
+                                        sum_term += mini_w[n_prime - j] \
+                                                          * (mini_beta[j + 1, n_prime + 1]
+                                                          - mini_beta[j, n_prime])
+                                mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
+                                                                                * (3 * G[n_prime] - G[n_prime - 1])
+                                                                                - mini_xi * sum_term) / (1 + mini_xi
+                                                                                * mini_beta[0, n_prime + 1]) \
+                                                                                + mini_u[n_prime + 1]
+                        else:
+                                mini_v[n_prime + 1] = mini_w[n_prime] + mini_step / 2 \
+                                                                                * (3 * G[n_prime] - G[n_prime - 1])\
+                                                                                + mini_u[n_prime + 1]
+                # equation (17)
                 else: # order is 3 and n_prime &gt; 1
-                        for j in range(n_prime + 1):
-                                sum_term += mini_w[n_prime - j] \
-                                                  * (mini_gamma[j + 1, n_prime + 1] \
-                                                  - mini_gamma[j, n_prime])
                         mini_x[n_prime + 1] = mini_x[n_prime] + mini_step / 12 \
                                                                         * (23 * mini_v[n_prime]
                                                                         - 16 * mini_v[n_prime - 1]
                                                                         + 5 * mini_v[n_prime - 2])
                         mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
                                                                                                          mini_x[n_prime + 1, 1])
-                        mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
-                                                                        * (23 * G[n_prime] - 16 * G[n_prime - 1]
-                                                                        + 5 * G[n_prime - 2]) \
-                                                                        - mini_xi * sum_term) \
-                                                                        / (1 + mini_xi
-                                                                        * mini_gamma[0, n_prime + 1]) \
-                                                                        + mini_u[n_prime + 1]
+                        if include_history:
+                                for j in range(n_prime + 1):
+                                        sum_term += mini_w[n_prime - j] \
+                                                          * (mini_gamma[j + 1, n_prime + 1] \
+                                                          - mini_gamma[j, n_prime])
+                                mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
+                                                                                * (23 * G[n_prime]
+                                                                                - 16 * G[n_prime - 1]
+                                                                                + 5 * G[n_prime - 2]) \
+                                                                                - mini_xi * sum_term) \
+                                                                                / (1 + mini_xi
+                                                                                * mini_gamma[0, n_prime + 1]) \
+                                                                                + mini_u[n_prime + 1]
+                        else:
+                                mini_v[n_prime + 1] = mini_w[n_prime] + mini_step / 12 \
+                                                                                * (23 * G[n_prime]
+                                                                                - 16 * G[n_prime - 1]
+                                                                                + 5 * G[n_prime - 2]) \
+                                                                                + mini_u[n_prime + 1]
 
         # store solutions for the first two intervals
         x[1] = mini_x[int(mini_steps / 2)]
@@ -1728,114 +1584,47 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
                            - R / St * w
                 sum_term = 0
                 if order == 1 or n == 0:
-                        for j in range(n + 1):
-                                sum_term += w[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
                         x[n + 1] = x[n] + delta_t * v[n]
                         u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                        v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
-                                                         / (1 + xi * alpha[0, n + 1]) + u[n + 1]
+                        if include_history:
+                                for j in range(n + 1):
+                                        sum_term += w[n - j] * (alpha[j + 1, n + 1]
+                                                                                 - alpha[j, n])
+                                v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
+                                                                 / (1 + xi * alpha[0, n + 1]) + u[n + 1]
+                        else:
+                                v[n + 1] = w[n] + delta_t * G[n] + u[n + 1]
                 elif order == 2 or n == 1:
-                        for j in range(n + 1):
-                                sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
                         x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
                         u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                        v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
-                                                         - xi * sum_term) / (1 + xi * beta[0, n + 1]) \
-                                                         + u[n + 1]
+                        if include_history:
+                                for j in range(n + 1):
+                                        sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
+                                v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+                                                                 - xi * sum_term) \
+                                                                 / (1 + xi * beta[0, n + 1]) + u[n + 1]
+                        else:
+                                v[n + 1] = w[n] + delta_t / 2 * (3 * G[n] - G[n - 1]) \
+                                                                + u[n + 1]
                 else: # order is 3 and n &gt; 1
-                        for j in range(n + 1):
-                                sum_term += w[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
                         x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
                                                         + 5 * v[n - 2])
                         u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
-                        v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
-                                                         + 5 * G[n - 2]) - xi * sum_term) \
-                                                         / (1 + xi * gamma[0, n + 1]) + u[n + 1]
+                        if include_history:
+                                for j in range(n + 1):
+                                        sum_term += w[n - j] * (gamma[j + 1, n + 1]
+                                                                                 - gamma[j, n])
+                                v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                                 + 5 * G[n - 2]) - xi * sum_term) \
+                                                                 / (1 + xi * gamma[0, n + 1]) + u[n + 1]
+                        else:
+                                v[n + 1] = w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
+                                                                + 5 * G[n - 2]) + u[n + 1]
         return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.maxey_riley"><code class="name flex">
-<span>def <span class="ident">maxey_riley</span></span>(<span>self, t, y)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Evaluates the Maxey-Riley equation,
-<span><span class="MathJax_Preview">\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},</script></span>
-<span><span class="MathJax_Preview">\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
-- \textbf{v}}{\epsilon}
-+ \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-+ (1 - \frac{3R}{2}) \textbf{g}
-- \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-\frac{1}{\sqrt{t - s}} \mathrm{d}s
-[\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
-- \textbf{v}}{\epsilon}
-+ \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-+ (1 - \frac{3R}{2}) \textbf{g}
-- \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-\frac{1}{\sqrt{t - s}} \mathrm{d}s
-[\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},</script></span>
-with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
-\quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.</span><script type="math/tex; mode=display">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
-\quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.</script></span></p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
-<dd>The time to use in the computations.</dd>
-<dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
-<dd>A list containing the x, z, xdot, zdot values to use.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Array</code></dt>
-<dd>The components of the particle's velocity and acceleration.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def maxey_riley(self, t, y):
-        r&#34;&#34;&#34;
-        Evaluates the Maxey-Riley equation,
-        $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
-        $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
-                - \textbf{v}}{\epsilon}
-                + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                + (1 - \frac{3R}{2}) \textbf{g}
-                - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                \frac{1}{\sqrt{t - s}} \mathrm{d}s
-                [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
-        with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
-                \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
-        
-        Parameters
-        ----------
-        t : float
-                The time to use in the computations.
-        y : list (array-like)
-                A list containing the x, z, xdot, zdot values to use.
-
-        Returns
-        -------
-        Array
-                The components of the particle&#39;s velocity and acceleration.
-        &#34;&#34;&#34;
-        # initialize local variables and update the particle and fluid histories
-        R = self.density_ratio
-        x, z = y[:2]
-        particle_velocity = y[2:]
-        fluid_velocity = self.flow.velocity(x, z)
-
-        # compute terms on the RHS of the M-R equation
-        stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
-        fluid_pressure_gradient = 3 * R / 2 \
-                                                                * self.flow.material_derivative(x, z, t)
-
-        # M-R equation
-        particle_acceleration = stokes_drag + fluid_pressure_gradient
-        return np.concatenate((particle_velocity, particle_acceleration))</code></pre>
-</details>
-</dd>
 <dt id="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.run_numerics"><code class="name flex">
-<span>def <span class="ident">run_numerics</span></span>(<span>self, include_history, order=3, x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50, delta_t=0.005, method='BDF')</span>
+<span>def <span class="ident">run_numerics</span></span>(<span>self, include_history, order=3, x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50, delta_t=0.005)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the position and velocity of the particle over time.</p>
@@ -1857,8 +1646,6 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <dd>The number of oscillation periods to integrate over.</dd>
 <dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code>, default=<code>5e-3</code></dt>
 <dd>The size of the time steps used for integration.</dd>
-<dt><strong><code>method</code></strong> :&ensp;<code>str</code>, default=<code>'BDF'</code></dt>
-<dd>The method of integration to use when neglecting history effects.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1878,7 +1665,7 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
-                                 zdot_0=1, num_periods=50, delta_t=5e-3, method=&#39;BDF&#39;):
+                                 zdot_0=1, num_periods=50, delta_t=5e-3):
         &#34;&#34;&#34;
         Computes the position and velocity of the particle over time.
 
@@ -1900,8 +1687,6 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
                 The number of oscillation periods to integrate over.
         delta_t : float, default=5e-3
                 The size of the time steps used for integration.
-        method : str, default=&#39;BDF&#39;
-                The method of integration to use when neglecting history effects.
 
         Returns
         -------
@@ -1918,21 +1703,11 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
         &#34;&#34;&#34;
         # initialize parameters for the solver
         t_final = num_periods * self.flow.period
-        t_span = (0, t_final)
         t_eval = np.arange(0, t_final + delta_t, delta_t)
         y = [x_0, z_0, xdot_0, zdot_0]
 
         # run computations
-        if include_history:     
-                x, z, xdot, zdot, t = self.full_maxey_riley(t_eval, y, order=order)
-        else:
-                sols = integrate.solve_ivp(self.maxey_riley, t_span, y,
-                                                                   method=method, t_eval=t_eval,
-                                                                   rtol=1e-8, atol=1e-10)
-                # unpack solutions
-                x, z, xdot, zdot = sols.y
-                t = sols.t
-        return x, z, xdot, zdot, t</code></pre>
+        return self.maxey_riley(include_history, t_eval, y, order)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1963,9 +1738,7 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <li>
 <h4><code><a title="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem" href="#modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem">RotatingTransportSystem</a></code></h4>
 <ul class="">
-<li><code><a title="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.asymptotic_velocity" href="#modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.asymptotic_velocity">asymptotic_velocity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.derivative_along_trajectory" href="#modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.derivative_along_trajectory">derivative_along_trajectory</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.full_maxey_riley" href="#modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.full_maxey_riley">full_maxey_riley</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.maxey_riley" href="#modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.maxey_riley">maxey_riley</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.run_numerics" href="#modelling-microplastics-transport.models.rotating_system.RotatingTransportSystem.run_numerics">run_numerics</a></code></li>
 </ul>

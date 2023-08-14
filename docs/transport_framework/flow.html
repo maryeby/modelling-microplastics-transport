@@ -67,9 +67,100 @@ class Flow(ABC):
                 pass
 
         @abstractmethod
-        def material_derivative(self, x, z, t): 
+        def partial_t(self, x, z, t): 
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to time.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial time derivative vector components.
                 &#34;&#34;&#34;
-                Computes the Lagrangian derivative.
+                pass
+
+        @abstractmethod
+        def partial_x(self, x, z, t): 
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the horizontal position _x_.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial x derivative vector components.
+                &#34;&#34;&#34;
+                pass
+
+        @abstractmethod
+        def partial_z(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the vertical position _z_.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial z derivative vector components.
+                &#34;&#34;&#34;
+                pass
+
+        def dot_jacobian(self, vec, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the dot product of the provided vector with the Jacobian of the
+                fluid **u**.
+
+                Parameters
+                ----------
+                vec: array
+                        The vector to be used in the dot product.
+                x : float or array
+                        The x position(s) at which to evaluate the solution.
+                z : float or array
+                        The z position(s) at which to evaluate the solution.
+                t : float or array
+                        The time(s) at which to evaluate the solution.
+
+                Returns
+                -------
+                Array containing the vector components of the resulting dot product.
+                &#34;&#34;&#34;
+                x_component, z_component = vec
+                dxu, dxw = self.partial_x(x, z, t)
+                dzu, dzw = self.partial_z(x, z, t)
+                return np.array([dxu * x_component + dzu * z_component,
+                                                 dxw * x_component + dzw * z_component])
+
+        def material_derivative(self, x, z, t): 
+                r&#34;&#34;&#34;
+                Computes the material derivative,
+                $$\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
+                        = \frac{\partial \textbf{u}}{\partial t}
+                        + \textbf{u} \cdot \nabla \textbf{u}.$$
 
                 Parameters
                 ----------
@@ -84,27 +175,34 @@ class Flow(ABC):
                 -------
                 Array containing the material derivative vector components.
                 &#34;&#34;&#34;
-                pass
+                return self.partial_t(x, z, t) \
+                           + self.dot_jacobian(self.velocity(x, z, t), x, z, t)
 
-        @abstractmethod
-        def material_derivative2(self, x, z, t):
-                &#34;&#34;&#34;
-                Computes the second order Lagrangian derivative.
+        def derivative_along_trajectory(self, x, z, t, v):
+                r&#34;&#34;&#34;
+                Computes the derivative of the fluid along the provided trajectory of
+                the particle,
+                $$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+                        = \frac{\partial \textbf{u}}{\partial t}
+                        + \textbf{v} \cdot \nabla \textbf{u}.$$
 
                 Parameters
                 ----------
                 x : float or array
                         The x position(s) at which to evaluate the fluid velocity.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
+                        The z position(s) at which to evaluate the fluid velocity.
                 t : float or array
-                        The time(s) at which to evaluate the velocity.
+                        The time(s) at which to evaluate the fluid velocity.
+                v : array
+                        The velocity of the particle.
 
                 Returns
                 -------
-                Array containing the second order material derivative vector components.
+                Array
+                        The horizontal and vertical components of the solution.
                 &#34;&#34;&#34;
-                pass</code></pre>
+                return self.velocity(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
 </details>
 </section>
 <section>
@@ -171,9 +269,100 @@ integrate.</dd>
                 pass
 
         @abstractmethod
-        def material_derivative(self, x, z, t): 
+        def partial_t(self, x, z, t): 
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to time.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial time derivative vector components.
                 &#34;&#34;&#34;
-                Computes the Lagrangian derivative.
+                pass
+
+        @abstractmethod
+        def partial_x(self, x, z, t): 
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the horizontal position _x_.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial x derivative vector components.
+                &#34;&#34;&#34;
+                pass
+
+        @abstractmethod
+        def partial_z(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the vertical position _z_.
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial z derivative vector components.
+                &#34;&#34;&#34;
+                pass
+
+        def dot_jacobian(self, vec, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the dot product of the provided vector with the Jacobian of the
+                fluid **u**.
+
+                Parameters
+                ----------
+                vec: array
+                        The vector to be used in the dot product.
+                x : float or array
+                        The x position(s) at which to evaluate the solution.
+                z : float or array
+                        The z position(s) at which to evaluate the solution.
+                t : float or array
+                        The time(s) at which to evaluate the solution.
+
+                Returns
+                -------
+                Array containing the vector components of the resulting dot product.
+                &#34;&#34;&#34;
+                x_component, z_component = vec
+                dxu, dxw = self.partial_x(x, z, t)
+                dzu, dzw = self.partial_z(x, z, t)
+                return np.array([dxu * x_component + dzu * z_component,
+                                                 dxw * x_component + dzw * z_component])
+
+        def material_derivative(self, x, z, t): 
+                r&#34;&#34;&#34;
+                Computes the material derivative,
+                $$\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
+                        = \frac{\partial \textbf{u}}{\partial t}
+                        + \textbf{u} \cdot \nabla \textbf{u}.$$
 
                 Parameters
                 ----------
@@ -188,27 +377,34 @@ integrate.</dd>
                 -------
                 Array containing the material derivative vector components.
                 &#34;&#34;&#34;
-                pass
+                return self.partial_t(x, z, t) \
+                           + self.dot_jacobian(self.velocity(x, z, t), x, z, t)
 
-        @abstractmethod
-        def material_derivative2(self, x, z, t):
-                &#34;&#34;&#34;
-                Computes the second order Lagrangian derivative.
+        def derivative_along_trajectory(self, x, z, t, v):
+                r&#34;&#34;&#34;
+                Computes the derivative of the fluid along the provided trajectory of
+                the particle,
+                $$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+                        = \frac{\partial \textbf{u}}{\partial t}
+                        + \textbf{v} \cdot \nabla \textbf{u}.$$
 
                 Parameters
                 ----------
                 x : float or array
                         The x position(s) at which to evaluate the fluid velocity.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
+                        The z position(s) at which to evaluate the fluid velocity.
                 t : float or array
-                        The time(s) at which to evaluate the velocity.
+                        The time(s) at which to evaluate the fluid velocity.
+                v : array
+                        The velocity of the particle.
 
                 Returns
                 -------
-                Array containing the second order material derivative vector components.
+                Array
+                        The horizontal and vertical components of the solution.
                 &#34;&#34;&#34;
-                pass</code></pre>
+                return self.velocity(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -216,11 +412,124 @@ integrate.</dd>
 </ul>
 <h3>Methods</h3>
 <dl>
+<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.derivative_along_trajectory"><code class="name flex">
+<span>def <span class="ident">derivative_along_trajectory</span></span>(<span>self, x, z, t, v)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the derivative of the fluid along the provided trajectory of
+the particle,
+<span><span class="MathJax_Preview">\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+= \frac{\partial \textbf{u}}{\partial t}
++ \textbf{v} \cdot \nabla \textbf{u}.</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+= \frac{\partial \textbf{u}}{\partial t}
++ \textbf{v} \cdot \nabla \textbf{u}.</script></span></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the fluid velocity.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the fluid velocity.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the fluid velocity.</dd>
+<dt><strong><code>v</code></strong> :&ensp;<code>array</code></dt>
+<dd>The velocity of the particle.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Array</code></dt>
+<dd>The horizontal and vertical components of the solution.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def derivative_along_trajectory(self, x, z, t, v):
+        r&#34;&#34;&#34;
+        Computes the derivative of the fluid along the provided trajectory of
+        the particle,
+        $$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+                = \frac{\partial \textbf{u}}{\partial t}
+                + \textbf{v} \cdot \nabla \textbf{u}.$$
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the fluid velocity.
+        z : float or array
+                The z position(s) at which to evaluate the fluid velocity.
+        t : float or array
+                The time(s) at which to evaluate the fluid velocity.
+        v : array
+                The velocity of the particle.
+
+        Returns
+        -------
+        Array
+                The horizontal and vertical components of the solution.
+        &#34;&#34;&#34;
+        return self.velocity(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.dot_jacobian"><code class="name flex">
+<span>def <span class="ident">dot_jacobian</span></span>(<span>self, vec, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the dot product of the provided vector with the Jacobian of the
+fluid <strong>u</strong>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>vec</code></strong> :&ensp;<code>array</code></dt>
+<dd>The vector to be used in the dot product.</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the solution.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the solution.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the solution.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the vector components of the resulting dot product.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def dot_jacobian(self, vec, x, z, t):
+        r&#34;&#34;&#34;
+        Computes the dot product of the provided vector with the Jacobian of the
+        fluid **u**.
+
+        Parameters
+        ----------
+        vec: array
+                The vector to be used in the dot product.
+        x : float or array
+                The x position(s) at which to evaluate the solution.
+        z : float or array
+                The z position(s) at which to evaluate the solution.
+        t : float or array
+                The time(s) at which to evaluate the solution.
+
+        Returns
+        -------
+        Array containing the vector components of the resulting dot product.
+        &#34;&#34;&#34;
+        x_component, z_component = vec
+        dxu, dxw = self.partial_x(x, z, t)
+        dzu, dzw = self.partial_z(x, z, t)
+        return np.array([dxu * x_component + dzu * z_component,
+                                         dxw * x_component + dzw * z_component])</code></pre>
+</details>
+</dd>
 <dt id="modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative"><code class="name flex">
 <span>def <span class="ident">material_derivative</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the Lagrangian derivative.</p>
+<div class="desc"><p>Computes the material derivative,
+<span><span class="MathJax_Preview">\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
+= \frac{\partial \textbf{u}}{\partial t}
++ \textbf{u} \cdot \nabla \textbf{u}.</span><script type="math/tex; mode=display">\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
+= \frac{\partial \textbf{u}}{\partial t}
++ \textbf{u} \cdot \nabla \textbf{u}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -236,10 +545,12 @@ integrate.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@abstractmethod
-def material_derivative(self, x, z, t): 
-        &#34;&#34;&#34;
-        Computes the Lagrangian derivative.
+<pre><code class="python">def material_derivative(self, x, z, t): 
+        r&#34;&#34;&#34;
+        Computes the material derivative,
+        $$\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
+                = \frac{\partial \textbf{u}}{\partial t}
+                + \textbf{u} \cdot \nabla \textbf{u}.$$
 
         Parameters
         ----------
@@ -254,46 +565,135 @@ def material_derivative(self, x, z, t):
         -------
         Array containing the material derivative vector components.
         &#34;&#34;&#34;
-        pass</code></pre>
+        return self.partial_t(x, z, t) \
+                   + self.dot_jacobian(self.velocity(x, z, t), x, z, t)</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative2"><code class="name flex">
-<span>def <span class="ident">material_derivative2</span></span>(<span>self, x, z, t)</span>
+<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.partial_t"><code class="name flex">
+<span>def <span class="ident">partial_t</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the second order Lagrangian derivative.</p>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to time.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the fluid velocity.</dd>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the velocity and derivative.</dd>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The time(s) at which to evaluate the velocity.</dd>
+<dd>The time(s) at which to evaluate the derivative.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the second order material derivative vector components.</p></div>
+<p>Array containing the partial time derivative vector components.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def material_derivative2(self, x, z, t):
-        &#34;&#34;&#34;
-        Computes the second order Lagrangian derivative.
+def partial_t(self, x, z, t): 
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to time.
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the fluid velocity.
+                The x position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the velocity and derivative.
+                The z position(s) at which to evaluate the derivative.
         t : float or array
-                The time(s) at which to evaluate the velocity.
+                The time(s) at which to evaluate the derivative.
 
         Returns
         -------
-        Array containing the second order material derivative vector components.
+        Array containing the partial time derivative vector components.
+        &#34;&#34;&#34;
+        pass</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.partial_x"><code class="name flex">
+<span>def <span class="ident">partial_x</span></span>(<span>self, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to the horizontal position <em>x</em>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the derivative.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the partial x derivative vector components.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def partial_x(self, x, z, t): 
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to the horizontal position _x_.
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the derivative.
+        z : float or array
+                The z position(s) at which to evaluate the derivative.
+        t : float or array
+                The time(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        Array containing the partial x derivative vector components.
+        &#34;&#34;&#34;
+        pass</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.partial_z"><code class="name flex">
+<span>def <span class="ident">partial_z</span></span>(<span>self, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to the vertical position <em>z</em>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the derivative.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the partial z derivative vector components.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def partial_z(self, x, z, t):
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to the vertical position _z_.
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the derivative.
+        z : float or array
+                The z position(s) at which to evaluate the derivative.
+        t : float or array
+                The time(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        Array containing the partial z derivative vector components.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -360,8 +760,12 @@ def velocity(self, x, z, t):
 <li>
 <h4><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow" href="#modelling-microplastics-transport.transport_framework.flow.Flow">Flow</a></code></h4>
 <ul class="">
+<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.derivative_along_trajectory" href="#modelling-microplastics-transport.transport_framework.flow.Flow.derivative_along_trajectory">derivative_along_trajectory</a></code></li>
+<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.dot_jacobian" href="#modelling-microplastics-transport.transport_framework.flow.Flow.dot_jacobian">dot_jacobian</a></code></li>
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative" href="#modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative">material_derivative</a></code></li>
-<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative2" href="#modelling-microplastics-transport.transport_framework.flow.Flow.material_derivative2">material_derivative2</a></code></li>
+<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.partial_t" href="#modelling-microplastics-transport.transport_framework.flow.Flow.partial_t">partial_t</a></code></li>
+<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.partial_x" href="#modelling-microplastics-transport.transport_framework.flow.Flow.partial_x">partial_x</a></code></li>
+<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.partial_z" href="#modelling-microplastics-transport.transport_framework.flow.Flow.partial_z">partial_z</a></code></li>
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.velocity" href="#modelling-microplastics-transport.transport_framework.flow.Flow.velocity">velocity</a></code></li>
 </ul>
 </li>

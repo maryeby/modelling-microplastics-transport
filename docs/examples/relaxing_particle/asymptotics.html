@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>modelling-microplastics-transport.examples.rigid_body_rotation.rotating_numerics API documentation</title>
+<title>modelling-microplastics-transport.examples.relaxing_particle.asymptotics API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>modelling-microplastics-transport.examples.rigid_body_rotation.rotating_numerics</code></h1>
+<h1 class="title">Module <code>modelling-microplastics-transport.examples.relaxing_particle.asymptotics</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -30,60 +30,42 @@
 <pre><code class="python">import sys 
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
-import numpy as np
 import pandas as pd
+import numpy as np
 
 from transport_framework import particle as prt
-from models import rotating_flow as fl
-from models import rotating_system as ts
+from models import quiescent_flow as fl
+from models import relaxing_system as ts
 
 def main():
         &#34;&#34;&#34;
-        This program runs numerical simulations for a rotating rigid body, and saves
-        the results to the `data` directory.
+        This program computes asymptotic solutions for a relaxing particle in a
+        quiescent flow, and saves the results to the `data` directory.
         &#34;&#34;&#34;
-        # initialize variables for the transport system
-        t_final = 100
-        delta_t = 1e-2
-        R = 2 / 3 * 0.75
-        my_particle = prt.Particle(stokes_num=2 / 3 * 0.3)
-        my_flow = fl.RotatingFlow()
-        my_system = ts.RotatingTransportSystem(my_particle, my_flow, R)
-        my_dict = dict.fromkeys([&#39;t&#39;, &#39;first_x&#39;, &#39;first_z&#39;, &#39;first_xdot&#39;,
-                                                         &#39;first_zdot&#39;, &#39;second_x&#39;, &#39;second_z&#39;,
-                                                         &#39;second_xdot&#39;, &#39;second_zdot&#39;, &#39;third_x&#39;, &#39;third_z&#39;,
-                                                         &#39;third_xdot&#39;, &#39;third_zdot&#39;])
-        x_0 = 1
-        xdot_0, zdot_0 = my_flow.velocity(x_0, 0)
+        # initialize variables for the transport systems
+        R_light = 2 / (1 + 2 * 0.01)
+        R_neutral = 2 / (1 + 2 * 1)
+        R_heavy = 2 / (1 + 2 * 5)
+        my_particle = prt.Particle(stokes_num=0.66)
+        my_flow = fl.QuiescentFlow()
+        light_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_light)
+        neutral_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_neutral)
+        heavy_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_heavy)
 
-        # compute first order results
-        x, z, _, _, _ = my_system.run_numerics(include_history=True, order=1,
-                                                                                   x_0=x_0, xdot_0=xdot_0,
-                                                                                   zdot_0=zdot_0, delta_t=delta_t,
-                                                                                   num_periods=t_final)
-        my_dict[&#39;first_x&#39;] = x
-        my_dict[&#39;first_z&#39;] = z
+        # get time t from numerics
+        numerics = pd.read_csv(&#39;../data/relaxing_particle/numerics.csv&#39;)        
+        t = numerics[&#39;t&#39;][1:]
 
-        # compute second order results
-        x, z, _, _, _ = my_system.run_numerics(include_history=True, order=2,
-                                                                                   x_0=x_0, xdot_0=xdot_0,
-                                                                                   zdot_0=zdot_0, delta_t=delta_t,
-                                                                                   num_periods=t_final)
-        my_dict[&#39;second_x&#39;] = x
-        my_dict[&#39;second_z&#39;] = z
+        # compute asymptotics
+        light = light_system.asymptotic_velocity(t)
+        neutral = neutral_system.asymptotic_velocity(t)
+        heavy = heavy_system.asymptotic_velocity(t)
 
-        # compute third order results
-        x, z, _, _, t = my_system.run_numerics(include_history=True, x_0=x_0,
-                                                                                   xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                   delta_t=delta_t, num_periods=t_final)
-        my_dict[&#39;third_x&#39;] = x
-        my_dict[&#39;third_z&#39;] = z
-        my_dict[&#39;t&#39;] = t
-
-        # write results to data file
-        numerics = pd.DataFrame(my_dict)
-        numerics.to_csv(&#39;../data/rotating_numerics.csv&#39;, index=False)
-                
+        # store results and write to a csv file
+        asymptotics = pd.DataFrame({&#39;t&#39;: t, &#39;light&#39;: light, &#39;neutral&#39;: neutral,
+                                                                &#39;heavy&#39;: heavy})
+        asymptotics.to_csv(&#39;../data/relaxing_particle/asymptotics.csv&#39;,
+                                           index=False)
 if __name__ == &#39;__main__&#39;:
         main()</code></pre>
 </details>
@@ -95,62 +77,45 @@ if __name__ == &#39;__main__&#39;:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="modelling-microplastics-transport.examples.rigid_body_rotation.rotating_numerics.main"><code class="name flex">
+<dt id="modelling-microplastics-transport.examples.relaxing_particle.asymptotics.main"><code class="name flex">
 <span>def <span class="ident">main</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>This program runs numerical simulations for a rotating rigid body, and saves
-the results to the <code>data</code> directory.</p></div>
+<div class="desc"><p>This program computes asymptotic solutions for a relaxing particle in a
+quiescent flow, and saves the results to the <code>data</code> directory.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
         &#34;&#34;&#34;
-        This program runs numerical simulations for a rotating rigid body, and saves
-        the results to the `data` directory.
+        This program computes asymptotic solutions for a relaxing particle in a
+        quiescent flow, and saves the results to the `data` directory.
         &#34;&#34;&#34;
-        # initialize variables for the transport system
-        t_final = 100
-        delta_t = 1e-2
-        R = 2 / 3 * 0.75
-        my_particle = prt.Particle(stokes_num=2 / 3 * 0.3)
-        my_flow = fl.RotatingFlow()
-        my_system = ts.RotatingTransportSystem(my_particle, my_flow, R)
-        my_dict = dict.fromkeys([&#39;t&#39;, &#39;first_x&#39;, &#39;first_z&#39;, &#39;first_xdot&#39;,
-                                                         &#39;first_zdot&#39;, &#39;second_x&#39;, &#39;second_z&#39;,
-                                                         &#39;second_xdot&#39;, &#39;second_zdot&#39;, &#39;third_x&#39;, &#39;third_z&#39;,
-                                                         &#39;third_xdot&#39;, &#39;third_zdot&#39;])
-        x_0 = 1
-        xdot_0, zdot_0 = my_flow.velocity(x_0, 0)
+        # initialize variables for the transport systems
+        R_light = 2 / (1 + 2 * 0.01)
+        R_neutral = 2 / (1 + 2 * 1)
+        R_heavy = 2 / (1 + 2 * 5)
+        my_particle = prt.Particle(stokes_num=0.66)
+        my_flow = fl.QuiescentFlow()
+        light_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_light)
+        neutral_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_neutral)
+        heavy_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_heavy)
 
-        # compute first order results
-        x, z, _, _, _ = my_system.run_numerics(include_history=True, order=1,
-                                                                                   x_0=x_0, xdot_0=xdot_0,
-                                                                                   zdot_0=zdot_0, delta_t=delta_t,
-                                                                                   num_periods=t_final)
-        my_dict[&#39;first_x&#39;] = x
-        my_dict[&#39;first_z&#39;] = z
+        # get time t from numerics
+        numerics = pd.read_csv(&#39;../data/relaxing_particle/numerics.csv&#39;)        
+        t = numerics[&#39;t&#39;][1:]
 
-        # compute second order results
-        x, z, _, _, _ = my_system.run_numerics(include_history=True, order=2,
-                                                                                   x_0=x_0, xdot_0=xdot_0,
-                                                                                   zdot_0=zdot_0, delta_t=delta_t,
-                                                                                   num_periods=t_final)
-        my_dict[&#39;second_x&#39;] = x
-        my_dict[&#39;second_z&#39;] = z
+        # compute asymptotics
+        light = light_system.asymptotic_velocity(t)
+        neutral = neutral_system.asymptotic_velocity(t)
+        heavy = heavy_system.asymptotic_velocity(t)
 
-        # compute third order results
-        x, z, _, _, t = my_system.run_numerics(include_history=True, x_0=x_0,
-                                                                                   xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                   delta_t=delta_t, num_periods=t_final)
-        my_dict[&#39;third_x&#39;] = x
-        my_dict[&#39;third_z&#39;] = z
-        my_dict[&#39;t&#39;] = t
-
-        # write results to data file
-        numerics = pd.DataFrame(my_dict)
-        numerics.to_csv(&#39;../data/rotating_numerics.csv&#39;, index=False)</code></pre>
+        # store results and write to a csv file
+        asymptotics = pd.DataFrame({&#39;t&#39;: t, &#39;light&#39;: light, &#39;neutral&#39;: neutral,
+                                                                &#39;heavy&#39;: heavy})
+        asymptotics.to_csv(&#39;../data/relaxing_particle/asymptotics.csv&#39;,
+                                           index=False)</code></pre>
 </details>
 </dd>
 </dl>
@@ -166,12 +131,12 @@ the results to the <code>data</code> directory.</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="modelling-microplastics-transport.examples.rigid_body_rotation" href="index.html">modelling-microplastics-transport.examples.rigid_body_rotation</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.relaxing_particle" href="index.html">modelling-microplastics-transport.examples.relaxing_particle</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="modelling-microplastics-transport.examples.rigid_body_rotation.rotating_numerics.main" href="#modelling-microplastics-transport.examples.rigid_body_rotation.rotating_numerics.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.relaxing_particle.asymptotics.main" href="#modelling-microplastics-transport.examples.relaxing_particle.asymptotics.main">main</a></code></li>
 </ul>
 </li>
 </ul>

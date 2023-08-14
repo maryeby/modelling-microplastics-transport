@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>modelling-microplastics-transport.examples.relaxing_particle.relaxing_asymptotics API documentation</title>
+<title>modelling-microplastics-transport.examples.rigid_body_rotation.rel_error API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>modelling-microplastics-transport.examples.relaxing_particle.relaxing_asymptotics</code></h1>
+<h1 class="title">Module <code>modelling-microplastics-transport.examples.rigid_body_rotation.rel_error</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -33,39 +33,38 @@ sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
 import pandas as pd
 import numpy as np
 
-from transport_framework import particle as prt
-from models import quiescent_flow as fl
-from models import relaxing_system as ts
-
 def main():
         &#34;&#34;&#34;
-        This program computes asymptotic solutions for a relaxing particle in a
-        quiescent flow, and saves the results to the `data` directory.
+        This program computes the relative error for the numerical solutions of a
+        rotating particle in a flow and saves the results to the `data` directory.
         &#34;&#34;&#34;
-        # initialize variables for the transport systems
-        R_light = 2 / (1 + 2 * 0.01)
-        R_neutral = 2 / (1 + 2 * 1)
-        R_heavy = 2 / (1 + 2 * 5)
-        my_particle = prt.Particle(stokes_num=0.66)
-        my_flow = fl.QuiescentFlow()
-        light_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_light)
-        neutral_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_neutral)
-        heavy_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_heavy)
+        # read data
+        data_path = &#39;../data/rigid_body_rotation/&#39;
+        numerics = pd.read_csv(data_path + &#39;numerics.csv&#39;)
+        analytics = pd.read_csv(data_path + &#39;analytics.csv&#39;)
 
-        # get time t from numerics
-        numerics = pd.read_csv(&#39;../data/relaxing_numerics.csv&#39;) 
-        t = numerics[&#39;t&#39;][1:]
+        # compute relative error
+        exact = analytics[[&#39;x_ana&#39;, &#39;z_ana&#39;]].to_numpy()
+        x_num1 = numerics[[&#39;first_x&#39;, &#39;first_z&#39;]].to_numpy()
+        x_num2 = numerics[[&#39;second_x&#39;, &#39;second_z&#39;]].to_numpy()
+        x_num3 = numerics[[&#39;third_x&#39;, &#39;third_z&#39;]].to_numpy()
+        my_dict = dict.fromkeys([&#39;e_rel1&#39;, &#39;e_rel2&#39;, &#39;e_rel3&#39;, &#39;global_error1&#39;,
+                                                         &#39;global_error2&#39;, &#39;global_error3&#39;])
+        my_dict[&#39;t&#39;] = numerics[&#39;t&#39;]
+        my_dict[&#39;e_rel1&#39;] = np.linalg.norm(exact - x_num1, axis=1) \
+                                                / np.linalg.norm(exact, axis=1)
+        my_dict[&#39;e_rel2&#39;] = np.linalg.norm(exact - x_num2, axis=1) \
+                                                / np.linalg.norm(exact, axis=1)
+        my_dict[&#39;e_rel3&#39;] = np.linalg.norm(exact - x_num3, axis=1) \
+                                                / np.linalg.norm(exact, axis=1)
+        my_dict[&#39;global_error1&#39;] = np.linalg.norm(exact - x_num1, axis=1).max()
+        my_dict[&#39;global_error2&#39;] = np.linalg.norm(exact - x_num2, axis=1).max()
+        my_dict[&#39;global_error3&#39;] = np.linalg.norm(exact - x_num3, axis=1).max()
 
-        # compute asymptotics
-        light = light_system.asymptotic_velocity(t)
-        neutral = neutral_system.asymptotic_velocity(t)
-        heavy = heavy_system.asymptotic_velocity(t)
+        # write results to data file
+        rel_error = pd.DataFrame(my_dict)
+        rel_error.to_csv(data_path + &#39;rel_error.csv&#39;, index=False)
 
-        # store results and write to a csv file
-        asymptotics = pd.DataFrame({&#39;t&#39;: t, &#39;light&#39;: light, &#39;neutral&#39;: neutral,
-                                                                &#39;heavy&#39;: heavy})
-        asymptotics.to_csv(&#39;../data/relaxing_asymptotics.csv&#39;,
-                                           index=False)
 if __name__ == &#39;__main__&#39;:
         main()</code></pre>
 </details>
@@ -77,45 +76,47 @@ if __name__ == &#39;__main__&#39;:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="modelling-microplastics-transport.examples.relaxing_particle.relaxing_asymptotics.main"><code class="name flex">
+<dt id="modelling-microplastics-transport.examples.rigid_body_rotation.rel_error.main"><code class="name flex">
 <span>def <span class="ident">main</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>This program computes asymptotic solutions for a relaxing particle in a
-quiescent flow, and saves the results to the <code>data</code> directory.</p></div>
+<div class="desc"><p>This program computes the relative error for the numerical solutions of a
+rotating particle in a flow and saves the results to the <code>data</code> directory.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
         &#34;&#34;&#34;
-        This program computes asymptotic solutions for a relaxing particle in a
-        quiescent flow, and saves the results to the `data` directory.
+        This program computes the relative error for the numerical solutions of a
+        rotating particle in a flow and saves the results to the `data` directory.
         &#34;&#34;&#34;
-        # initialize variables for the transport systems
-        R_light = 2 / (1 + 2 * 0.01)
-        R_neutral = 2 / (1 + 2 * 1)
-        R_heavy = 2 / (1 + 2 * 5)
-        my_particle = prt.Particle(stokes_num=0.66)
-        my_flow = fl.QuiescentFlow()
-        light_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_light)
-        neutral_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_neutral)
-        heavy_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_heavy)
+        # read data
+        data_path = &#39;../data/rigid_body_rotation/&#39;
+        numerics = pd.read_csv(data_path + &#39;numerics.csv&#39;)
+        analytics = pd.read_csv(data_path + &#39;analytics.csv&#39;)
 
-        # get time t from numerics
-        numerics = pd.read_csv(&#39;../data/relaxing_numerics.csv&#39;) 
-        t = numerics[&#39;t&#39;][1:]
+        # compute relative error
+        exact = analytics[[&#39;x_ana&#39;, &#39;z_ana&#39;]].to_numpy()
+        x_num1 = numerics[[&#39;first_x&#39;, &#39;first_z&#39;]].to_numpy()
+        x_num2 = numerics[[&#39;second_x&#39;, &#39;second_z&#39;]].to_numpy()
+        x_num3 = numerics[[&#39;third_x&#39;, &#39;third_z&#39;]].to_numpy()
+        my_dict = dict.fromkeys([&#39;e_rel1&#39;, &#39;e_rel2&#39;, &#39;e_rel3&#39;, &#39;global_error1&#39;,
+                                                         &#39;global_error2&#39;, &#39;global_error3&#39;])
+        my_dict[&#39;t&#39;] = numerics[&#39;t&#39;]
+        my_dict[&#39;e_rel1&#39;] = np.linalg.norm(exact - x_num1, axis=1) \
+                                                / np.linalg.norm(exact, axis=1)
+        my_dict[&#39;e_rel2&#39;] = np.linalg.norm(exact - x_num2, axis=1) \
+                                                / np.linalg.norm(exact, axis=1)
+        my_dict[&#39;e_rel3&#39;] = np.linalg.norm(exact - x_num3, axis=1) \
+                                                / np.linalg.norm(exact, axis=1)
+        my_dict[&#39;global_error1&#39;] = np.linalg.norm(exact - x_num1, axis=1).max()
+        my_dict[&#39;global_error2&#39;] = np.linalg.norm(exact - x_num2, axis=1).max()
+        my_dict[&#39;global_error3&#39;] = np.linalg.norm(exact - x_num3, axis=1).max()
 
-        # compute asymptotics
-        light = light_system.asymptotic_velocity(t)
-        neutral = neutral_system.asymptotic_velocity(t)
-        heavy = heavy_system.asymptotic_velocity(t)
-
-        # store results and write to a csv file
-        asymptotics = pd.DataFrame({&#39;t&#39;: t, &#39;light&#39;: light, &#39;neutral&#39;: neutral,
-                                                                &#39;heavy&#39;: heavy})
-        asymptotics.to_csv(&#39;../data/relaxing_asymptotics.csv&#39;,
-                                           index=False)</code></pre>
+        # write results to data file
+        rel_error = pd.DataFrame(my_dict)
+        rel_error.to_csv(data_path + &#39;rel_error.csv&#39;, index=False)</code></pre>
 </details>
 </dd>
 </dl>
@@ -131,12 +132,12 @@ quiescent flow, and saves the results to the <code>data</code> directory.</p></d
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="modelling-microplastics-transport.examples.relaxing_particle" href="index.html">modelling-microplastics-transport.examples.relaxing_particle</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.rigid_body_rotation" href="index.html">modelling-microplastics-transport.examples.rigid_body_rotation</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="modelling-microplastics-transport.examples.relaxing_particle.relaxing_asymptotics.main" href="#modelling-microplastics-transport.examples.relaxing_particle.relaxing_asymptotics.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.rigid_body_rotation.rel_error.main" href="#modelling-microplastics-transport.examples.rigid_body_rotation.rel_error.main">main</a></code></li>
 </ul>
 </li>
 </ul>

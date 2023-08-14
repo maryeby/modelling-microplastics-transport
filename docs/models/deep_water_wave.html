@@ -54,7 +54,7 @@ class DeepWaterWave(wave.Wave):
                 wavenum : float
                         The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
                 gravity : float
-                        The gravity _**g**_.
+                        The gravity **g**.
                 angular_freq : float
                         The angular frequency omega, computed using the dispersion relation.
                 period : float
@@ -74,13 +74,13 @@ class DeepWaterWave(wave.Wave):
                 self.angular_freq = np.sqrt(constants.g * self.wavenum)
 
         def set_gravity(self):
-                &#34;&#34;&#34;Defines the gravity _**g**_.&#34;&#34;&#34;
+                &#34;&#34;&#34;Defines the gravity **g**.&#34;&#34;&#34;
                 self.gravity = np.array([0, -constants.g]) / (self.wavenum \
                                            * (self.angular_freq * self.amplitude) ** 2)
 
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity _**u**_ = (_u_, _w_), with
+                Computes the fluid velocity **u** = (_u_, _w_), with
                 $$u(x, z, t) = e^{z} \cos(x - \frac{t}{\epsilon}),$$
                 $$w(x, z, t) = e^{z} \sin(x - \frac{t}{\epsilon}).$$
 
@@ -98,31 +98,75 @@ class DeepWaterWave(wave.Wave):
                 Array containing the velocity field vector components _u_ and _w_.
                 &#34;&#34;&#34;
                 return np.array([np.exp(z) * np.cos(x - t / self.epsilon),
-                         np.exp(z) * np.sin(x - t / self.epsilon)])
+                                                 np.exp(z) * np.sin(x - t / self.epsilon)])
 
-        def material_derivative(self, x, z, t):
+        def partial_t(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the Lagrangian derivative, where
-                $$\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_x =
-                        \frac{w}{\epsilon}, \qquad
-                \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_z
-                        = e^{2z} - \frac{u}{\epsilon}.$$
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to time, where
+                $$\frac{\partial u}{\partial t} = \frac{w}{\epsilon}, \qquad
+                \frac{\partial w}{\partial t} = -\frac{u}{\epsilon}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
+                        The x position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
+                        The z position(s) at which to evaluate the derivative.
                 t : float or array
-                        The time(s) at which to evaluate the velocity.
+                        The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the material derivative vector components.
-                &#34;&#34;&#34;             
+                Array containing the partial time derivative vector components.
+                &#34;&#34;&#34;
                 u, w = self.velocity(x, z, t)
-                return np.array([w / self.epsilon, np.exp(2 * z) - u / self.epsilon])
+                return np.array([w / self.epsilon, -u / self.epsilon])
+
+        def partial_x(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the horizontal position _x_, where
+                $$\frac{\partial u}{\partial x} = -w, \qquad
+                \frac{\partial w}{\partial x} = u.$$
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial x derivative vector components.
+                &#34;&#34;&#34;
+                u, w = self.velocity(x, z, t)
+                return np.array([-w, u])
+
+        def partial_z(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the vertical position _z_, where
+                $$\frac{\partial u}{\partial z} = u, \qquad
+                \frac{\partial w}{\partial z} = w.$$
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial z derivative vector components.
+                &#34;&#34;&#34;
+                return self.velocity(x, z, t)
 
         def material_derivative2(self, x, z, t):
                 r&#34;&#34;&#34;
@@ -148,7 +192,7 @@ class DeepWaterWave(wave.Wave):
                 &#34;&#34;&#34;
                 u, w = self.velocity(x, z, t)
                 return np.array([np.exp(2 * z) - u / self.epsilon ** 2,
-                         w * (2 * np.exp(2 * z) - 1 / self.epsilon ** 2)])</code></pre>
+                                                 w * (2 * np.exp(2 * z) - 1 / self.epsilon ** 2)])</code></pre>
 </details>
 </section>
 <section>
@@ -179,7 +223,7 @@ depth.</p>
 <dt><strong><code>wavenum</code></strong> :&ensp;<code>float</code></dt>
 <dd>The wave number <em>k</em>, computed as <span><span class="MathJax_Preview">k = \frac{2 \pi}{\lambda}.</span><script type="math/tex; mode=display">k = \frac{2 \pi}{\lambda}.</script></span></dd>
 <dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The gravity <em><strong>g</strong></em>.</dd>
+<dd>The gravity <strong>g</strong>.</dd>
 <dt><strong><code>angular_freq</code></strong> :&ensp;<code>float</code></dt>
 <dd>The angular frequency omega, computed using the dispersion relation.</dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
@@ -212,7 +256,7 @@ depth.</p>
                 wavenum : float
                         The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
                 gravity : float
-                        The gravity _**g**_.
+                        The gravity **g**.
                 angular_freq : float
                         The angular frequency omega, computed using the dispersion relation.
                 period : float
@@ -232,13 +276,13 @@ depth.</p>
                 self.angular_freq = np.sqrt(constants.g * self.wavenum)
 
         def set_gravity(self):
-                &#34;&#34;&#34;Defines the gravity _**g**_.&#34;&#34;&#34;
+                &#34;&#34;&#34;Defines the gravity **g**.&#34;&#34;&#34;
                 self.gravity = np.array([0, -constants.g]) / (self.wavenum \
                                            * (self.angular_freq * self.amplitude) ** 2)
 
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity _**u**_ = (_u_, _w_), with
+                Computes the fluid velocity **u** = (_u_, _w_), with
                 $$u(x, z, t) = e^{z} \cos(x - \frac{t}{\epsilon}),$$
                 $$w(x, z, t) = e^{z} \sin(x - \frac{t}{\epsilon}).$$
 
@@ -256,31 +300,75 @@ depth.</p>
                 Array containing the velocity field vector components _u_ and _w_.
                 &#34;&#34;&#34;
                 return np.array([np.exp(z) * np.cos(x - t / self.epsilon),
-                         np.exp(z) * np.sin(x - t / self.epsilon)])
+                                                 np.exp(z) * np.sin(x - t / self.epsilon)])
 
-        def material_derivative(self, x, z, t):
+        def partial_t(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the Lagrangian derivative, where
-                $$\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_x =
-                        \frac{w}{\epsilon}, \qquad
-                \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_z
-                        = e^{2z} - \frac{u}{\epsilon}.$$
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to time, where
+                $$\frac{\partial u}{\partial t} = \frac{w}{\epsilon}, \qquad
+                \frac{\partial w}{\partial t} = -\frac{u}{\epsilon}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
+                        The x position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
+                        The z position(s) at which to evaluate the derivative.
                 t : float or array
-                        The time(s) at which to evaluate the velocity.
+                        The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the material derivative vector components.
-                &#34;&#34;&#34;             
+                Array containing the partial time derivative vector components.
+                &#34;&#34;&#34;
                 u, w = self.velocity(x, z, t)
-                return np.array([w / self.epsilon, np.exp(2 * z) - u / self.epsilon])
+                return np.array([w / self.epsilon, -u / self.epsilon])
+
+        def partial_x(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the horizontal position _x_, where
+                $$\frac{\partial u}{\partial x} = -w, \qquad
+                \frac{\partial w}{\partial x} = u.$$
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial x derivative vector components.
+                &#34;&#34;&#34;
+                u, w = self.velocity(x, z, t)
+                return np.array([-w, u])
+
+        def partial_z(self, x, z, t):
+                r&#34;&#34;&#34;
+                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+                respect to the vertical position _z_, where
+                $$\frac{\partial u}{\partial z} = u, \qquad
+                \frac{\partial w}{\partial z} = w.$$
+
+                Parameters
+                ----------
+                x : float or array
+                        The x position(s) at which to evaluate the derivative.
+                z : float or array
+                        The z position(s) at which to evaluate the derivative.
+                t : float or array
+                        The time(s) at which to evaluate the derivative.
+
+                Returns
+                -------
+                Array containing the partial z derivative vector components.
+                &#34;&#34;&#34;
+                return self.velocity(x, z, t)
 
         def material_derivative2(self, x, z, t):
                 r&#34;&#34;&#34;
@@ -306,7 +394,7 @@ depth.</p>
                 &#34;&#34;&#34;
                 u, w = self.velocity(x, z, t)
                 return np.array([np.exp(2 * z) - u / self.epsilon ** 2,
-                         w * (2 * np.exp(2 * z) - 1 / self.epsilon ** 2)])</code></pre>
+                                                 w * (2 * np.exp(2 * z) - 1 / self.epsilon ** 2)])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -316,58 +404,6 @@ depth.</p>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.material_derivative"><code class="name flex">
-<span>def <span class="ident">material_derivative</span></span>(<span>self, x, z, t)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Computes the Lagrangian derivative, where
-<span><span class="MathJax_Preview">\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_x =
-\frac{w}{\epsilon}, \qquad
-\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_z
-= e^{2z} - \frac{u}{\epsilon}.</span><script type="math/tex; mode=display">\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_x =
-\frac{w}{\epsilon}, \qquad
-\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_z
-= e^{2z} - \frac{u}{\epsilon}.</script></span></p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the fluid velocity.</dd>
-<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the velocity and derivative.</dd>
-<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The time(s) at which to evaluate the velocity.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>Array containing the material derivative vector components.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def material_derivative(self, x, z, t):
-        r&#34;&#34;&#34;
-        Computes the Lagrangian derivative, where
-        $$\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_x =
-                \frac{w}{\epsilon}, \qquad
-        \Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_z
-                = e^{2z} - \frac{u}{\epsilon}.$$
-
-        Parameters
-        ----------
-        x : float or array
-                The x position(s) at which to evaluate the fluid velocity.
-        z : float or array
-                The z position(s) at which to evaluate the velocity and derivative.
-        t : float or array
-                The time(s) at which to evaluate the velocity.
-
-        Returns
-        -------
-        Array containing the material derivative vector components.
-        &#34;&#34;&#34;             
-        u, w = self.velocity(x, z, t)
-        return np.array([w / self.epsilon, np.exp(2 * z) - u / self.epsilon])</code></pre>
-</details>
-</dd>
 <dt id="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.material_derivative2"><code class="name flex">
 <span>def <span class="ident">material_derivative2</span></span>(<span>self, x, z, t)</span>
 </code></dt>
@@ -421,7 +457,150 @@ depth.</p>
         &#34;&#34;&#34;
         u, w = self.velocity(x, z, t)
         return np.array([np.exp(2 * z) - u / self.epsilon ** 2,
-                 w * (2 * np.exp(2 * z) - 1 / self.epsilon ** 2)])</code></pre>
+                                         w * (2 * np.exp(2 * z) - 1 / self.epsilon ** 2)])</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_t"><code class="name flex">
+<span>def <span class="ident">partial_t</span></span>(<span>self, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to time, where
+<span><span class="MathJax_Preview">\frac{\partial u}{\partial t} = \frac{w}{\epsilon}, \qquad
+\frac{\partial w}{\partial t} = -\frac{u}{\epsilon}.</span><script type="math/tex; mode=display">\frac{\partial u}{\partial t} = \frac{w}{\epsilon}, \qquad
+\frac{\partial w}{\partial t} = -\frac{u}{\epsilon}.</script></span></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the derivative.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the partial time derivative vector components.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def partial_t(self, x, z, t):
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to time, where
+        $$\frac{\partial u}{\partial t} = \frac{w}{\epsilon}, \qquad
+        \frac{\partial w}{\partial t} = -\frac{u}{\epsilon}.$$
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the derivative.
+        z : float or array
+                The z position(s) at which to evaluate the derivative.
+        t : float or array
+                The time(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        Array containing the partial time derivative vector components.
+        &#34;&#34;&#34;
+        u, w = self.velocity(x, z, t)
+        return np.array([w / self.epsilon, -u / self.epsilon])</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_x"><code class="name flex">
+<span>def <span class="ident">partial_x</span></span>(<span>self, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to the horizontal position <em>x</em>, where
+<span><span class="MathJax_Preview">\frac{\partial u}{\partial x} = -w, \qquad
+\frac{\partial w}{\partial x} = u.</span><script type="math/tex; mode=display">\frac{\partial u}{\partial x} = -w, \qquad
+\frac{\partial w}{\partial x} = u.</script></span></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the derivative.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the partial x derivative vector components.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def partial_x(self, x, z, t):
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to the horizontal position _x_, where
+        $$\frac{\partial u}{\partial x} = -w, \qquad
+        \frac{\partial w}{\partial x} = u.$$
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the derivative.
+        z : float or array
+                The z position(s) at which to evaluate the derivative.
+        t : float or array
+                The time(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        Array containing the partial x derivative vector components.
+        &#34;&#34;&#34;
+        u, w = self.velocity(x, z, t)
+        return np.array([-w, u])</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_z"><code class="name flex">
+<span>def <span class="ident">partial_z</span></span>(<span>self, x, z, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
+respect to the vertical position <em>z</em>, where
+<span><span class="MathJax_Preview">\frac{\partial u}{\partial z} = u, \qquad
+\frac{\partial w}{\partial z} = w.</span><script type="math/tex; mode=display">\frac{\partial u}{\partial z} = u, \qquad
+\frac{\partial w}{\partial z} = w.</script></span></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
+<dd>The time(s) at which to evaluate the derivative.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Array containing the partial z derivative vector components.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def partial_z(self, x, z, t):
+        r&#34;&#34;&#34;
+        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+        respect to the vertical position _z_, where
+        $$\frac{\partial u}{\partial z} = u, \qquad
+        \frac{\partial w}{\partial z} = w.$$
+
+        Parameters
+        ----------
+        x : float or array
+                The x position(s) at which to evaluate the derivative.
+        z : float or array
+                The z position(s) at which to evaluate the derivative.
+        t : float or array
+                The time(s) at which to evaluate the derivative.
+
+        Returns
+        -------
+        Array containing the partial z derivative vector components.
+        &#34;&#34;&#34;
+        return self.velocity(x, z, t)</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.set_angular_freq"><code class="name flex">
@@ -446,13 +625,13 @@ depth.</p>
 <span>def <span class="ident">set_gravity</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Defines the gravity <em><strong>g</strong></em>.</p></div>
+<div class="desc"><p>Defines the gravity <strong>g</strong>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def set_gravity(self):
-        &#34;&#34;&#34;Defines the gravity _**g**_.&#34;&#34;&#34;
+        &#34;&#34;&#34;Defines the gravity **g**.&#34;&#34;&#34;
         self.gravity = np.array([0, -constants.g]) / (self.wavenum \
                                    * (self.angular_freq * self.amplitude) ** 2)</code></pre>
 </details>
@@ -461,7 +640,7 @@ depth.</p>
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the fluid velocity <em><strong>u</strong></em> = (<em>u</em>, <em>w</em>), with
+<div class="desc"><p>Computes the fluid velocity <strong>u</strong> = (<em>u</em>, <em>w</em>), with
 <span><span class="MathJax_Preview">u(x, z, t) = e^{z} \cos(x - \frac{t}{\epsilon}),</span><script type="math/tex; mode=display">u(x, z, t) = e^{z} \cos(x - \frac{t}{\epsilon}),</script></span>
 <span><span class="MathJax_Preview">w(x, z, t) = e^{z} \sin(x - \frac{t}{\epsilon}).</span><script type="math/tex; mode=display">w(x, z, t) = e^{z} \sin(x - \frac{t}{\epsilon}).</script></span></p>
 <h2 id="parameters">Parameters</h2>
@@ -481,7 +660,7 @@ depth.</p>
 </summary>
 <pre><code class="python">def velocity(self, x, z, t):
         r&#34;&#34;&#34;
-        Computes the fluid velocity _**u**_ = (_u_, _w_), with
+        Computes the fluid velocity **u** = (_u_, _w_), with
         $$u(x, z, t) = e^{z} \cos(x - \frac{t}{\epsilon}),$$
         $$w(x, z, t) = e^{z} \sin(x - \frac{t}{\epsilon}).$$
 
@@ -499,7 +678,7 @@ depth.</p>
         Array containing the velocity field vector components _u_ and _w_.
         &#34;&#34;&#34;
         return np.array([np.exp(z) * np.cos(x - t / self.epsilon),
-                 np.exp(z) * np.sin(x - t / self.epsilon)])</code></pre>
+                                         np.exp(z) * np.sin(x - t / self.epsilon)])</code></pre>
 </details>
 </dd>
 </dl>
@@ -523,8 +702,10 @@ depth.</p>
 <li>
 <h4><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave">DeepWaterWave</a></code></h4>
 <ul class="">
-<li><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.material_derivative" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.material_derivative">material_derivative</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.material_derivative2" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.material_derivative2">material_derivative2</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_t" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_t">partial_t</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_x" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_x">partial_x</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_z" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.partial_z">partial_z</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.set_angular_freq" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.set_angular_freq">set_angular_freq</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.set_gravity" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.set_gravity">set_gravity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.velocity" href="#modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave.velocity">velocity</a></code></li>

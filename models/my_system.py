@@ -4,10 +4,10 @@ sys.path.append('/home/s2182576/Documents/academia/thesis/'
 import numpy as np
 from time import time
 from tqdm import tqdm
-from models import rotating_flow
+from models import deep_water_wave
 from transport_framework import particle, transport_system
 
-class RotatingTransportSystem(transport_system.TransportSystem):
+class MyTransportSystem(transport_system.TransportSystem):
 	""" 
 	Represents the transport of a rigid particle in a rotating fluid flow.
 	"""
@@ -24,28 +24,6 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 			The ratio between the particle's density and the fluid's density.
 		"""
 		super().__init__(particle, flow, density_ratio)
-
-	def derivative_along_trajectory(self, xdot, zdot):
-		r"""
-		Computes the derivative of the fluid along the trajectory of the
-		particle,
-		$$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-			= \frac{\partial \textbf{u}}{\partial t}
-			+ \textbf{v} \cdot \nabla \textbf{u}.$$
-
-		Parameters
-		----------
-		xdot : float or array
-			The value(s) of the horizontal velocity of the particle.
-		zdot : float
-			The value(s) of the vertical velocity of the particle.
-
-		Returns
-		-------
-		Array
-			The horizontal and vertical components of the solution.
-		"""
-		return np.transpose(np.array([-zdot, xdot]))
 
 	def maxey_riley(self, include_history, t, y, order):
 		r"""
@@ -74,11 +52,13 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		delta_t = t[1] - t[0]
 
 		# compute the number of time steps and create arrays to store solutions
-		mini_steps = 2 * int(np.sqrt(2) / delta_t)
-		mini_step = delta_t / (mini_steps / 2)
-		mini_x = np.empty((mini_steps + 1, 2)) 
-		mini_v = np.empty((mini_steps + 1, 2))
-		mini_u = np.empty((mini_steps + 1, 2))
+		num_mini_steps = 2 * int(np.sqrt(2) / delta_t)
+		mini_step = delta_t / (num_mini_steps / 2)
+		mini_steps = np.arange(0, num_mini_steps * mini_step + mini_step,
+                               mini_step)
+		mini_x = np.empty((num_mini_steps + 1, 2)) 
+		mini_v = np.empty((num_mini_steps + 1, 2))
+		mini_u = np.empty((num_mini_steps + 1, 2))
 		num_steps = t.size - 1
 		x = np.empty((t.size, 2))
 		v = np.empty((t.size, 2))
@@ -87,7 +67,7 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		# set initial conditions
 		x[0] = y[:2]
 		v[0] = y[2:]
-		u[0] = self.flow.velocity(x[0, 0], x[0, 1])
+		u[0] = self.flow.velocity(x[0, 0], x[0, 1], t[0])
 		mini_x[0] = x[0]
 		mini_v[0] = v[0]
 		mini_u[0] = u[0]
@@ -99,36 +79,41 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 
 			# compute matrices containing the values of alpha, beta, and gamma
 			if order == 1:
-				mini_alpha = compute_alpha(mini_steps + 1)
+				mini_alpha = compute_alpha(num_mini_steps + 1)
 				alpha = compute_alpha(t.size)
 			elif order == 2:
 				mini_alpha = compute_alpha(2)
-				mini_beta = compute_beta(mini_steps + 1, mini_alpha[:, 1]) 
+				mini_beta = compute_beta(num_mini_steps + 1, mini_alpha[:, 1]) 
 				alpha = mini_alpha
 				beta = compute_beta(t.size, alpha[:, 1])
 			else: # order == 3
 				mini_alpha = compute_alpha(2)
 				mini_beta = compute_beta(3, mini_alpha[:, 1]) 
-				mini_gamma = compute_gamma(mini_steps + 1, mini_beta[:, 2]) 
+				mini_gamma = compute_gamma(num_mini_steps + 1, mini_beta[:, 2]) 
 				alpha = mini_alpha
 				beta = mini_beta
 				gamma = compute_gamma(t.size, beta[:, 2])
 
 		# compute solutions for the first two intervals using finer time steps
-		for n_prime in range(mini_steps):
+		for n_prime in range(num_mini_steps):
 			mini_w = mini_v - mini_u
 			G = (3 / 2 * R - 1) \
-				* self.derivative_along_trajectory(mini_v[:, 0], mini_v[:, 1]) \
-				- 3 / 2 * R \
-				* np.transpose(np.array([-mini_w[:, 1], mini_w[:, 0]])) \
-				- R / St * mini_w
+				   * np.transpose(self.flow.derivative_along_trajectory(
+								  mini_x[:, 0], mini_x[:, 1],
+								  mini_steps, np.transpose(mini_v))) \
+				   - 3 / 2 * R * np.transpose(self.flow.dot_jacobian(
+											  np.transpose(mini_w),
+											  mini_x[:, 0], mini_x[:, 1],
+											  mini_steps)) \
+				   - R / St * mini_w + (1 - 3 * R / 2) * self.flow.gravity
 			sum_term = 0
 			# equation (15)
 			if order == 1 or n_prime == 0:
 				mini_x[n_prime + 1] = mini_x[n_prime] + mini_step \
 													  * mini_v[n_prime]
 				mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
-														 mini_x[n_prime + 1, 1])
+										mini_x[n_prime + 1, 1],
+										mini_steps[n_prime + 1])
 				if include_history:
 					for j in range(n_prime + 1):
 						sum_term += mini_w[n_prime - j] \
@@ -150,7 +135,8 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 										* (3 * mini_v[n_prime]
 										- mini_v[n_prime - 1])
 				mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
-														 mini_x[n_prime + 1, 1])
+										mini_x[n_prime + 1, 1],
+										mini_steps[n_prime + 1])
 				if include_history:
 					for j in range(n_prime + 1):
 						sum_term += mini_w[n_prime - j] \
@@ -172,7 +158,8 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 										- 16 * mini_v[n_prime - 1]
 										+ 5 * mini_v[n_prime - 2])
 				mini_u[n_prime + 1] = self.flow.velocity(mini_x[n_prime + 1, 0],
-														 mini_x[n_prime + 1, 1])
+										mini_x[n_prime + 1, 1],
+										mini_steps[n_prime + 1])
 				if include_history:
 					for j in range(n_prime + 1):
 						sum_term += mini_w[n_prime - j] \
@@ -194,9 +181,9 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 											+ mini_u[n_prime + 1]
 
 		# store solutions for the first two intervals
-		x[1] = mini_x[int(mini_steps / 2)]
-		v[1] = mini_v[int(mini_steps / 2)]
-		u[1] = mini_u[int(mini_steps / 2)]
+		x[1] = mini_x[int(num_mini_steps / 2)]
+		v[1] = mini_v[int(num_mini_steps / 2)]
+		u[1] = mini_u[int(num_mini_steps / 2)]
 		x[2] = mini_x[-1]
 		v[2] = mini_v[-1]
 		u[2] = mini_u[-1]
@@ -205,13 +192,17 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		for n in tqdm(range(2, num_steps)):
 			w = v - u
 			G = (3 / 2 * R - 1) \
-				   * self.derivative_along_trajectory(v[:, 0], v[:, 1]) \
-				   - 3 / 2 * R * np.transpose(np.array([-w[:, 1], w[:, 0]])) \
-				   - R / St * w
+				   * np.transpose(self.flow.derivative_along_trajectory(x[:, 0],
+								  x[:, 1], t, np.transpose(v))) \
+				   - 3 / 2 * R \
+				   * np.transpose(self.flow.dot_jacobian(np.transpose(w),
+														 x[:, 0], x[:, 1], t)) \
+				   - R / St * w + (1 - 3 * R / 2) * self.flow.gravity
 			sum_term = 0
 			if order == 1 or n == 0:
 				x[n + 1] = x[n] + delta_t * v[n]
-				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
+				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1],
+											  t[n + 1])
 				if include_history:
 					for j in range(n + 1):
 						sum_term += w[n - j] * (alpha[j + 1, n + 1]
@@ -222,7 +213,8 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 					v[n + 1] = w[n] + delta_t * G[n] + u[n + 1]
 			elif order == 2 or n == 1:
 				x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
-				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
+				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1],
+											  t[n + 1])
 				if include_history:
 					for j in range(n + 1):
 						sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
@@ -235,7 +227,8 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 			else: # order is 3 and n > 1
 				x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
 								+ 5 * v[n - 2])
-				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
+				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1],
+											  t[n + 1])
 				if include_history:
 					for j in range(n + 1):
 						sum_term += w[n - j] * (gamma[j + 1, n + 1]
@@ -369,6 +362,7 @@ def compute_beta(size, alpha):
 	arr[:, 0] = 0		# n = 0 (should never be called for beta)
 	arr[:2, 1] = alpha	# n = 1
 
+	# initialize variables for frequently used values
 	root2 = np.sqrt(np.float128(2))
 	root3 = np.sqrt(np.float128(3))
 
@@ -378,6 +372,7 @@ def compute_beta(size, alpha):
 	arr[2, 2] = np.float128(2) / np.float128(15) * root2
 
 	if 3 < size:
+		# initialize variables for frequently used values
 		coeff1 = np.float128(4) / np.float128(5)
 		coeff2 = np.float128(12) / np.float128(5)
 		coeff3 = np.float128(8) / np.float128(15)
@@ -459,6 +454,7 @@ def compute_gamma(size, beta):
 	arr[:, :2] = 0		# n = 0 and n = 1 (should never be called for gamma)
 	arr[:3, 2] = beta	# n = 2
 	
+	# initialize variables for frequently used values
 	coeff = np.float128(16) / np.float128(105)
 	exp1 = np.float128(3) / np.float128(2)
 	exp2 = np.float128(5) / np.float128(2)

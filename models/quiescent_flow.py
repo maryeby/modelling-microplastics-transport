@@ -47,22 +47,63 @@ class QuiescentFlow(flow.Flow):
 		"""
 		return np.array([0, 0])
 
-	def material_derivative(self, x, z, t):
-		"""
-		Computes the Lagrangian derivative.
+	def partial_t(self, x, z, t):
+		r"""
+		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+		respect to time.
 
 		Parameters
 		----------
 		x : float or array
-			The x position(s) at which to evaluate the fluid velocity.
+			The x position(s) at which to evaluate the derivative.
 		z : float or array
-			The z position(s) at which to evaluate the velocity and derivative.
+			The z position(s) at which to evaluate the derivative.
 		t : float or array
-			The time(s) at which to evaluate the velocity.
+			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the material derivative vector components.
+		Array containing the partial time derivative vector components.
+		"""
+		return np.array([0, 0])
+
+	def partial_x(self, x, z, t):
+		r"""
+		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+		respect to the horizontal position _x_.
+
+		Parameters
+		----------
+		x : float or array
+			The x position(s) at which to evaluate the derivative.
+		z : float or array
+			The z position(s) at which to evaluate the derivative.
+		t : float or array
+			The time(s) at which to evaluate the derivative.
+
+		Returns
+		-------
+		Array containing the partial x derivative vector components.
+		"""
+		return np.array([0, 0])
+
+	def partial_z(self, x, z, t):
+		r"""
+		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+		respect to the vertical position _z_.
+
+		Parameters
+		----------
+		x : float or array
+			The x position(s) at which to evaluate the derivative.
+		z : float or array
+			The z position(s) at which to evaluate the derivative.
+		t : float or array
+			The time(s) at which to evaluate the derivative.
+
+		Returns
+		-------
+		Array containing the partial z derivative vector components.
 		"""
 		return np.array([0, 0])
 

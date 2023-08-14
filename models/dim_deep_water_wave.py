@@ -73,33 +73,75 @@ class DimensionalDeepWaterWave(wave.Wave):
 		return np.array([U * np.exp(k * z) * np.cos(k * x - omega * t), 
 						 U * np.exp(k * z) * np.sin(k * x - omega * t)])
 
-	def material_derivative(self, x, z, t):
+	def partial_t(self, x, z, t): 
 		r"""
-		Computes the Lagrangian derivative, where
-		$$\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_x = \omega w,
-			\qquad
-		\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}\Bigg]_z
-			= U^2 k e^{2kz} - \omega u.$$
+		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+		respect to time, where
+		$$\frac{\partial u}{\partial t} = w \omega, \qquad
+		\frac{\partial w}{\partial t} = -u \omega.$$
 
 		Parameters
 		----------
 		x : float or array
-			The x position(s) at which to evaluate the fluid velocity.
+			The x position(s) at which to evaluate the derivative.
 		z : float or array
-			The z position(s) at which to evaluate the velocity and derivative.
+			The z position(s) at which to evaluate the derivative.
 		t : float or array
-			The time(s) at which to evaluate the velocity.
+			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the material derivative vector components.
+		Array containing the partial time derivative vector components.
 		"""
-		U = self.max_velocity
-		k = self.wavenum
-		epsilon = self.amplitude * k
 		omega = self.angular_freq
 		u, w = self.velocity(x, z, t)
-		return np.array([omega * w, k * U ** 2 * np.exp(2 * k * z) - omega * u])
+		return np.array([omega * w, omega * -u])
+
+	def partial_x(self, x, z, t): 
+		r"""
+		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+		respect to the horizontal position _x_, where
+		$$\frac{\partial u}{\partial x} = -wk, \qquad
+		\frac{\partial w}{\partial x} = uk.$$
+
+		Parameters
+		----------
+		x : float or array
+			The x position(s) at which to evaluate the derivative.
+		z : float or array
+			The z position(s) at which to evaluate the derivative.
+		t : float or array
+			The time(s) at which to evaluate the derivative.
+
+		Returns
+		-------
+		Array containing the partial x derivative vector components.
+		"""
+		k = self.wavenum
+		u, w = self.velocity(x, z, t)
+		return np.array([-w * k, u * k])
+
+	def partial_z(self, x, z, t):
+		r"""
+		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
+		respect to the vertical position _z_, where
+		$$\frac{\partial u}{\partial z} = ku, \qquad
+		\frac{\partial w}{\partial z} = kw.$$
+
+		Parameters
+		----------
+		x : float or array
+			The x position(s) at which to evaluate the derivative.
+		z : float or array
+			The z position(s) at which to evaluate the derivative.
+		t : float or array
+			The time(s) at which to evaluate the derivative.
+
+		Returns
+		-------
+		Array containing the partial z derivative vector components.
+		"""
+		return self.wavenum * self.velocity(x, z, t)
 
 	def material_derivative2(self, x, z, t):
 		r"""
