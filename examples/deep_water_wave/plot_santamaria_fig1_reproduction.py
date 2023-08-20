@@ -28,6 +28,7 @@ def main():
 	plt.plot('my_light_x', 'my_light_z', ':k', data=my_data,
 			 label='light particle (Daitche)')
 	plt.legend(fontsize=14)
+	plt.tight_layout()
 	plt.show()
 if __name__ == '__main__':
 	main()

@@ -29,6 +29,8 @@ class DimensionalDeepWaterWave(wave.Wave):
 			The angular frequency omega, computed using the dispersion relation.
 		max_velocity : float
 			The maximum velocity *U* at the surface z = 0.
+		phase_velocity : float
+			The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
 		period : float
 			The period of the wave, computed as
 			$$\text{period} = \frac{2\pi}{\omega}.$$

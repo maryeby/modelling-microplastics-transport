@@ -52,7 +52,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 		delta_t = t[1] - t[0]
 
 		# compute the number of time steps and create arrays to store solutions
-		num_mini_steps = 2 * int(np.sqrt(2) / delta_t)
+		num_mini_steps = 2 * int(np.ceil(np.sqrt(2) / delta_t))
 		mini_step = delta_t / (num_mini_steps / 2)
 		mini_steps = np.arange(0, num_mini_steps * mini_step + mini_step,
                                mini_step)
@@ -241,8 +241,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 									+ 5 * G[n - 2]) + u[n + 1]
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-	def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
-					 zdot_0=1, num_periods=50, delta_t=5e-3):
+	def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=None,
+					 zdot_0=None, num_periods=50, delta_t=1e-3):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -256,9 +256,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The initial horizontal position of the particle.
 		z_0 : float, default=0
 			The initial vertical position of the particle.
-		xdot_0 : float, default=1
+		xdot_0 : float, default=None
 			The initial horizontal velocity of the particle.
-		zdot_0 : float, default=1
+		zdot_0 : float, default=None
 			The initial vertical velocity of the particle.
 		num_periods : int, default=50
 			The number of oscillation periods to integrate over.
@@ -279,6 +279,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The times at which the model was evaluated.
 		"""
 		# initialize parameters for the solver
+		if xdot_0 == None and zdot_0 == None:
+			xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, t=0)
 		t_final = num_periods * self.flow.period
 		t_eval = np.arange(0, t_final + delta_t, delta_t)
 		y = [x_0, z_0, xdot_0, zdot_0]

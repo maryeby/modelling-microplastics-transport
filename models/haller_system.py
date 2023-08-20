@@ -123,7 +123,7 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		return np.concatenate((particle_velocity, particle_accel))
 
 	def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
-					 delta_t=5e-3, method='BDF'):
+					 delta_t=1e-3, method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 

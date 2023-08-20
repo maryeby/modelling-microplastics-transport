@@ -35,6 +35,7 @@ class DeepWaterWave(wave.Wave):
 			A relationship between the wave ampltiude *A* and wave number *k*.
 		"""
 		super().__init__(depth, amplitude, wavelength)
+		self.max_velocity = self.angular_freq * self.amplitude
 		self.epsilon = self.amplitude * self.wavenum
 
 	def set_angular_freq(self):

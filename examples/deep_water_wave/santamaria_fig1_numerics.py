@@ -12,7 +12,8 @@ from models import my_system as my
 
 def main():
 	"""
-	This program reproduces Figure 1 from Santamaria et al. (2013).
+	This program reproduces numerical results from Figure 1 in Santamaria et al.
+	(2013).
 	"""
 	my_dict = dict.fromkeys(['sm_heavy_x', 'sm_heavy_z', 'sm_light_x',
 							 'sm_light_z', 'my_heavy_x', 'my_heavy_z',
