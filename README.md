@@ -32,8 +32,7 @@ robustness of existing models by employing more general solutions for the veloci
 Basset-Boussinesq history term.
 
 ## Project Organization
-The source code for this project is contained in the [`transport_framework`](transport_framework), [`models`](models), and [`examples`](examples) directories. The `transport_framework` directory
-defines the `Particle`, `Flow`, and `TransportSystem` objects in general. The `models` directory contains specific implementations of these objects (ex:
-[`models/santamaria_system.py`](models/santamaria_system.py) is the implementation of the transport system described in [Santamaria et al. (2013)](https://doi.org/10.1209/0295-5075/102/14003)). The `examples` directory contains
-examples of how the implementations in `models` can be used. The [`figures`](figures) directory contains plots produced from `examples`, as well as relevant figures
-from other sources. Documentation for the source code can be found in the [`docs`](docs/index) directory.
+The source code for this project is contained in the `transport_framework`, `models`, and `examples` directories. The [`transport_framework`](transport_framework)
+directory defines the `Particle`, `Flow`, and `TransportSystem` objects in general. The [`models`](models) directory contains specific implementations of these
+objects (ex: [`models/santamaria_system.py`](models/santamaria_system.py) is the implementation of the transport system described in [Santamaria et al. (2013)](https://doi.org/10.1209/0295-5075/102/14003)). The [`examples`](examples) directory contains examples of how the implementations in `models` can be used. The [`figures`](figures) directory contains plots
+produced from `examples`, as well as relevant figures from other sources. Documentation for the source code can be found in the [`docs`](docs) directory.
