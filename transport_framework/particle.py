@@ -6,11 +6,6 @@ class Particle:
 		Attributes
 		----------
 		stokes_num : float
-			The stokes number *St*.
-		history : list (array-like)
-			The history of the velocity of the particle **v**.
+			The Stokes number *St*.
 		"""
 		self.stokes_num = stokes_num
-		self.position = []
-		self.velocity = []
-		self.history = []

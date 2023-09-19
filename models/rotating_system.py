@@ -25,32 +25,10 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		"""
 		super().__init__(particle, flow, density_ratio)
 
-	def derivative_along_trajectory(self, xdot, zdot):
-		r"""
-		Computes the derivative of the fluid along the trajectory of the
-		particle,
-		$$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-			= \frac{\partial \textbf{u}}{\partial t}
-			+ \textbf{v} \cdot \nabla \textbf{u}.$$
-
-		Parameters
-		----------
-		xdot : float or array
-			The value(s) of the horizontal velocity of the particle.
-		zdot : float
-			The value(s) of the vertical velocity of the particle.
-
-		Returns
-		-------
-		Array
-			The horizontal and vertical components of the solution.
-		"""
-		return np.transpose(np.array([-zdot, xdot]))
-
 	def maxey_riley(self, include_history, t, y, order):
 		r"""
-		Implements the integration scheme for the full Maxey-Riley equation with
-		history effects, as outlined in Daitche (2013) Section 3.
+		Implements the integration scheme for the full Maxey-Riley equation as
+		outlined in Daitche (2013) Section 3.
 
 		Parameters
 		----------
@@ -61,12 +39,13 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		y : list (array-like)
 			A list containing the initial particle position and velocity.
 		order : int
-			The order of the integration scheme.
+			The order of the integration scheme  (first, second, or third).
 
 		Returns
 		-------
 		Array
-			The components of the particle's position and velocity.
+			The components of the particle's position and velocity, and the
+			times where the Maxey-Riley equation was evaluated.
 		"""
 		# initialize local variables
 		R = self.density_ratio
@@ -118,9 +97,12 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		for n_prime in range(mini_steps):
 			mini_w = mini_v - mini_u
 			G = (3 / 2 * R - 1) \
-				* self.derivative_along_trajectory(mini_v[:, 0], mini_v[:, 1]) \
+				* self.flow.derivative_along_trajectory(mini_x[:, 0].T,
+														mini_x[:, 1].T, 0,
+														mini_v.T).T \
 				- 3 / 2 * R \
-				* np.transpose(np.array([-mini_w[:, 1], mini_w[:, 0]])) \
+				* self.flow.dot_jacobian(mini_w.T, mini_x[:, 0].T,
+										 mini_x[:, 1].T, 0).T \
 				- R / St * mini_w
 			sum_term = 0
 			# equation (15)
@@ -205,8 +187,10 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		for n in tqdm(range(2, num_steps)):
 			w = v - u
 			G = (3 / 2 * R - 1) \
-				   * self.derivative_along_trajectory(v[:, 0], v[:, 1]) \
-				   - 3 / 2 * R * np.transpose(np.array([-w[:, 1], w[:, 0]])) \
+				   * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
+														   0, v.T).T \
+				   - 3 / 2 * R * self.flow.dot_jacobian(w.T, x[:, 0].T,
+														x[:, 1].T, 0).T \
 				   - R / St * w
 			sum_term = 0
 			if order == 1 or n == 0:
@@ -248,8 +232,8 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 									+ 5 * G[n - 2]) + u[n + 1]
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-	def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
-					 zdot_0=1, num_periods=50, delta_t=5e-3):
+	def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
+					 num_periods, delta_t, order=3):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -257,20 +241,20 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		----------
 		include_history : boolean
 			Whether to include history effects.
-		order : int
-			The order of the integration scheme (first, second, or third).
-		x_0 : float, default=0
+		x_0 : float
 			The initial horizontal position of the particle.
-		z_0 : float, default=0
+		z_0 : float
 			The initial vertical position of the particle.
-		xdot_0 : float, default=1
+		xdot_0 : float
 			The initial horizontal velocity of the particle.
-		zdot_0 : float, default=1
+		zdot_0 : float
 			The initial vertical velocity of the particle.
-		num_periods : int, default=50
-			The number of oscillation periods to integrate over.
-		delta_t : float, default=5e-3
+		num_periods : int
+			The number of periods to integrate over.
+		delta_t : float
 			The size of the time steps used for integration.
+		order : int, default=3
+			The order of the integration scheme (first, second, or third).
 
 		Returns
 		-------

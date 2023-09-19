@@ -48,16 +48,16 @@ def main():
 		z_label = 'z_%.2e' % delta_t
 		t = np.arange(0, t_final + delta_t, delta_t)
 		x1, z1, _, _, _ = my_system.run_numerics(include_history=True, order=1,
-												 x_0=x_0, xdot_0=xdot_0,
+												 x_0=x_0, z_0=0, xdot_0=xdot_0,
 												 zdot_0=zdot_0, delta_t=delta_t,
 												 num_periods=t_final)
 		x2, z2, _, _, _ = my_system.run_numerics(include_history=True, order=2,
-												 x_0=x_0, xdot_0=xdot_0,
+												 x_0=x_0, z_0=0, xdot_0=xdot_0,
 												 zdot_0=zdot_0, delta_t=delta_t,
 												 num_periods=t_final)
 		x3, z3, _, _, _ = my_system.run_numerics(include_history=True, x_0=x_0,
-												 xdot_0=xdot_0, zdot_0=zdot_0,
-												 delta_t=delta_t,
+												 z_0=0, xdot_0=xdot_0,
+												 zdot_0=zdot_0, delta_t=delta_t,
 												 num_periods=t_final)
 		finish = time()
 		dict1[x_label] = x1

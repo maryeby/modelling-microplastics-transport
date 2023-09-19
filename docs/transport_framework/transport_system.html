@@ -28,7 +28,6 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from abc import ABC, abstractmethod
-import numpy as np
 
 class TransportSystem:
         &#34;&#34;&#34;
@@ -43,10 +42,8 @@ class TransportSystem:
                         The particle being transported.
                 flow : Flow (obj)
                         The flow through which the particle is transported.
-                gravity : float
-                        The gravity _**g**_.
                 density_ratio : float
-                        The ratio between the particle&#39;s density and the fluid&#39;s density.
+                        The ratio between the particle and fluid densities.
                 &#34;&#34;&#34;
                 self.particle = particle
                 self.flow = flow
@@ -55,37 +52,37 @@ class TransportSystem:
         @abstractmethod
         def maxey_riley(self, t, y):
                 &#34;&#34;&#34;
-                Evaluates the Maxey-Riley equation without the history term.
+                Evaluates the Maxey-Riley equation.
                 
                 Parameters
                 ----------
-                t : float
-                        The time to use in the computations
+                t : array
+                        The time(s) to use in the computations.
                 y : list (array-like)
-                        A list containing the x, z, xdot, zdot values to use.
+                        A list containing the initial particle position and velocity.
 
                 Returns
                 -------
                 Array
-                        The components of the particle&#39;s velocity and acceleration.
+                        The components of the particle&#39;s position and velocity, and the
+                        times where the Maxey-Riley equation was evaluated.
                 &#34;&#34;&#34;
                 pass
 
         @abstractmethod
-        def run_numerics(self, x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
-                                         method=&#39;BDF&#39;):
+        def run_numerics(self, x_0, z_0, num_periods, delta_t, method=&#39;BDF&#39;):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
                 Parameters
                 ----------
-                x_0 : float, default=0
+                x_0 : float
                         The initial horizontal position of the particle.
-                z_0 : float, default=0
+                z_0 : float
                         The initial vertical position of the particle.
-                num_periods : int, default=50
-                        The number of oscillation periods to integrate over.
-                delta_t : float, default=5e-3
+                num_periods : int
+                        The number of periods to integrate over.
+                delta_t : float
                         The size of the timesteps of integration.
                 method : str, default=&#39;BDF&#39;
                         The method of integration to use.
@@ -127,10 +124,8 @@ class TransportSystem:
 <dd>The particle being transported.</dd>
 <dt><strong><code>flow</code></strong> :&ensp;<code>Flow (obj)</code></dt>
 <dd>The flow through which the particle is transported.</dd>
-<dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The gravity <em><strong>g</strong></em>.</dd>
 <dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
-<dd>The ratio between the particle's density and the fluid's density.</dd>
+<dd>The ratio between the particle and fluid densities.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -149,10 +144,8 @@ class TransportSystem:
                         The particle being transported.
                 flow : Flow (obj)
                         The flow through which the particle is transported.
-                gravity : float
-                        The gravity _**g**_.
                 density_ratio : float
-                        The ratio between the particle&#39;s density and the fluid&#39;s density.
+                        The ratio between the particle and fluid densities.
                 &#34;&#34;&#34;
                 self.particle = particle
                 self.flow = flow
@@ -161,37 +154,37 @@ class TransportSystem:
         @abstractmethod
         def maxey_riley(self, t, y):
                 &#34;&#34;&#34;
-                Evaluates the Maxey-Riley equation without the history term.
+                Evaluates the Maxey-Riley equation.
                 
                 Parameters
                 ----------
-                t : float
-                        The time to use in the computations
+                t : array
+                        The time(s) to use in the computations.
                 y : list (array-like)
-                        A list containing the x, z, xdot, zdot values to use.
+                        A list containing the initial particle position and velocity.
 
                 Returns
                 -------
                 Array
-                        The components of the particle&#39;s velocity and acceleration.
+                        The components of the particle&#39;s position and velocity, and the
+                        times where the Maxey-Riley equation was evaluated.
                 &#34;&#34;&#34;
                 pass
 
         @abstractmethod
-        def run_numerics(self, x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
-                                         method=&#39;BDF&#39;):
+        def run_numerics(self, x_0, z_0, num_periods, delta_t, method=&#39;BDF&#39;):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
                 Parameters
                 ----------
-                x_0 : float, default=0
+                x_0 : float
                         The initial horizontal position of the particle.
-                z_0 : float, default=0
+                z_0 : float
                         The initial vertical position of the particle.
-                num_periods : int, default=50
-                        The number of oscillation periods to integrate over.
-                delta_t : float, default=5e-3
+                num_periods : int
+                        The number of periods to integrate over.
+                delta_t : float
                         The size of the timesteps of integration.
                 method : str, default=&#39;BDF&#39;
                         The method of integration to use.
@@ -217,18 +210,19 @@ class TransportSystem:
 <span>def <span class="ident">maxey_riley</span></span>(<span>self, t, y)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Evaluates the Maxey-Riley equation without the history term.</p>
+<div class="desc"><p>Evaluates the Maxey-Riley equation.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
-<dd>The time to use in the computations</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>array</code></dt>
+<dd>The time(s) to use in the computations.</dd>
 <dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
-<dd>A list containing the x, z, xdot, zdot values to use.</dd>
+<dd>A list containing the initial particle position and velocity.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>Array</code></dt>
-<dd>The components of the particle's velocity and acceleration.</dd>
+<dd>The components of the particle's position and velocity, and the
+times where the Maxey-Riley equation was evaluated.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -237,37 +231,38 @@ class TransportSystem:
 <pre><code class="python">@abstractmethod
 def maxey_riley(self, t, y):
         &#34;&#34;&#34;
-        Evaluates the Maxey-Riley equation without the history term.
+        Evaluates the Maxey-Riley equation.
         
         Parameters
         ----------
-        t : float
-                The time to use in the computations
+        t : array
+                The time(s) to use in the computations.
         y : list (array-like)
-                A list containing the x, z, xdot, zdot values to use.
+                A list containing the initial particle position and velocity.
 
         Returns
         -------
         Array
-                The components of the particle&#39;s velocity and acceleration.
+                The components of the particle&#39;s position and velocity, and the
+                times where the Maxey-Riley equation was evaluated.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.transport_framework.transport_system.TransportSystem.run_numerics"><code class="name flex">
-<span>def <span class="ident">run_numerics</span></span>(<span>self, x_0=0, z_0=0, num_periods=50, delta_t=0.005, method='BDF')</span>
+<span>def <span class="ident">run_numerics</span></span>(<span>self, x_0, z_0, num_periods, delta_t, method='BDF')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the position and velocity of the particle over time.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial horizontal position of the particle.</dd>
-<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial vertical position of the particle.</dd>
-<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code>, default=<code>50</code></dt>
-<dd>The number of oscillation periods to integrate over.</dd>
-<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code>, default=<code>5e-3</code></dt>
+<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code></dt>
+<dd>The number of periods to integrate over.</dd>
+<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
 <dd>The size of the timesteps of integration.</dd>
 <dt><strong><code>method</code></strong> :&ensp;<code>str</code>, default=<code>'BDF'</code></dt>
 <dd>The method of integration to use.</dd>
@@ -290,20 +285,19 @@ def maxey_riley(self, t, y):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def run_numerics(self, x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
-                                 method=&#39;BDF&#39;):
+def run_numerics(self, x_0, z_0, num_periods, delta_t, method=&#39;BDF&#39;):
         &#34;&#34;&#34;
         Computes the position and velocity of the particle over time.
 
         Parameters
         ----------
-        x_0 : float, default=0
+        x_0 : float
                 The initial horizontal position of the particle.
-        z_0 : float, default=0
+        z_0 : float
                 The initial vertical position of the particle.
-        num_periods : int, default=50
-                The number of oscillation periods to integrate over.
-        delta_t : float, default=5e-3
+        num_periods : int
+                The number of periods to integrate over.
+        delta_t : float
                 The size of the timesteps of integration.
         method : str, default=&#39;BDF&#39;
                 The method of integration to use.

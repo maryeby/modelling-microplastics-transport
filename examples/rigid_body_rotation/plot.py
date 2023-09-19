@@ -20,9 +20,6 @@ def main():
 	computation_times = pd.read_csv(data_path + 'computation_times.csv')
 	daitche = pd.read_csv(data_path + 'daitche_fig3.csv')
 
-#	trajectory_numerics = numerics
-#	trajectory_analytics = analytics
-#	trajectory_int_times = int_times
 	trajectory_numerics = numerics.iloc[:2000]
 	trajectory_analytics = analytics.iloc[:2000]
 	trajectory_int_times = int_times.iloc[:21]

@@ -27,10 +27,10 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import numpy as np
-import sys
+<pre><code class="python">import sys
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
+import numpy as np
 from transport_framework import flow
 
 class RotatingFlow(flow.Flow):
@@ -42,24 +42,30 @@ class RotatingFlow(flow.Flow):
                 ----------
                 depth : float, default=15
                         The depth of the fluid *h*.
+                gravity : array
+                        The gravity **g** acting on the fluid.
                 period : float
                         A parameter used in the computation of the timespan over which to
                         integrate.
                 &#34;&#34;&#34;
-                self.depth = depth
-                self.period = 1
+                super().__init__(depth)
+
+        def set_gravity(self):
+                r&#34;&#34;&#34;Defines the gravity vector **g** as, $$\mathbf{g} = \mathbf{0}.$$&#34;&#34;&#34;
+                self.gravity = np.array([0, 0]) # gravity not considered for this flow
 
         def velocity(self, x, z, t=None):
-                &#34;&#34;&#34;
-                Computes the fluid velocity _**u**_.
+                r&#34;&#34;&#34;
+                Computes the fluid velocity as,
+                $$\textbf{u} = (u, w) = \langle -z, x \rangle.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the velocity.
+                        The horizontal position(s) at which to evaluate the velocity.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity.
-                t : float or array, default=None
+                        The vertical position(s) at which to evaluate the velocity.
+                t : float or array
                         The time(s) at which to evaluate the velocity.
 
                 Returns
@@ -70,63 +76,65 @@ class RotatingFlow(flow.Flow):
 
         def partial_t(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to time.
+                Computes the partial derivative of the fluid with respect to time as,
+                $$\frac{\partial \textbf{u}}{\partial t} = \mathbf{0}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial time derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
-                return np.array([0, 0])
+                return np.array([np.zeros(x.shape), np.zeros(z.shape)])
 
         def partial_x(self, x, z, t): 
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to the horizontal position _x_.
+                Computes the partial derivative of the fluid with respect to the
+                horizontal position as,
+                $$\frac{\partial \textbf{u}}{\partial x} = \langle 0, 1 \rangle.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial x derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
-                return np.array([0, 1])
+                return np.array([np.zeros(x.shape), np.ones(z.shape)])
 
         def partial_z(self, x, z, t): 
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to the vertical position _z_.
+                Computes the partial derivative of the fluid with respect to the
+                vertical positiona as,
+                $$\frac{\partial \textbf{u}}{\partial z} = \langle -1, 0 \rangle.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial z derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
-                return np.array([-1, 0])</code></pre>
+                return np.array([-np.ones(x.shape), np.zeros(z.shape)])</code></pre>
 </details>
 </section>
 <section>
@@ -148,6 +156,8 @@ class RotatingFlow(flow.Flow):
 <dl>
 <dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>15</code></dt>
 <dd>The depth of the fluid <em>h</em>.</dd>
+<dt><strong><code>gravity</code></strong> :&ensp;<code>array</code></dt>
+<dd>The gravity <strong>g</strong> acting on the fluid.</dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
 <dd>A parameter used in the computation of the timespan over which to
 integrate.</dd>
@@ -165,24 +175,30 @@ integrate.</dd>
                 ----------
                 depth : float, default=15
                         The depth of the fluid *h*.
+                gravity : array
+                        The gravity **g** acting on the fluid.
                 period : float
                         A parameter used in the computation of the timespan over which to
                         integrate.
                 &#34;&#34;&#34;
-                self.depth = depth
-                self.period = 1
+                super().__init__(depth)
+
+        def set_gravity(self):
+                r&#34;&#34;&#34;Defines the gravity vector **g** as, $$\mathbf{g} = \mathbf{0}.$$&#34;&#34;&#34;
+                self.gravity = np.array([0, 0]) # gravity not considered for this flow
 
         def velocity(self, x, z, t=None):
-                &#34;&#34;&#34;
-                Computes the fluid velocity _**u**_.
+                r&#34;&#34;&#34;
+                Computes the fluid velocity as,
+                $$\textbf{u} = (u, w) = \langle -z, x \rangle.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the velocity.
+                        The horizontal position(s) at which to evaluate the velocity.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity.
-                t : float or array, default=None
+                        The vertical position(s) at which to evaluate the velocity.
+                t : float or array
                         The time(s) at which to evaluate the velocity.
 
                 Returns
@@ -193,63 +209,65 @@ integrate.</dd>
 
         def partial_t(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to time.
+                Computes the partial derivative of the fluid with respect to time as,
+                $$\frac{\partial \textbf{u}}{\partial t} = \mathbf{0}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial time derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
-                return np.array([0, 0])
+                return np.array([np.zeros(x.shape), np.zeros(z.shape)])
 
         def partial_x(self, x, z, t): 
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to the horizontal position _x_.
+                Computes the partial derivative of the fluid with respect to the
+                horizontal position as,
+                $$\frac{\partial \textbf{u}}{\partial x} = \langle 0, 1 \rangle.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial x derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
-                return np.array([0, 1])
+                return np.array([np.zeros(x.shape), np.ones(z.shape)])
 
         def partial_z(self, x, z, t): 
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to the vertical position _z_.
+                Computes the partial derivative of the fluid with respect to the
+                vertical positiona as,
+                $$\frac{\partial \textbf{u}}{\partial z} = \langle -1, 0 \rangle.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial z derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
-                return np.array([-1, 0])</code></pre>
+                return np.array([-np.ones(x.shape), np.zeros(z.shape)])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -262,140 +280,159 @@ integrate.</dd>
 <span>def <span class="ident">partial_t</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
-respect to time.</p>
+<div class="desc"><p>Computes the partial derivative of the fluid with respect to time as,
+<span><span class="MathJax_Preview">\frac{\partial \textbf{u}}{\partial t} = \mathbf{0}.</span><script type="math/tex; mode=display">\frac{\partial \textbf{u}}{\partial t} = \mathbf{0}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dd>The horizontal position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dd>The vertical position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the derivative.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the partial time derivative vector components.</p></div>
+<p>Array containing the vector components of the derivative.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def partial_t(self, x, z, t):
         r&#34;&#34;&#34;
-        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-        respect to time.
+        Computes the partial derivative of the fluid with respect to time as,
+        $$\frac{\partial \textbf{u}}{\partial t} = \mathbf{0}.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the derivative.
+                The horizontal position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the derivative.
+                The vertical position(s) at which to evaluate the derivative.
         t : float or array
                 The time(s) at which to evaluate the derivative.
 
         Returns
         -------
-        Array containing the partial time derivative vector components.
+        Array containing the vector components of the derivative.
         &#34;&#34;&#34;
-        return np.array([0, 0])</code></pre>
+        return np.array([np.zeros(x.shape), np.zeros(z.shape)])</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_x"><code class="name flex">
 <span>def <span class="ident">partial_x</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
-respect to the horizontal position <em>x</em>.</p>
+<div class="desc"><p>Computes the partial derivative of the fluid with respect to the
+horizontal position as,
+<span><span class="MathJax_Preview">\frac{\partial \textbf{u}}{\partial x} = \langle 0, 1 \rangle.</span><script type="math/tex; mode=display">\frac{\partial \textbf{u}}{\partial x} = \langle 0, 1 \rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dd>The horizontal position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dd>The vertical position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the derivative.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the partial x derivative vector components.</p></div>
+<p>Array containing the vector components of the derivative.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def partial_x(self, x, z, t): 
         r&#34;&#34;&#34;
-        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-        respect to the horizontal position _x_.
+        Computes the partial derivative of the fluid with respect to the
+        horizontal position as,
+        $$\frac{\partial \textbf{u}}{\partial x} = \langle 0, 1 \rangle.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the derivative.
+                The horizontal position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the derivative.
+                The vertical position(s) at which to evaluate the derivative.
         t : float or array
                 The time(s) at which to evaluate the derivative.
 
         Returns
         -------
-        Array containing the partial x derivative vector components.
+        Array containing the vector components of the derivative.
         &#34;&#34;&#34;
-        return np.array([0, 1])</code></pre>
+        return np.array([np.zeros(x.shape), np.ones(z.shape)])</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_z"><code class="name flex">
 <span>def <span class="ident">partial_z</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
-respect to the vertical position <em>z</em>.</p>
+<div class="desc"><p>Computes the partial derivative of the fluid with respect to the
+vertical positiona as,
+<span><span class="MathJax_Preview">\frac{\partial \textbf{u}}{\partial z} = \langle -1, 0 \rangle.</span><script type="math/tex; mode=display">\frac{\partial \textbf{u}}{\partial z} = \langle -1, 0 \rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dd>The horizontal position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dd>The vertical position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the derivative.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the partial z derivative vector components.</p></div>
+<p>Array containing the vector components of the derivative.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def partial_z(self, x, z, t): 
         r&#34;&#34;&#34;
-        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-        respect to the vertical position _z_.
+        Computes the partial derivative of the fluid with respect to the
+        vertical positiona as,
+        $$\frac{\partial \textbf{u}}{\partial z} = \langle -1, 0 \rangle.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the derivative.
+                The horizontal position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the derivative.
+                The vertical position(s) at which to evaluate the derivative.
         t : float or array
                 The time(s) at which to evaluate the derivative.
 
         Returns
         -------
-        Array containing the partial z derivative vector components.
+        Array containing the vector components of the derivative.
         &#34;&#34;&#34;
-        return np.array([-1, 0])</code></pre>
+        return np.array([-np.ones(x.shape), np.zeros(z.shape)])</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.set_gravity"><code class="name flex">
+<span>def <span class="ident">set_gravity</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Defines the gravity vector <strong>g</strong> as, <span><span class="MathJax_Preview">\mathbf{g} = \mathbf{0}.</span><script type="math/tex; mode=display">\mathbf{g} = \mathbf{0}.</script></span></p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_gravity(self):
+        r&#34;&#34;&#34;Defines the gravity vector **g** as, $$\mathbf{g} = \mathbf{0}.$$&#34;&#34;&#34;
+        self.gravity = np.array([0, 0]) # gravity not considered for this flow</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.velocity"><code class="name flex">
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the fluid velocity <em><strong>u</strong></em>.</p>
+<div class="desc"><p>Computes the fluid velocity as,
+<span><span class="MathJax_Preview">\textbf{u} = (u, w) = \langle -z, x \rangle.</span><script type="math/tex; mode=display">\textbf{u} = (u, w) = \langle -z, x \rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the velocity.</dd>
+<dd>The horizontal position(s) at which to evaluate the velocity.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the velocity.</dd>
-<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code>, default=<code>None</code></dt>
+<dd>The vertical position(s) at which to evaluate the velocity.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the velocity.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -405,16 +442,17 @@ respect to the vertical position <em>z</em>.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def velocity(self, x, z, t=None):
-        &#34;&#34;&#34;
-        Computes the fluid velocity _**u**_.
+        r&#34;&#34;&#34;
+        Computes the fluid velocity as,
+        $$\textbf{u} = (u, w) = \langle -z, x \rangle.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the velocity.
+                The horizontal position(s) at which to evaluate the velocity.
         z : float or array
-                The z position(s) at which to evaluate the velocity.
-        t : float or array, default=None
+                The vertical position(s) at which to evaluate the velocity.
+        t : float or array
                 The time(s) at which to evaluate the velocity.
 
         Returns
@@ -448,6 +486,7 @@ respect to the vertical position <em>z</em>.</p>
 <li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_t" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_t">partial_t</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_x" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_x">partial_x</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_z" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_z">partial_z</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.set_gravity" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.set_gravity">set_gravity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.velocity" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.velocity">velocity</a></code></li>
 </ul>
 </li>

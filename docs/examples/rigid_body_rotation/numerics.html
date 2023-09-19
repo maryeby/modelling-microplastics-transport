@@ -43,22 +43,24 @@ def main():
         the results to the `data` directory.
         &#34;&#34;&#34;
         # initialize variables for the transport system
-        t_final = 100
-        delta_t = 1e-2
         R = 2 / 3 * 0.75
         my_particle = prt.Particle(stokes_num=2 / 3 * 0.3)
         my_flow = fl.RotatingFlow()
         my_system = ts.RotatingTransportSystem(my_particle, my_flow, R)
+
+        # initialize variables for the numerical simulations
         my_dict = dict.fromkeys([&#39;t&#39;, &#39;first_x&#39;, &#39;first_z&#39;, &#39;first_xdot&#39;,
                                                          &#39;first_zdot&#39;, &#39;second_x&#39;, &#39;second_z&#39;,
                                                          &#39;second_xdot&#39;, &#39;second_zdot&#39;, &#39;third_x&#39;, &#39;third_z&#39;,
                                                          &#39;third_xdot&#39;, &#39;third_zdot&#39;])
-        x_0 = 1
+        x_0, z_0 = 1, 0
         xdot_0, zdot_0 = my_flow.velocity(x_0, 0)
+        t_final = 100
+        delta_t = 1e-2
 
         # compute first order results
         x, z, _, _, _ = my_system.run_numerics(include_history=True, order=1,
-                                                                                   x_0=x_0, xdot_0=xdot_0,
+                                                                                   x_0=x_0, z_0=z_0, xdot_0=xdot_0,
                                                                                    zdot_0=zdot_0, delta_t=delta_t,
                                                                                    num_periods=t_final)
         my_dict[&#39;first_x&#39;] = x
@@ -66,7 +68,7 @@ def main():
 
         # compute second order results
         x, z, _, _, _ = my_system.run_numerics(include_history=True, order=2,
-                                                                                   x_0=x_0, xdot_0=xdot_0,
+                                                                                   x_0=x_0, z_0=z_0, xdot_0=xdot_0,
                                                                                    zdot_0=zdot_0, delta_t=delta_t,
                                                                                    num_periods=t_final)
         my_dict[&#39;second_x&#39;] = x
@@ -74,8 +76,9 @@ def main():
 
         # compute third order results
         x, z, _, _, t = my_system.run_numerics(include_history=True, x_0=x_0,
-                                                                                   xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                   delta_t=delta_t, num_periods=t_final)
+                                                                                   z_0=z_0, xdot_0=xdot_0,
+                                                                                   zdot_0=zdot_0, delta_t=delta_t,
+                                                                                   num_periods=t_final)
         my_dict[&#39;third_x&#39;] = x
         my_dict[&#39;third_z&#39;] = z
         my_dict[&#39;t&#39;] = t
@@ -111,22 +114,24 @@ the results to the <code>data</code> directory.</p></div>
         the results to the `data` directory.
         &#34;&#34;&#34;
         # initialize variables for the transport system
-        t_final = 100
-        delta_t = 1e-2
         R = 2 / 3 * 0.75
         my_particle = prt.Particle(stokes_num=2 / 3 * 0.3)
         my_flow = fl.RotatingFlow()
         my_system = ts.RotatingTransportSystem(my_particle, my_flow, R)
+
+        # initialize variables for the numerical simulations
         my_dict = dict.fromkeys([&#39;t&#39;, &#39;first_x&#39;, &#39;first_z&#39;, &#39;first_xdot&#39;,
                                                          &#39;first_zdot&#39;, &#39;second_x&#39;, &#39;second_z&#39;,
                                                          &#39;second_xdot&#39;, &#39;second_zdot&#39;, &#39;third_x&#39;, &#39;third_z&#39;,
                                                          &#39;third_xdot&#39;, &#39;third_zdot&#39;])
-        x_0 = 1
+        x_0, z_0 = 1, 0
         xdot_0, zdot_0 = my_flow.velocity(x_0, 0)
+        t_final = 100
+        delta_t = 1e-2
 
         # compute first order results
         x, z, _, _, _ = my_system.run_numerics(include_history=True, order=1,
-                                                                                   x_0=x_0, xdot_0=xdot_0,
+                                                                                   x_0=x_0, z_0=z_0, xdot_0=xdot_0,
                                                                                    zdot_0=zdot_0, delta_t=delta_t,
                                                                                    num_periods=t_final)
         my_dict[&#39;first_x&#39;] = x
@@ -134,7 +139,7 @@ the results to the <code>data</code> directory.</p></div>
 
         # compute second order results
         x, z, _, _, _ = my_system.run_numerics(include_history=True, order=2,
-                                                                                   x_0=x_0, xdot_0=xdot_0,
+                                                                                   x_0=x_0, z_0=z_0, xdot_0=xdot_0,
                                                                                    zdot_0=zdot_0, delta_t=delta_t,
                                                                                    num_periods=t_final)
         my_dict[&#39;second_x&#39;] = x
@@ -142,8 +147,9 @@ the results to the <code>data</code> directory.</p></div>
 
         # compute third order results
         x, z, _, _, t = my_system.run_numerics(include_history=True, x_0=x_0,
-                                                                                   xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                   delta_t=delta_t, num_periods=t_final)
+                                                                                   z_0=z_0, xdot_0=xdot_0,
+                                                                                   zdot_0=zdot_0, delta_t=delta_t,
+                                                                                   num_periods=t_final)
         my_dict[&#39;third_x&#39;] = x
         my_dict[&#39;third_z&#39;] = z
         my_dict[&#39;t&#39;] = t

@@ -22,7 +22,7 @@ def main():
 	plt.ylabel(r'$\dot{x}$', fontsize=16)
 	plt.xticks(fontsize=14)
 	plt.yticks(fontsize=14)
-#	plt.minorticks_on()
+	plt.minorticks_on()
 	plt.yscale('log')
 	plt.axis([0, 14.5, 1e-5, 1e1])
 

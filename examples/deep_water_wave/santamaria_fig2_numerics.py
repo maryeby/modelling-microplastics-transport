@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 
 from transport_framework import particle as prt
+from models import dim_deep_water_wave as dim_fl
 from models import deep_water_wave as fl
+from models import santamaria_system as sm
 from models import my_system as ts
 
 def main():
@@ -16,55 +18,66 @@ def main():
 	# initialize the particle, flow, and transport system
 	my_flow = fl.DeepWaterWave(amplitude=0.02, wavelength=1)
 	R = 2 / 3 * 0.9
-	St = my_flow.epsilon * R * 0.157
-	U = my_flow.max_velocity
-	xdot_0, zdot_0 = my_flow.velocity(x=0, z=0, t=0) / U
+	St = my_flow.froude_num * R * 0.157
 	my_particle = prt.Particle(stokes_num=St)
 	my_system = ts.MyTransportSystem(my_particle, my_flow, R)
-#	my_dict = dict.fromkeys(['coarse_t', 'coarse_u_d', 'coarse_w_d', 'medium_t',
-#							 'medium_u_d', 'medium_w_d', 'fine_t', 'fine_u_d',
-#							 'fine_w_d'])
-	my_dict = dict.fromkeys(['fine_t', 'fine_u_d', 'fine_w_d', 'x', 'z',
-							 'interpd_x', 'interpd_z'])
-	omega = my_flow.angular_freq
-	num_periods = 80 * omega / (2 * np.pi)
-#	num_periods = 50
+	my_dict = dict.fromkeys(['coarse_t', 'coarse_u_d', 'coarse_w_d', 'medium_t',
+							 'medium_u_d', 'medium_w_d', 'fine_t', 'fine_u_d',
+							 'fine_w_d'])
+
+	# intialize Santamaria particle, flow, transport system
+	sm_flow = dim_fl.DimensionalDeepWaterWave(amplitude=0.02, wavelength=1)
+	sm_particle = prt.Particle(stokes_num=0.157)
+	sm_system = sm.SantamariaTransportSystem(sm_particle, sm_flow, 0.9)
+	omega = sm_flow.angular_freq
+	U = sm_flow.max_velocity
+	T = 1 / (omega * sm_flow.froude_num)
+	num_periods = 50
+	x_0 = 0
+	z_0 = 0
+	xdot_0, zdot_0 = my_flow.velocity(x_0, z_0, t=0)
+
+	# run numerical simulations and compute drift velocity for Santamaria
+	x, z, xdot, _, t = sm_system.run_numerics(sm_system.maxey_riley,
+											  x_0=x_0, z_0=z_0, delta_t=1e-3,
+											  num_periods=num_periods)
+	sm_u_d, sm_w_d, sm_t = compute_drift_velocity(x, z, xdot, t)
+	my_dict['sm_u_d'] = sm_u_d / U
+	my_dict['sm_w_d'] = sm_w_d / U
+	my_dict['sm_t'] = omega * sm_t
 
 	# run numerical simulation and compute drift velocity for fine delta_t
 	x, z, xdot, _, t = my_system.run_numerics(include_history=False,
+											  x_0=x_0, z_0=z_0,
 											  xdot_0=xdot_0, zdot_0=zdot_0,
-											  delta_t=1e-2,
-											  num_periods=num_periods)
-#	fine_u_d, fine_w_d, fine_t = compute_drift_velocity(x, z, xdot, t)
-	fine_u_d, fine_w_d, fine_t, interpd_x, interpd_z = compute_drift_velocity(x,
-														z, xdot, t)
+											  delta_t=1e-3 / T,
+											  num_periods=num_periods / T)
+	fine_u_d, fine_w_d, fine_t = compute_drift_velocity(x, z, xdot, t)
 	my_dict['fine_u_d'] = fine_u_d
 	my_dict['fine_w_d'] = fine_w_d
-	my_dict['fine_t'] = fine_t
-	my_dict['x'] = x
-	my_dict['z'] = z
-	my_dict['interpd_x'] = interpd_x
-	my_dict['interpd_z'] = interpd_z
+	my_dict['fine_t'] = fine_t * omega
 
 	# run numerical simulation and compute drift velocity for medium delta_t
-#	x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-#											  xdot_0=xdot_0, zdot_0=zdot_0,
-#											  delta_t=5e-3,
-#											  num_periods=num_periods)
-#	medium_u_d, medium_w_d, medium_t = compute_drift_velocity(x, z, xdot, t)
-#	my_dict['medium_u_d'] = medium_u_d
-#	my_dict['medium_w_d'] = medium_w_d
-#	my_dict['medium_t'] = medium_t
+	x, z, xdot, _, t = my_system.run_numerics(include_history=False,
+											  x_0=x_0, z_0=z_0,
+											  xdot_0=xdot_0, zdot_0=zdot_0,
+											  delta_t=5e-3 / T,
+											  num_periods=num_periods / T)
+	medium_u_d, medium_w_d, medium_t = compute_drift_velocity(x, z, xdot, t)
+	my_dict['medium_u_d'] = medium_u_d
+	my_dict['medium_w_d'] = medium_w_d
+	my_dict['medium_t'] = medium_t * omega
 
 	# run numerical simulation and compute drift velocity for coarse delta_t
-#	x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-#											  xdot_0=xdot_0, zdot_0=zdot_0,
-#											  delta_t=1e-2,
-#											  num_periods=num_periods)
-#	coarse_u_d, coarse_w_d, coarse_t = compute_drift_velocity(x, z, xdot, t)
-#	my_dict['coarse_u_d'] = coarse_u_d
-#	my_dict['coarse_w_d'] = coarse_w_d
-#	my_dict['coarse_t'] = coarse_t
+	x, z, xdot, _, t = my_system.run_numerics(include_history=False,
+											  x_0=x_0, z_0=z_0,
+											  xdot_0=xdot_0, zdot_0=zdot_0,
+											  delta_t=1e-2 / T,
+											  num_periods=num_periods / T)
+	coarse_u_d, coarse_w_d, coarse_t = compute_drift_velocity(x, z, xdot, t)
+	my_dict['coarse_u_d'] = coarse_u_d
+	my_dict['coarse_w_d'] = coarse_w_d
+	my_dict['coarse_t'] = coarse_t * omega
 
 	# write results to data file
 	my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
@@ -100,9 +113,7 @@ def compute_drift_velocity(x, z, xdot, t):
 				 / (interpd_t[i] - interpd_t[i - 1]))
 		w_d.append((interpd_z[i] - interpd_z[i - 1]) 
 				 / (interpd_t[i] - interpd_t[i - 1]))
-#	return np.array(u_d), np.array(w_d), np.array(interpd_t)
-	return np.array(u_d), np.array(w_d), np.array(interpd_t), \
-		   np.array(interpd_x), np.array(interpd_z)
+	return np.array(u_d), np.array(w_d), np.array(interpd_t)
 
 if __name__ == '__main__':
 	main()

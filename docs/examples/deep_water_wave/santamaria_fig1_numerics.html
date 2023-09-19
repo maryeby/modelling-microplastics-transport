@@ -41,11 +41,9 @@ from models import my_system as my
 
 def main():
         &#34;&#34;&#34;
-        This program reproduces Figure 1 from Santamaria et al. (2013).
+        This program reproduces numerical results from Figure 1 in Santamaria et al.
+        (2013).
         &#34;&#34;&#34;
-        my_dict = dict.fromkeys([&#39;sm_heavy_x&#39;, &#39;sm_heavy_z&#39;, &#39;sm_light_x&#39;,
-                                                         &#39;sm_light_z&#39;, &#39;my_heavy_x&#39;, &#39;my_heavy_z&#39;,
-                                                         &#39;my_light_x&#39;, &#39;my_light_z&#39;])
 
         # initialize variables for the Santamaria system
         heavy_beta = 0.96
@@ -62,36 +60,46 @@ def main():
         # initialize variables for the Daitche system
         heavy_R = 2 / 3 * 0.96
         light_R = 2 / 3 * 1.04
-        x_0 = k * 0.13
-        z_0 = k * -0.4
         my_flow = fl.DeepWaterWave(amplitude=0.026, wavelength=0.5)
-        heavy_st = my_flow.epsilon * heavy_R * 0.5
-        light_st = my_flow.epsilon * light_R * 0.5
+        heavy_st = my_flow.froude_num * heavy_R * 0.5
+        light_st = my_flow.froude_num * light_R * 0.5
         my_heavy_particle = prt.Particle(stokes_num=heavy_st)
         my_light_particle = prt.Particle(stokes_num=light_st)
         my_heavy_system = my.MyTransportSystem(my_heavy_particle, my_flow, heavy_R)
         my_light_system = my.MyTransportSystem(my_light_particle, my_flow, light_R)
 
+        # initialize variables for the numerical simulations
+        my_dict = dict.fromkeys([&#39;sm_heavy_x&#39;, &#39;sm_heavy_z&#39;, &#39;sm_light_x&#39;,
+                                                         &#39;sm_light_z&#39;, &#39;my_heavy_x&#39;, &#39;my_heavy_z&#39;,
+                                                         &#39;my_light_x&#39;, &#39;my_light_z&#39;])
+        x_0, z_0 = k * 0.13, k * -0.4
+        T = 1 / (sm_flow.angular_freq * sm_flow.froude_num)
+        num_periods = 50
+        delta_t = 1e-2
+
         # generate results for the heavy and light particles
         x, z, _, _, _ = sm_heavy_system.run_numerics(sm_heavy_system.maxey_riley,
-                                                                                                 num_periods=100)
+                                                                                                 x_0=0, z_0=0,
+                                                                                                 delta_t=delta_t,
+                                                                                                 num_periods=num_periods)
         my_dict[&#39;sm_heavy_x&#39;] = k * x
         my_dict[&#39;sm_heavy_z&#39;] = k * z
         x, z, _, _, _ = sm_light_system.run_numerics(sm_light_system.maxey_riley,
                                                                                                  x_0=0.13, z_0=-0.4,
-                                                                                                 num_periods=100)
+                                                                                                 delta_t=delta_t,
+                                                                                                 num_periods=num_periods)
         my_dict[&#39;sm_light_x&#39;] = k * x
         my_dict[&#39;sm_light_z&#39;] = k * z
-        x, z, _, _, _ = my_heavy_system.run_numerics(include_history=False,
-                                                                                                 xdot_0=1, zdot_0=0,
-                                                                                                 num_periods=100 / my_flow.epsilon)
-#                                                                                                num_periods=100)
+        x, z, _, _, _ = my_heavy_system.run_numerics(include_history=False, x_0=0,
+                                                                                                 z_0=0, xdot_0=1, zdot_0=0,
+                                                                                                 delta_t=delta_t / T,
+                                                                                                 num_periods=num_periods / T)
         my_dict[&#39;my_heavy_x&#39;] = x
         my_dict[&#39;my_heavy_z&#39;] = z
         x, z, _, _, _ = my_light_system.run_numerics(include_history=False, x_0=x_0,
                                                                                                  z_0=z_0, xdot_0=0, zdot_0=0,
-                                                 num_periods=100 / my_flow.epsilon)
-#                                                                                                num_periods=150)
+                                                                                                 delta_t=delta_t / T,
+                                                 num_periods=num_periods / T)
         my_dict[&#39;my_light_x&#39;] = x
         my_dict[&#39;my_light_z&#39;] = z
 
@@ -115,18 +123,17 @@ if __name__ == &#39;__main__&#39;:
 <span>def <span class="ident">main</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>This program reproduces Figure 1 from Santamaria et al. (2013).</p></div>
+<div class="desc"><p>This program reproduces numerical results from Figure 1 in Santamaria et al.
+(2013).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
         &#34;&#34;&#34;
-        This program reproduces Figure 1 from Santamaria et al. (2013).
+        This program reproduces numerical results from Figure 1 in Santamaria et al.
+        (2013).
         &#34;&#34;&#34;
-        my_dict = dict.fromkeys([&#39;sm_heavy_x&#39;, &#39;sm_heavy_z&#39;, &#39;sm_light_x&#39;,
-                                                         &#39;sm_light_z&#39;, &#39;my_heavy_x&#39;, &#39;my_heavy_z&#39;,
-                                                         &#39;my_light_x&#39;, &#39;my_light_z&#39;])
 
         # initialize variables for the Santamaria system
         heavy_beta = 0.96
@@ -143,36 +150,46 @@ if __name__ == &#39;__main__&#39;:
         # initialize variables for the Daitche system
         heavy_R = 2 / 3 * 0.96
         light_R = 2 / 3 * 1.04
-        x_0 = k * 0.13
-        z_0 = k * -0.4
         my_flow = fl.DeepWaterWave(amplitude=0.026, wavelength=0.5)
-        heavy_st = my_flow.epsilon * heavy_R * 0.5
-        light_st = my_flow.epsilon * light_R * 0.5
+        heavy_st = my_flow.froude_num * heavy_R * 0.5
+        light_st = my_flow.froude_num * light_R * 0.5
         my_heavy_particle = prt.Particle(stokes_num=heavy_st)
         my_light_particle = prt.Particle(stokes_num=light_st)
         my_heavy_system = my.MyTransportSystem(my_heavy_particle, my_flow, heavy_R)
         my_light_system = my.MyTransportSystem(my_light_particle, my_flow, light_R)
 
+        # initialize variables for the numerical simulations
+        my_dict = dict.fromkeys([&#39;sm_heavy_x&#39;, &#39;sm_heavy_z&#39;, &#39;sm_light_x&#39;,
+                                                         &#39;sm_light_z&#39;, &#39;my_heavy_x&#39;, &#39;my_heavy_z&#39;,
+                                                         &#39;my_light_x&#39;, &#39;my_light_z&#39;])
+        x_0, z_0 = k * 0.13, k * -0.4
+        T = 1 / (sm_flow.angular_freq * sm_flow.froude_num)
+        num_periods = 50
+        delta_t = 1e-2
+
         # generate results for the heavy and light particles
         x, z, _, _, _ = sm_heavy_system.run_numerics(sm_heavy_system.maxey_riley,
-                                                                                                 num_periods=100)
+                                                                                                 x_0=0, z_0=0,
+                                                                                                 delta_t=delta_t,
+                                                                                                 num_periods=num_periods)
         my_dict[&#39;sm_heavy_x&#39;] = k * x
         my_dict[&#39;sm_heavy_z&#39;] = k * z
         x, z, _, _, _ = sm_light_system.run_numerics(sm_light_system.maxey_riley,
                                                                                                  x_0=0.13, z_0=-0.4,
-                                                                                                 num_periods=100)
+                                                                                                 delta_t=delta_t,
+                                                                                                 num_periods=num_periods)
         my_dict[&#39;sm_light_x&#39;] = k * x
         my_dict[&#39;sm_light_z&#39;] = k * z
-        x, z, _, _, _ = my_heavy_system.run_numerics(include_history=False,
-                                                                                                 xdot_0=1, zdot_0=0,
-                                                                                                 num_periods=100 / my_flow.epsilon)
-#                                                                                                num_periods=100)
+        x, z, _, _, _ = my_heavy_system.run_numerics(include_history=False, x_0=0,
+                                                                                                 z_0=0, xdot_0=1, zdot_0=0,
+                                                                                                 delta_t=delta_t / T,
+                                                                                                 num_periods=num_periods / T)
         my_dict[&#39;my_heavy_x&#39;] = x
         my_dict[&#39;my_heavy_z&#39;] = z
         x, z, _, _, _ = my_light_system.run_numerics(include_history=False, x_0=x_0,
                                                                                                  z_0=z_0, xdot_0=0, zdot_0=0,
-                                                 num_periods=100 / my_flow.epsilon)
-#                                                                                                num_periods=150)
+                                                                                                 delta_t=delta_t / T,
+                                                 num_periods=num_periods / T)
         my_dict[&#39;my_light_x&#39;] = x
         my_dict[&#39;my_light_z&#39;] = z
 

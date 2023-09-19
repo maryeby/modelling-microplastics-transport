@@ -51,7 +51,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                 flow : Flow (obj)
                         The flow through which the particle is transported.
                 density_ratio : float
-                        The ratio between the particle&#39;s density and the fluid&#39;s density.
+                        The ratio between the particle and fluid densities.
                 epsilon : float
                         A relationship between the Stokes number and density ratio,
                         $$\epsilon = \frac{St}{R}.$$
@@ -98,24 +98,21 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
         def maxey_riley(self, t, y):
                 r&#34;&#34;&#34;
-                Evaluates the Maxey-Riley equation,
+                Evaluates the Maxey-Riley equation without history effects,
                 $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
                 $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
                         - \textbf{v}}{\epsilon}
                         + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                        + (1 - \frac{3R}{2}) \textbf{g}
-                        - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                        \frac{1}{\sqrt{t - s}} \mathrm{d}s
-                        [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
+                        + (1 - \frac{3R}{2}) \textbf{g},$$
                 with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
                         \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
                 
                 Parameters
                 ----------
                 t : float
-                        The time to use in the computations.
+                        The time(s) to use in the computations.
                 y : list (array-like)
-                        A list containing the x, z, xdot, zdot values to use.
+                        A list containing the initial particle position and velocity.
 
                 Returns
                 -------
@@ -154,7 +151,8 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                 Returns
                 -------
                 Array
-                        The components of the particle&#39;s position and velocity.
+                        The components of the particle&#39;s position and velocity, and the
+                        times where the Maxey-Riley equation was evaluated.
                 &#34;&#34;&#34;
                 # initialize local variables
                 R = self.density_ratio
@@ -267,9 +265,8 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                                                                  / (1 + xi * gamma[0, n + 1])
                 return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-        def run_numerics(self, include_history, order=3,
-                                         x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50,
-                                         delta_t=5e-3, method=&#39;BDF&#39;):
+        def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
+                                         num_periods, delta_t, order=3, method=&#39;BDF&#39;):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
@@ -277,20 +274,20 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
                 ----------
                 include_history : boolean
                         Whether to include history effects.
-                order : int
-                        The order of the integration scheme (first, second, or third).
-                x_0 : float, default=0
+                x_0 : float
                         The initial horizontal position of the particle.
-                z_0 : float, default=0
+                z_0 : float
                         The initial vertical position of the particle.
-                xdot_0 : float, default=1
+                xdot_0 : float
                         The initial horizontal velocity of the particle.
-                zdot_0 : float, default=1
+                zdot_0 : float
                         The initial vertical velocity of the particle.
-                num_periods : int, default=50
-                        The number of oscillation periods to integrate over.
-                delta_t : float, default=5e-3
+                num_periods : int
+                        The number of periods to integrate over.
+                delta_t : float
                         The size of the time steps used for integration.
+                order : int, default=3
+                        The order of the integration scheme (first, second, or third).
                 method : str, default=&#39;BDF&#39;
                         The method of integration to use when neglecting history effects.
 
@@ -910,7 +907,7 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 <dt><strong><code>flow</code></strong> :&ensp;<code>Flow (obj)</code></dt>
 <dd>The flow through which the particle is transported.</dd>
 <dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
-<dd>The ratio between the particle's density and the fluid's density.</dd>
+<dd>The ratio between the particle and fluid densities.</dd>
 <dt><strong><code>epsilon</code></strong> :&ensp;<code>float</code></dt>
 <dd>A relationship between the Stokes number and density ratio,
 <span><span class="MathJax_Preview">\epsilon = \frac{St}{R}.</span><script type="math/tex; mode=display">\epsilon = \frac{St}{R}.</script></span></dd>
@@ -945,7 +942,7 @@ used to compute the asymptotic behavior of the system.</dd>
                 flow : Flow (obj)
                         The flow through which the particle is transported.
                 density_ratio : float
-                        The ratio between the particle&#39;s density and the fluid&#39;s density.
+                        The ratio between the particle and fluid densities.
                 epsilon : float
                         A relationship between the Stokes number and density ratio,
                         $$\epsilon = \frac{St}{R}.$$
@@ -992,24 +989,21 @@ used to compute the asymptotic behavior of the system.</dd>
 
         def maxey_riley(self, t, y):
                 r&#34;&#34;&#34;
-                Evaluates the Maxey-Riley equation,
+                Evaluates the Maxey-Riley equation without history effects,
                 $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
                 $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
                         - \textbf{v}}{\epsilon}
                         + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                        + (1 - \frac{3R}{2}) \textbf{g}
-                        - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                        \frac{1}{\sqrt{t - s}} \mathrm{d}s
-                        [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
+                        + (1 - \frac{3R}{2}) \textbf{g},$$
                 with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
                         \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
                 
                 Parameters
                 ----------
                 t : float
-                        The time to use in the computations.
+                        The time(s) to use in the computations.
                 y : list (array-like)
-                        A list containing the x, z, xdot, zdot values to use.
+                        A list containing the initial particle position and velocity.
 
                 Returns
                 -------
@@ -1048,7 +1042,8 @@ used to compute the asymptotic behavior of the system.</dd>
                 Returns
                 -------
                 Array
-                        The components of the particle&#39;s position and velocity.
+                        The components of the particle&#39;s position and velocity, and the
+                        times where the Maxey-Riley equation was evaluated.
                 &#34;&#34;&#34;
                 # initialize local variables
                 R = self.density_ratio
@@ -1161,9 +1156,8 @@ used to compute the asymptotic behavior of the system.</dd>
                                                                  / (1 + xi * gamma[0, n + 1])
                 return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-        def run_numerics(self, include_history, order=3,
-                                         x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50,
-                                         delta_t=5e-3, method=&#39;BDF&#39;):
+        def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
+                                         num_periods, delta_t, order=3, method=&#39;BDF&#39;):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
@@ -1171,20 +1165,20 @@ used to compute the asymptotic behavior of the system.</dd>
                 ----------
                 include_history : boolean
                         Whether to include history effects.
-                order : int
-                        The order of the integration scheme (first, second, or third).
-                x_0 : float, default=0
+                x_0 : float
                         The initial horizontal position of the particle.
-                z_0 : float, default=0
+                z_0 : float
                         The initial vertical position of the particle.
-                xdot_0 : float, default=1
+                xdot_0 : float
                         The initial horizontal velocity of the particle.
-                zdot_0 : float, default=1
+                zdot_0 : float
                         The initial vertical velocity of the particle.
-                num_periods : int, default=50
-                        The number of oscillation periods to integrate over.
-                delta_t : float, default=5e-3
+                num_periods : int
+                        The number of periods to integrate over.
+                delta_t : float
                         The size of the time steps used for integration.
+                order : int, default=3
+                        The order of the integration scheme (first, second, or third).
                 method : str, default=&#39;BDF&#39;
                         The method of integration to use when neglecting history effects.
 
@@ -1292,7 +1286,8 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>Array</code></dt>
-<dd>The components of the particle's position and velocity.</dd>
+<dd>The components of the particle's position and velocity, and the
+times where the Maxey-Riley equation was evaluated.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1315,7 +1310,8 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
         Returns
         -------
         Array
-                The components of the particle&#39;s position and velocity.
+                The components of the particle&#39;s position and velocity, and the
+                times where the Maxey-Riley equation was evaluated.
         &#34;&#34;&#34;
         # initialize local variables
         R = self.density_ratio
@@ -1433,30 +1429,24 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 <span>def <span class="ident">maxey_riley</span></span>(<span>self, t, y)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Evaluates the Maxey-Riley equation,
+<div class="desc"><p>Evaluates the Maxey-Riley equation without history effects,
 <span><span class="MathJax_Preview">\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},</script></span>
 <span><span class="MathJax_Preview">\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
 - \textbf{v}}{\epsilon}
 + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-+ (1 - \frac{3R}{2}) \textbf{g}
-- \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-\frac{1}{\sqrt{t - s}} \mathrm{d}s
-[\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
++ (1 - \frac{3R}{2}) \textbf{g},</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
 - \textbf{v}}{\epsilon}
 + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-+ (1 - \frac{3R}{2}) \textbf{g}
-- \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-\frac{1}{\sqrt{t - s}} \mathrm{d}s
-[\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},</script></span>
++ (1 - \frac{3R}{2}) \textbf{g},</script></span>
 with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
 \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.</span><script type="math/tex; mode=display">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
 \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
-<dd>The time to use in the computations.</dd>
+<dd>The time(s) to use in the computations.</dd>
 <dt><strong><code>y</code></strong> :&ensp;<code>list (array-like)</code></dt>
-<dd>A list containing the x, z, xdot, zdot values to use.</dd>
+<dd>A list containing the initial particle position and velocity.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1469,24 +1459,21 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 </summary>
 <pre><code class="python">def maxey_riley(self, t, y):
         r&#34;&#34;&#34;
-        Evaluates the Maxey-Riley equation,
+        Evaluates the Maxey-Riley equation without history effects,
         $$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
         $$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
                 - \textbf{v}}{\epsilon}
                 + \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                + (1 - \frac{3R}{2}) \textbf{g}
-                - \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-                \frac{1}{\sqrt{t - s}} \mathrm{d}s
-                [\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
+                + (1 - \frac{3R}{2}) \textbf{g},$$
         with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
                 \quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
         
         Parameters
         ----------
         t : float
-                The time to use in the computations.
+                The time(s) to use in the computations.
         y : list (array-like)
-                A list containing the x, z, xdot, zdot values to use.
+                A list containing the initial particle position and velocity.
 
         Returns
         -------
@@ -1510,7 +1497,7 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.models.relaxing_system.RelaxingTransportSystem.run_numerics"><code class="name flex">
-<span>def <span class="ident">run_numerics</span></span>(<span>self, include_history, order=3, x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50, delta_t=0.005, method='BDF')</span>
+<span>def <span class="ident">run_numerics</span></span>(<span>self, include_history, x_0, z_0, xdot_0, zdot_0, num_periods, delta_t, order=3, method='BDF')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the position and velocity of the particle over time.</p>
@@ -1518,20 +1505,20 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <dl>
 <dt><strong><code>include_history</code></strong> :&ensp;<code>boolean</code></dt>
 <dd>Whether to include history effects.</dd>
-<dt><strong><code>order</code></strong> :&ensp;<code>int</code></dt>
-<dd>The order of the integration scheme (first, second, or third).</dd>
-<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial horizontal position of the particle.</dd>
-<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial vertical position of the particle.</dd>
-<dt><strong><code>xdot_0</code></strong> :&ensp;<code>float</code>, default=<code>1</code></dt>
+<dt><strong><code>xdot_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial horizontal velocity of the particle.</dd>
-<dt><strong><code>zdot_0</code></strong> :&ensp;<code>float</code>, default=<code>1</code></dt>
+<dt><strong><code>zdot_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial vertical velocity of the particle.</dd>
-<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code>, default=<code>50</code></dt>
-<dd>The number of oscillation periods to integrate over.</dd>
-<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code>, default=<code>5e-3</code></dt>
+<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code></dt>
+<dd>The number of periods to integrate over.</dd>
+<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
 <dd>The size of the time steps used for integration.</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>int</code>, default=<code>3</code></dt>
+<dd>The order of the integration scheme (first, second, or third).</dd>
 <dt><strong><code>method</code></strong> :&ensp;<code>str</code>, default=<code>'BDF'</code></dt>
 <dd>The method of integration to use when neglecting history effects.</dd>
 </dl>
@@ -1552,9 +1539,8 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_numerics(self, include_history, order=3,
-                                 x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50,
-                                 delta_t=5e-3, method=&#39;BDF&#39;):
+<pre><code class="python">def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
+                                 num_periods, delta_t, order=3, method=&#39;BDF&#39;):
         &#34;&#34;&#34;
         Computes the position and velocity of the particle over time.
 
@@ -1562,20 +1548,20 @@ with <span><span class="MathJax_Preview">R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \
         ----------
         include_history : boolean
                 Whether to include history effects.
-        order : int
-                The order of the integration scheme (first, second, or third).
-        x_0 : float, default=0
+        x_0 : float
                 The initial horizontal position of the particle.
-        z_0 : float, default=0
+        z_0 : float
                 The initial vertical position of the particle.
-        xdot_0 : float, default=1
+        xdot_0 : float
                 The initial horizontal velocity of the particle.
-        zdot_0 : float, default=1
+        zdot_0 : float
                 The initial vertical velocity of the particle.
-        num_periods : int, default=50
-                The number of oscillation periods to integrate over.
-        delta_t : float, default=5e-3
+        num_periods : int
+                The number of periods to integrate over.
+        delta_t : float
                 The size of the time steps used for integration.
+        order : int, default=3
+                The order of the integration scheme (first, second, or third).
         method : str, default=&#39;BDF&#39;
                 The method of integration to use when neglecting history effects.
 

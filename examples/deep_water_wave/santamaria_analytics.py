@@ -11,9 +11,9 @@ from models import santamaria_system as ts
 
 def main():
 	"""
-	This program computes analytical solutions for the Maxey-Riley equation
-	without history for deep water waves, following the approach outlined in
-	Santamaria et al. (2013), and saves the results to the `data` directory.
+	This program computes analytical solutions for the Stokes drift velocity of
+	an inertial particle in linear water waves, following the approach outlined
+	in Santamaria et al. (2013), and saves the results to the `data` directory.
 	"""
 	# initialize the particle, flow, and transport system
 	beta = 0.9
@@ -22,9 +22,11 @@ def main():
 	my_system = ts.SantamariaTransportSystem(my_particle, my_flow, beta)
 
 	# initialize variables for computing the analytics
-	omega = my_flow.angular_freq
-	t = np.arange(0, 80 / omega, 1e-3)
+	num_periods = 50
+	delta_t = 1e-3
+	t = np.arange(0, num_periods * my_flow.period, delta_t)
 	z_0 = 0
+	omega = my_flow.angular_freq
 	U = my_flow.max_velocity
 	St = my_particle.stokes_num
 	c = my_flow.phase_velocity

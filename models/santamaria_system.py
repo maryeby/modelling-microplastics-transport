@@ -13,7 +13,7 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 	"""
 
 	def __init__(self, particle, flow, density_ratio):
-		"""
+		r"""
 		Attributes
 		----------
 		particle : Particle (obj)
@@ -21,9 +21,10 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle's density and the fluid's density.
+			The ratio between the particle and fluid densities.
 		st_response_time : float
-			The Stokes response time tau.
+			The Stokes response time τ, computed as
+			$$\tau = \frac{St}{\omega}.$$
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.st_response_time = self.particle.stokes_num \
@@ -31,19 +32,23 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 
 	def maxey_riley(self, t, y):
 		r"""
-		Evaluates the Maxey-Riley equation without the history term,
+		Evaluates the Maxey-Riley equation without history effects,
 		corresponding to equations (3) and (4) in Santamaria et al. (2013),
-		$$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{V},$$
-		$$\frac{\mathrm{d}\textbf{V}}{\mathrm{d}t}
-			= \frac{\textbf{u} - \textbf{V}}{\tau} + (1 - \beta) \textbf{g}
-			+ \beta \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}.$$
+		$$\frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{v},$$
+		$$\frac{\mathrm{d}\mathbf{v}}{\mathrm{d}t}
+			= \frac{\mathbf{u} - \mathbf{v}}{\tau} + (1 - \beta) \mathbf{g}
+			+ \beta \frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}$$ with
+		$$\tau = \frac{a^2}{3 \beta \nu},
+			\qquad \beta = \frac{3 \rho_f}{\rho_f + 2 \rho_p},$$
+		where *a* is the particle radius, *ν* is the kinematic viscosity, and
+		*ρ* is the density of the particle or the fluid.
 		
 		Parameters
 		----------
-		t : float
-			The time to use in the computations
+		t : float or array
+			The time(s) when the Maxey-Riley equation should be evaluated.
 		y : list (array-like)
-			A list containing the x, z, xdot, zdot values to use.
+			A list containing the initial particle position and velocity.
 
 		Returns
 		-------
@@ -66,20 +71,23 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		r"""
 		Evalutes the inertial equation, corresponding to equation (5) in
 		Santamaria et al. (2013),
-		$$\textbf{V} = \textbf{u} + \tau (1 - \beta) \Bigg(\textbf{g}
-		- \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}\Bigg)
-		+ \tau^2 (1 - \beta) \frac{\mathrm{d}^2\textbf{u}}{\mathrm{d}t^2}
-		+ \mathcal{O}(\tau^3).$$
+		$$\mathbf{v} = \mathbf{u} + \tau (1 - \beta) \Bigg(\mathbf{g}
+		- \frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}\Bigg)
+		+ \tau^2 (1 - \beta) \frac{\mathrm{D}^2\mathbf{u}}{\mathrm{D}t^2}
+		+ \mathcal{O}(\tau^3)$$ with
+		$$\tau = \frac{a^2}{3 \beta \nu},
+			\qquad \beta = \frac{3 \rho_f}{\rho_f + 2 \rho_p},$$
+		where *a* is the particle radius, *ν* is the kinematic viscosity, and
+		*ρ* is the density of the particle or the fluid.
 
 		Parameters
 		----------
-		t : float
-			The time to use in the computations
+		t : float or array
+			The time(s) when the inertial equation should be evaluated.
 		y : list (array-like)
-			A list containing the x and z values to use, and the order of the
-			equation.
+			A list containing the x and z values to use in the computations.
 		order : int
-			The order at which to evalaute the inertial equation.
+			The order of the inertial equation (leading, first, or second).
 
 		Returns
 		-------
@@ -91,7 +99,6 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		g = self.flow.gravity
 		x, z = y[:2]
 		fluid_velocity = self.flow.velocity(x, z, t)
-		particle_velocity = np.zeros_like(fluid_velocity)
 		material_dv = self.flow.material_derivative(x, z, t)
 
 		if order == 0:
@@ -114,8 +121,8 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 
 		return np.concatenate((particle_velocity, particle_accel))
 
-	def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
-					 delta_t=1e-3, method='BDF'):
+	def run_numerics(self, equation, x_0, z_0, num_periods, delta_t, order=2,
+					 method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -123,16 +130,16 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		----------
 		equation : fun
 			The equation to evaluate, either M-R or the inertial equation.
-		order : int
-			The order at which to evaluate the inertial equation.
-		x_0 : float, default=0
+		x_0 : float
 			The initial horizontal position of the particle.
-		z_0 : float, default=0
+		z_0 : float
 			The initial vertical position of the particle.
-		num_periods : int, default=50
-			The number of oscillation periods to integrate over.
-		delta_t : float, default=5e-3
-			The size of the timesteps of integration.
+		num_periods : int
+			The number of wave periods to integrate over.
+		delta_t : float
+			The size of the timesteps used for integration.
+		order : int, default=2
+			The order of the inertial equation (leading, first, or second).
 		method : str, default='BDF'
 			The method of integration to use.
 
@@ -155,9 +162,9 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		fluid.
 		"""
 		# initial parameters
-		num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
-		t_span = (0, num_periods * self.flow.period)
-		t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
+		t_final = num_periods * self.flow.period
+		t_span = (0, t_final)
+		t_eval = np.arange(0, t_final, delta_t)
 		xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
 
 		# run computations

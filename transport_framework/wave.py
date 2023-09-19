@@ -1,12 +1,12 @@
-import numpy as np
 import sys
 sys.path.append('/home/s2182576/Documents/academia/thesis/'
 				+ 'modelling-microplastics-transport')
+import numpy as np
 from abc import ABC, abstractmethod
 from transport_framework import flow
 
 class Wave(flow.Flow):
-	"""Represents a fluid flow."""
+	"""Represents a fluid wave."""
 
 	def __init__(self, depth, amplitude, wavelength):
 		r"""
@@ -17,18 +17,22 @@ class Wave(flow.Flow):
 		amplitude : float
 			The amplitude of the wave *A*.
 		wavelength : float
-			The wavelength lambda.
+			The wavelength *λ*.
 		wavenum : float
-			The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+			The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
 		gravity : float
-			The gravity _**g**_.
+			The gravity **g** acting on the fluid.
 		angular_freq : float
-			The angular frequency omega, computed using the dispersion relation.
+			The angular frequency *ω*, computed using the dispersion relation.
 		phase_velocity : float
-			The phase velocity *c*.
+			The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
 		period : float
 			The period of the wave, computed as
 			$$\text{period} = \frac{2\pi}{\omega}.$$
+		max_velocity : float
+			The maximum velocity *U* at the surface z = 0.
+		froude_num : float
+			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
 		"""
 		super().__init__(depth)
 		self.amplitude = amplitude
@@ -37,16 +41,12 @@ class Wave(flow.Flow):
 		# computed attributes
 		self.wavenum = 2 * np.pi / self.wavelength
 		self.set_angular_freq()
-		self.set_gravity()
 		self.phase_velocity = self.angular_freq / self.wavenum
 		self.period = 2 * np.pi / self.angular_freq
+		self.max_velocity = self.angular_freq * self.amplitude
+		self.froude_num = self.max_velocity / self.phase_velocity
 		
 	@abstractmethod
 	def set_angular_freq(self):
-		"""Defines the angular frequency omega."""
-		pass
-
-	@abstractmethod
-	def set_gravity(self):
-		"""Defines the gravity _**g**_."""
+		"""Defines the angular frequency *ω*."""
 		pass

@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import numpy as np
 
 class TransportSystem:
 	"""
@@ -14,10 +13,8 @@ class TransportSystem:
 			The particle being transported.
 		flow : Flow (obj)
 			The flow through which the particle is transported.
-		gravity : float
-			The gravity _**g**_.
 		density_ratio : float
-			The ratio between the particle's density and the fluid's density.
+			The ratio between the particle and fluid densities.
 		"""
 		self.particle = particle
 		self.flow = flow
@@ -26,37 +23,37 @@ class TransportSystem:
 	@abstractmethod
 	def maxey_riley(self, t, y):
 		"""
-		Evaluates the Maxey-Riley equation without the history term.
+		Evaluates the Maxey-Riley equation.
 		
 		Parameters
 		----------
-		t : float
-			The time to use in the computations
+		t : array
+			The time(s) to use in the computations.
 		y : list (array-like)
-			A list containing the x, z, xdot, zdot values to use.
+			A list containing the initial particle position and velocity.
 
 		Returns
 		-------
 		Array
-			The components of the particle's velocity and acceleration.
+			The components of the particle's position and velocity, and the
+			times where the Maxey-Riley equation was evaluated.
 		"""
 		pass
 
 	@abstractmethod
-	def run_numerics(self, x_0=0, z_0=0, num_periods=50, delta_t=5e-3,
-					 method='BDF'):
+	def run_numerics(self, x_0, z_0, num_periods, delta_t, method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
 		Parameters
 		----------
-		x_0 : float, default=0
+		x_0 : float
 			The initial horizontal position of the particle.
-		z_0 : float, default=0
+		z_0 : float
 			The initial vertical position of the particle.
-		num_periods : int, default=50
-			The number of oscillation periods to integrate over.
-		delta_t : float, default=5e-3
+		num_periods : int
+			The number of periods to integrate over.
+		delta_t : float
 			The size of the timesteps of integration.
 		method : str, default='BDF'
 			The method of integration to use.

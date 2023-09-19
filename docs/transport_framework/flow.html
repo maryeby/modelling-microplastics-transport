@@ -39,115 +39,122 @@ class Flow(ABC):
                 ----------
                 depth : float
                         The depth of the fluid *h*.
+                gravity : array
+                        The gravity **g** acting on the fluid.
                 period : float
-                        A parameter used in the computation of the timespan over which to
-                        integrate.
+                        A parameter used in the computation of the integration timespan.
                 &#34;&#34;&#34;
                 self.depth = depth
                 self.period = 1
+                self.set_gravity()
+
+        @abstractmethod
+        def set_gravity(self):
+                &#34;&#34;&#34;Defines the gravity vector **g**.&#34;&#34;&#34;
+                pass
 
         @abstractmethod
         def velocity(self, x, z, t):
-                &#34;&#34;&#34;
-                Computes the fluid velocity _**u**_.
+                r&#34;&#34;&#34;
+                Computes the fluid velocity, $$\mathbf{u} = (u, w).$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the velocity.
+                        The horizontal position(s) at which to evaluate the velocity.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity.
+                        The vertical position(s) at which to evaluate the velocity.
                 t : float or array
                         The time(s) at which to evaluate the velocity.
 
                 Returns
                 -------
-                Array containing the velocity field vector components _u_ and _w_.
+                Array containing the velocity field vector components *u* and *w*.
                 &#34;&#34;&#34;
                 pass
 
         @abstractmethod
         def partial_t(self, x, z, t): 
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to time.
+                Computes the partial derivative of the fluid with respect to time,
+                $$\frac{\partial \mathbf{u}}{\partial t}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial time derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
                 pass
 
         @abstractmethod
         def partial_x(self, x, z, t): 
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to the horizontal position _x_.
+                Computes the partial derivative of the fluid with respect to the
+                horizontal position, $$\frac{\partial \mathbf{u}}{\partial x}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial x derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
                 pass
 
         @abstractmethod
         def partial_z(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to the vertical position _z_.
+                Computes the partial derivative of the fluid with respect to the
+                vertical position, $$\frac{\partial \mathbf{u}}{\partial z}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial z derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
                 pass
 
         def dot_jacobian(self, vec, x, z, t):
                 r&#34;&#34;&#34;
                 Computes the dot product of the provided vector with the Jacobian of the
-                fluid **u**.
+                fluid, $$\texttt{vec} \cdot \nabla \mathbf{u}.$$
 
                 Parameters
                 ----------
                 vec: array
                         The vector to be used in the dot product.
                 x : float or array
-                        The x position(s) at which to evaluate the solution.
+                        The horizontal position(s) at which to evaluate the solution.
                 z : float or array
-                        The z position(s) at which to evaluate the solution.
+                        The vertical position(s) at which to evaluate the solution.
                 t : float or array
                         The time(s) at which to evaluate the solution.
 
                 Returns
                 -------
-                Array containing the vector components of the resulting dot product.
+                Array containing the vector components of the dot product.
                 &#34;&#34;&#34;
                 x_component, z_component = vec
                 dxu, dxw = self.partial_x(x, z, t)
@@ -158,18 +165,18 @@ class Flow(ABC):
         def material_derivative(self, x, z, t): 
                 r&#34;&#34;&#34;
                 Computes the material derivative,
-                $$\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
-                        = \frac{\partial \textbf{u}}{\partial t}
-                        + \textbf{u} \cdot \nabla \textbf{u}.$$
+                $$\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
+                        = \frac{\partial \mathbf{u}}{\partial t}
+                        + \mathbf{u} \cdot \nabla \mathbf{u}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
-                        The time(s) at which to evaluate the velocity.
+                        The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
@@ -182,27 +189,26 @@ class Flow(ABC):
                 r&#34;&#34;&#34;
                 Computes the derivative of the fluid along the provided trajectory of
                 the particle,
-                $$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                        = \frac{\partial \textbf{u}}{\partial t}
-                        + \textbf{v} \cdot \nabla \textbf{u}.$$
+                $$\frac{\mathrm{d}\mathbf{u}}{\mathrm{d}t}
+                        = \frac{\partial \mathbf{u}}{\partial t}
+                        + \mathbf{v} \cdot \nabla \mathbf{u}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the fluid velocity.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
-                        The time(s) at which to evaluate the fluid velocity.
+                        The time(s) at which to evaluate the derivative.
                 v : array
                         The velocity of the particle.
 
                 Returns
                 -------
-                Array
-                        The horizontal and vertical components of the solution.
+                Array containing the derivative vector components.
                 &#34;&#34;&#34;
-                return self.velocity(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
+                return self.partial_t(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
 </details>
 </section>
 <section>
@@ -224,9 +230,10 @@ class Flow(ABC):
 <dl>
 <dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
 <dd>The depth of the fluid <em>h</em>.</dd>
+<dt><strong><code>gravity</code></strong> :&ensp;<code>array</code></dt>
+<dd>The gravity <strong>g</strong> acting on the fluid.</dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
-<dd>A parameter used in the computation of the timespan over which to
-integrate.</dd>
+<dd>A parameter used in the computation of the integration timespan.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -241,115 +248,122 @@ integrate.</dd>
                 ----------
                 depth : float
                         The depth of the fluid *h*.
+                gravity : array
+                        The gravity **g** acting on the fluid.
                 period : float
-                        A parameter used in the computation of the timespan over which to
-                        integrate.
+                        A parameter used in the computation of the integration timespan.
                 &#34;&#34;&#34;
                 self.depth = depth
                 self.period = 1
+                self.set_gravity()
+
+        @abstractmethod
+        def set_gravity(self):
+                &#34;&#34;&#34;Defines the gravity vector **g**.&#34;&#34;&#34;
+                pass
 
         @abstractmethod
         def velocity(self, x, z, t):
-                &#34;&#34;&#34;
-                Computes the fluid velocity _**u**_.
+                r&#34;&#34;&#34;
+                Computes the fluid velocity, $$\mathbf{u} = (u, w).$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the velocity.
+                        The horizontal position(s) at which to evaluate the velocity.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity.
+                        The vertical position(s) at which to evaluate the velocity.
                 t : float or array
                         The time(s) at which to evaluate the velocity.
 
                 Returns
                 -------
-                Array containing the velocity field vector components _u_ and _w_.
+                Array containing the velocity field vector components *u* and *w*.
                 &#34;&#34;&#34;
                 pass
 
         @abstractmethod
         def partial_t(self, x, z, t): 
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to time.
+                Computes the partial derivative of the fluid with respect to time,
+                $$\frac{\partial \mathbf{u}}{\partial t}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial time derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
                 pass
 
         @abstractmethod
         def partial_x(self, x, z, t): 
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to the horizontal position _x_.
+                Computes the partial derivative of the fluid with respect to the
+                horizontal position, $$\frac{\partial \mathbf{u}}{\partial x}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial x derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
                 pass
 
         @abstractmethod
         def partial_z(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-                respect to the vertical position _z_.
+                Computes the partial derivative of the fluid with respect to the
+                vertical position, $$\frac{\partial \mathbf{u}}{\partial z}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the derivative.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
                         The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
-                Array containing the partial z derivative vector components.
+                Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
                 pass
 
         def dot_jacobian(self, vec, x, z, t):
                 r&#34;&#34;&#34;
                 Computes the dot product of the provided vector with the Jacobian of the
-                fluid **u**.
+                fluid, $$\texttt{vec} \cdot \nabla \mathbf{u}.$$
 
                 Parameters
                 ----------
                 vec: array
                         The vector to be used in the dot product.
                 x : float or array
-                        The x position(s) at which to evaluate the solution.
+                        The horizontal position(s) at which to evaluate the solution.
                 z : float or array
-                        The z position(s) at which to evaluate the solution.
+                        The vertical position(s) at which to evaluate the solution.
                 t : float or array
                         The time(s) at which to evaluate the solution.
 
                 Returns
                 -------
-                Array containing the vector components of the resulting dot product.
+                Array containing the vector components of the dot product.
                 &#34;&#34;&#34;
                 x_component, z_component = vec
                 dxu, dxw = self.partial_x(x, z, t)
@@ -360,18 +374,18 @@ integrate.</dd>
         def material_derivative(self, x, z, t): 
                 r&#34;&#34;&#34;
                 Computes the material derivative,
-                $$\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
-                        = \frac{\partial \textbf{u}}{\partial t}
-                        + \textbf{u} \cdot \nabla \textbf{u}.$$
+                $$\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
+                        = \frac{\partial \mathbf{u}}{\partial t}
+                        + \mathbf{u} \cdot \nabla \mathbf{u}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
-                        The time(s) at which to evaluate the velocity.
+                        The time(s) at which to evaluate the derivative.
 
                 Returns
                 -------
@@ -384,27 +398,26 @@ integrate.</dd>
                 r&#34;&#34;&#34;
                 Computes the derivative of the fluid along the provided trajectory of
                 the particle,
-                $$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                        = \frac{\partial \textbf{u}}{\partial t}
-                        + \textbf{v} \cdot \nabla \textbf{u}.$$
+                $$\frac{\mathrm{d}\mathbf{u}}{\mathrm{d}t}
+                        = \frac{\partial \mathbf{u}}{\partial t}
+                        + \mathbf{v} \cdot \nabla \mathbf{u}.$$
 
                 Parameters
                 ----------
                 x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
+                        The horizontal position(s) at which to evaluate the derivative.
                 z : float or array
-                        The z position(s) at which to evaluate the fluid velocity.
+                        The vertical position(s) at which to evaluate the derivative.
                 t : float or array
-                        The time(s) at which to evaluate the fluid velocity.
+                        The time(s) at which to evaluate the derivative.
                 v : array
                         The velocity of the particle.
 
                 Returns
                 -------
-                Array
-                        The horizontal and vertical components of the solution.
+                Array containing the derivative vector components.
                 &#34;&#34;&#34;
-                return self.velocity(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
+                return self.partial_t(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -418,27 +431,24 @@ integrate.</dd>
 <dd>
 <div class="desc"><p>Computes the derivative of the fluid along the provided trajectory of
 the particle,
-<span><span class="MathJax_Preview">\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-= \frac{\partial \textbf{u}}{\partial t}
-+ \textbf{v} \cdot \nabla \textbf{u}.</span><script type="math/tex; mode=display">\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-= \frac{\partial \textbf{u}}{\partial t}
-+ \textbf{v} \cdot \nabla \textbf{u}.</script></span></p>
+<span><span class="MathJax_Preview">\frac{\mathrm{d}\mathbf{u}}{\mathrm{d}t}
+= \frac{\partial \mathbf{u}}{\partial t}
++ \mathbf{v} \cdot \nabla \mathbf{u}.</span><script type="math/tex; mode=display">\frac{\mathrm{d}\mathbf{u}}{\mathrm{d}t}
+= \frac{\partial \mathbf{u}}{\partial t}
++ \mathbf{v} \cdot \nabla \mathbf{u}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the fluid velocity.</dd>
+<dd>The horizontal position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the fluid velocity.</dd>
+<dd>The vertical position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The time(s) at which to evaluate the fluid velocity.</dd>
+<dd>The time(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>v</code></strong> :&ensp;<code>array</code></dt>
 <dd>The velocity of the particle.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Array</code></dt>
-<dd>The horizontal and vertical components of the solution.</dd>
-</dl></div>
+<p>Array containing the derivative vector components.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -447,27 +457,26 @@ the particle,
         r&#34;&#34;&#34;
         Computes the derivative of the fluid along the provided trajectory of
         the particle,
-        $$\frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-                = \frac{\partial \textbf{u}}{\partial t}
-                + \textbf{v} \cdot \nabla \textbf{u}.$$
+        $$\frac{\mathrm{d}\mathbf{u}}{\mathrm{d}t}
+                = \frac{\partial \mathbf{u}}{\partial t}
+                + \mathbf{v} \cdot \nabla \mathbf{u}.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the fluid velocity.
+                The horizontal position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the fluid velocity.
+                The vertical position(s) at which to evaluate the derivative.
         t : float or array
-                The time(s) at which to evaluate the fluid velocity.
+                The time(s) at which to evaluate the derivative.
         v : array
                 The velocity of the particle.
 
         Returns
         -------
-        Array
-                The horizontal and vertical components of the solution.
+        Array containing the derivative vector components.
         &#34;&#34;&#34;
-        return self.velocity(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
+        return self.partial_t(x, z, t) + self.dot_jacobian(v, x, z, t)</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.transport_framework.flow.Flow.dot_jacobian"><code class="name flex">
@@ -475,20 +484,20 @@ the particle,
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the dot product of the provided vector with the Jacobian of the
-fluid <strong>u</strong>.</p>
+fluid, <span><span class="MathJax_Preview">\texttt{vec} \cdot \nabla \mathbf{u}.</span><script type="math/tex; mode=display">\texttt{vec} \cdot \nabla \mathbf{u}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>vec</code></strong> :&ensp;<code>array</code></dt>
 <dd>The vector to be used in the dot product.</dd>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the solution.</dd>
+<dd>The horizontal position(s) at which to evaluate the solution.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the solution.</dd>
+<dd>The vertical position(s) at which to evaluate the solution.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the solution.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the vector components of the resulting dot product.</p></div>
+<p>Array containing the vector components of the dot product.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -496,22 +505,22 @@ fluid <strong>u</strong>.</p>
 <pre><code class="python">def dot_jacobian(self, vec, x, z, t):
         r&#34;&#34;&#34;
         Computes the dot product of the provided vector with the Jacobian of the
-        fluid **u**.
+        fluid, $$\texttt{vec} \cdot \nabla \mathbf{u}.$$
 
         Parameters
         ----------
         vec: array
                 The vector to be used in the dot product.
         x : float or array
-                The x position(s) at which to evaluate the solution.
+                The horizontal position(s) at which to evaluate the solution.
         z : float or array
-                The z position(s) at which to evaluate the solution.
+                The vertical position(s) at which to evaluate the solution.
         t : float or array
                 The time(s) at which to evaluate the solution.
 
         Returns
         -------
-        Array containing the vector components of the resulting dot product.
+        Array containing the vector components of the dot product.
         &#34;&#34;&#34;
         x_component, z_component = vec
         dxu, dxw = self.partial_x(x, z, t)
@@ -525,19 +534,19 @@ fluid <strong>u</strong>.</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the material derivative,
-<span><span class="MathJax_Preview">\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
-= \frac{\partial \textbf{u}}{\partial t}
-+ \textbf{u} \cdot \nabla \textbf{u}.</span><script type="math/tex; mode=display">\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
-= \frac{\partial \textbf{u}}{\partial t}
-+ \textbf{u} \cdot \nabla \textbf{u}.</script></span></p>
+<span><span class="MathJax_Preview">\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
+= \frac{\partial \mathbf{u}}{\partial t}
++ \mathbf{u} \cdot \nabla \mathbf{u}.</span><script type="math/tex; mode=display">\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
+= \frac{\partial \mathbf{u}}{\partial t}
++ \mathbf{u} \cdot \nabla \mathbf{u}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the fluid velocity.</dd>
+<dd>The horizontal position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the velocity and derivative.</dd>
+<dd>The vertical position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The time(s) at which to evaluate the velocity.</dd>
+<dd>The time(s) at which to evaluate the derivative.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <p>Array containing the material derivative vector components.</p></div>
@@ -548,18 +557,18 @@ fluid <strong>u</strong>.</p>
 <pre><code class="python">def material_derivative(self, x, z, t): 
         r&#34;&#34;&#34;
         Computes the material derivative,
-        $$\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t}
-                = \frac{\partial \textbf{u}}{\partial t}
-                + \textbf{u} \cdot \nabla \textbf{u}.$$
+        $$\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
+                = \frac{\partial \mathbf{u}}{\partial t}
+                + \mathbf{u} \cdot \nabla \mathbf{u}.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the fluid velocity.
+                The horizontal position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the velocity and derivative.
+                The vertical position(s) at which to evaluate the derivative.
         t : float or array
-                The time(s) at which to evaluate the velocity.
+                The time(s) at which to evaluate the derivative.
 
         Returns
         -------
@@ -573,19 +582,19 @@ fluid <strong>u</strong>.</p>
 <span>def <span class="ident">partial_t</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
-respect to time.</p>
+<div class="desc"><p>Computes the partial derivative of the fluid with respect to time,
+<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial t}.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial t}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dd>The horizontal position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dd>The vertical position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the derivative.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the partial time derivative vector components.</p></div>
+<p>Array containing the vector components of the derivative.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -593,21 +602,21 @@ respect to time.</p>
 <pre><code class="python">@abstractmethod
 def partial_t(self, x, z, t): 
         r&#34;&#34;&#34;
-        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-        respect to time.
+        Computes the partial derivative of the fluid with respect to time,
+        $$\frac{\partial \mathbf{u}}{\partial t}.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the derivative.
+                The horizontal position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the derivative.
+                The vertical position(s) at which to evaluate the derivative.
         t : float or array
                 The time(s) at which to evaluate the derivative.
 
         Returns
         -------
-        Array containing the partial time derivative vector components.
+        Array containing the vector components of the derivative.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -616,19 +625,19 @@ def partial_t(self, x, z, t):
 <span>def <span class="ident">partial_x</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
-respect to the horizontal position <em>x</em>.</p>
+<div class="desc"><p>Computes the partial derivative of the fluid with respect to the
+horizontal position, <span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial x}.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial x}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dd>The horizontal position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dd>The vertical position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the derivative.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the partial x derivative vector components.</p></div>
+<p>Array containing the vector components of the derivative.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -636,21 +645,21 @@ respect to the horizontal position <em>x</em>.</p>
 <pre><code class="python">@abstractmethod
 def partial_x(self, x, z, t): 
         r&#34;&#34;&#34;
-        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-        respect to the horizontal position _x_.
+        Computes the partial derivative of the fluid with respect to the
+        horizontal position, $$\frac{\partial \mathbf{u}}{\partial x}.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the derivative.
+                The horizontal position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the derivative.
+                The vertical position(s) at which to evaluate the derivative.
         t : float or array
                 The time(s) at which to evaluate the derivative.
 
         Returns
         -------
-        Array containing the partial x derivative vector components.
+        Array containing the vector components of the derivative.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -659,19 +668,19 @@ def partial_x(self, x, z, t):
 <span>def <span class="ident">partial_z</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the partial derivative of the fluid <strong>u</strong> = (<em>u</em>, <em>w</em>) with
-respect to the vertical position <em>z</em>.</p>
+<div class="desc"><p>Computes the partial derivative of the fluid with respect to the
+vertical position, <span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial z}.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial z}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the derivative.</dd>
+<dd>The horizontal position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the derivative.</dd>
+<dd>The vertical position(s) at which to evaluate the derivative.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the derivative.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the partial z derivative vector components.</p></div>
+<p>Array containing the vector components of the derivative.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -679,22 +688,37 @@ respect to the vertical position <em>z</em>.</p>
 <pre><code class="python">@abstractmethod
 def partial_z(self, x, z, t):
         r&#34;&#34;&#34;
-        Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-        respect to the vertical position _z_.
+        Computes the partial derivative of the fluid with respect to the
+        vertical position, $$\frac{\partial \mathbf{u}}{\partial z}.$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the derivative.
+                The horizontal position(s) at which to evaluate the derivative.
         z : float or array
-                The z position(s) at which to evaluate the derivative.
+                The vertical position(s) at which to evaluate the derivative.
         t : float or array
                 The time(s) at which to evaluate the derivative.
 
         Returns
         -------
-        Array containing the partial z derivative vector components.
+        Array containing the vector components of the derivative.
         &#34;&#34;&#34;
+        pass</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.transport_framework.flow.Flow.set_gravity"><code class="name flex">
+<span>def <span class="ident">set_gravity</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Defines the gravity vector <strong>g</strong>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def set_gravity(self):
+        &#34;&#34;&#34;Defines the gravity vector **g**.&#34;&#34;&#34;
         pass</code></pre>
 </details>
 </dd>
@@ -702,13 +726,13 @@ def partial_z(self, x, z, t):
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the fluid velocity <em><strong>u</strong></em>.</p>
+<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\mathbf{u} = (u, w).</span><script type="math/tex; mode=display">\mathbf{u} = (u, w).</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the velocity.</dd>
+<dd>The horizontal position(s) at which to evaluate the velocity.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the velocity.</dd>
+<dd>The vertical position(s) at which to evaluate the velocity.</dd>
 <dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
 <dd>The time(s) at which to evaluate the velocity.</dd>
 </dl>
@@ -720,21 +744,21 @@ def partial_z(self, x, z, t):
 </summary>
 <pre><code class="python">@abstractmethod
 def velocity(self, x, z, t):
-        &#34;&#34;&#34;
-        Computes the fluid velocity _**u**_.
+        r&#34;&#34;&#34;
+        Computes the fluid velocity, $$\mathbf{u} = (u, w).$$
 
         Parameters
         ----------
         x : float or array
-                The x position(s) at which to evaluate the velocity.
+                The horizontal position(s) at which to evaluate the velocity.
         z : float or array
-                The z position(s) at which to evaluate the velocity.
+                The vertical position(s) at which to evaluate the velocity.
         t : float or array
                 The time(s) at which to evaluate the velocity.
 
         Returns
         -------
-        Array containing the velocity field vector components _u_ and _w_.
+        Array containing the velocity field vector components *u* and *w*.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -766,6 +790,7 @@ def velocity(self, x, z, t):
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.partial_t" href="#modelling-microplastics-transport.transport_framework.flow.Flow.partial_t">partial_t</a></code></li>
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.partial_x" href="#modelling-microplastics-transport.transport_framework.flow.Flow.partial_x">partial_x</a></code></li>
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.partial_z" href="#modelling-microplastics-transport.transport_framework.flow.Flow.partial_z">partial_z</a></code></li>
+<li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.set_gravity" href="#modelling-microplastics-transport.transport_framework.flow.Flow.set_gravity">set_gravity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.transport_framework.flow.Flow.velocity" href="#modelling-microplastics-transport.transport_framework.flow.Flow.velocity">velocity</a></code></li>
 </ul>
 </li>

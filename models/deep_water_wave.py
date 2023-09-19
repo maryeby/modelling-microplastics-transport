@@ -1,7 +1,7 @@
-import numpy as np
 import sys
 sys.path.append('/home/s2182576/Documents/academia/thesis/'
 				+ 'modelling-microplastics-transport')
+import numpy as np
 from scipy import constants
 from transport_framework import wave
 
@@ -16,27 +16,40 @@ class DeepWaterWave(wave.Wave):
 		r"""
 		Attributes
 		----------
+		depth : float
+			The depth of the fluid *h*.
 		amplitude : float
 			The amplitude of the wave *A*.
 		wavelength : float
-			The wavelength lambda.
-		depth : float, default=15
-			The depth of the fluid *h*.
+			The wavelength *λ*.
 		wavenum : float
-			The wave number *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+			The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
 		gravity : float
-			The gravity **g**.
+			The gravity **g** acting on the fluid.
 		angular_freq : float
-			The angular frequency omega, computed using the dispersion relation.
+			The angular frequency *ω*, computed using the dispersion relation,
+			$$\omega = \sqrt{gk}.$$
+		phase_velocity : float
+			The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
 		period : float
 			The period of the wave, computed as
 			$$\text{period} = \frac{2\pi}{\omega}.$$
-		epsilon : float
-			A relationship between the wave ampltiude *A* and wave number *k*.
+		max_velocity : float
+			The maximum velocity *U* at the surface z = 0.
+		froude_num : float
+			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
-		self.max_velocity = self.angular_freq * self.amplitude
-		self.epsilon = self.amplitude * self.wavenum
+		self.gravity /= self.wavenum * self.max_velocity ** 2
+
+	def set_gravity(self):
+		r"""
+		Defines the gravity **g** as,
+		$$\mathbf{g} = \langle 0, g \rangle,$$
+		which is non-dimensionalized as,
+		$$\mathbf{g} = \Bigg\langle 0, \frac{g}{k(\omega A)^2} \Bigg\rangle.$$
+		"""
+		self.gravity = np.array([0, -constants.g])
 
 	def set_angular_freq(self):
 		r"""
@@ -45,109 +58,99 @@ class DeepWaterWave(wave.Wave):
 		"""
 		self.angular_freq = np.sqrt(constants.g * self.wavenum)
 
-	def set_gravity(self):
-		"""Defines the gravity **g**."""
-		self.gravity = np.array([0, -constants.g]) / (self.wavenum \
-					   * (self.angular_freq * self.amplitude) ** 2)
-
 	def velocity(self, x, z, t):
 		r"""
-		Computes the fluid velocity **u** = (_u_, _w_), with
-		$$u(x, z, t) = e^{z} \cos(x - \frac{t}{\epsilon}),$$
-		$$w(x, z, t) = e^{z} \sin(x - \frac{t}{\epsilon}).$$
+		Computes the fluid velocity, $$\textbf{u} = (u, w),$$
+		$$u(x, z, t) = e^{z} \cos\Bigg(x - \frac{t}{Fr}\Bigg),$$
+		$$w(x, z, t) = e^{z} \sin\Bigg(x - \frac{t}{Fr}\Bigg).$$
 
 		Parameters
 		----------
 		x : float or array
-			The x position(s) at which to evaluate the velocity.
+			The horizontal position(s) at which to evaluate the velocity.
 		z : float or array
-			The z position(s) at which to evaluate the velocity.
+			The vertical position(s) at which to evaluate the velocity.
 		t : float or array
 			The time(s) at which to evaluate the velocity.
 
 		Returns
 		-------
-		Array containing the velocity field vector components _u_ and _w_.
+		Array containing the velocity field vector components *u* and *w*.
 		"""
-		return np.array([np.exp(z) * np.cos(x - t / self.epsilon),
-						 np.exp(z) * np.sin(x - t / self.epsilon)])
+		return np.array([np.exp(z) * np.cos(x - t / self.froude_num),
+						 np.exp(z) * np.sin(x - t / self.froude_num)])
 
 	def partial_t(self, x, z, t):
 		r"""
-		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-		respect to time, where
-		$$\frac{\partial u}{\partial t} = \frac{w}{\epsilon}, \qquad
-		\frac{\partial w}{\partial t} = -\frac{u}{\epsilon}.$$
+		Computes the partial derivative of the fluid with respect to time,
+		$$\frac{\partial \mathbf{u}}{\partial t} =
+		\Bigg\langle \frac{w}{Fr}, \; -\frac{u}{Fr} \Bigg\rangle.$$
 
 		Parameters
 		----------
 		x : float or array
-			The x position(s) at which to evaluate the derivative.
+			The horizontal position(s) at which to evaluate the derivative.
 		z : float or array
-			The z position(s) at which to evaluate the derivative.
+			The vertical position(s) at which to evaluate the derivative.
 		t : float or array
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the partial time derivative vector components.
+		Array containing the vector components of the derivative.
 		"""
 		u, w = self.velocity(x, z, t)
-		return np.array([w / self.epsilon, -u / self.epsilon])
+		return np.array([w / self.froude_num, -u / self.froude_num])
 
 	def partial_x(self, x, z, t):
 		r"""
-		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-		respect to the horizontal position _x_, where
-		$$\frac{\partial u}{\partial x} = -w, \qquad
-		\frac{\partial w}{\partial x} = u.$$
+		Computes the partial derivative of the fluid with respect to the
+		horizontal position,
+		$$\frac{\partial \mathbf{u}}{\partial x} = \langle -w, \; u \rangle.$$
 
 		Parameters
 		----------
 		x : float or array
-			The x position(s) at which to evaluate the derivative.
+			The horizontal position(s) at which to evaluate the derivative.
 		z : float or array
-			The z position(s) at which to evaluate the derivative.
+			The vertical position(s) at which to evaluate the derivative.
 		t : float or array
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the partial x derivative vector components.
+		Array containing the vector components of the derivative.
 		"""
 		u, w = self.velocity(x, z, t)
 		return np.array([-w, u])
 
 	def partial_z(self, x, z, t):
 		r"""
-		Computes the partial derivative of the fluid **u** = (_u_, _w_) with
-		respect to the vertical position _z_, where
-		$$\frac{\partial u}{\partial z} = u, \qquad
-		\frac{\partial w}{\partial z} = w.$$
+		Computes the partial derivative of the fluid with respect to the
+		vertical position,
+		$$\frac{\partial \mathbf{u}}{\partial z} = \langle u, \; w \rangle.$$
 
 		Parameters
 		----------
 		x : float or array
-			The x position(s) at which to evaluate the derivative.
+			The horizontal position(s) at which to evaluate the derivative.
 		z : float or array
-			The z position(s) at which to evaluate the derivative.
+			The vertical position(s) at which to evaluate the derivative.
 		t : float or array
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the partial z derivative vector components.
+		Array containing the vector components of the derivative.
 		"""
 		return self.velocity(x, z, t)
 
 	def material_derivative2(self, x, z, t):
 		r"""
-		Computes the second order Lagrangian derivative, where
-		$$\Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}\Bigg]_x
-			= \frac{e^{2z}}{\epsilon} - \frac{u}{\epsilon^2},
-			\qquad
-		\Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}\Bigg]_z
-			= w(2e^{2z} - \frac{1}{\epsilon^2}).$$
+		Computes the second order material derivative, where
+		$$\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
+		\Bigg\langle e^{2z} - \frac{u}{Fr^2}, \quad
+		w \Bigg(2 e^{2z} - \frac{1}{Fr^2}\Bigg) \Bigg\rangle.$$
 
 		Parameters
 		----------
@@ -163,5 +166,6 @@ class DeepWaterWave(wave.Wave):
 		Array containing the second order material derivative vector components.
 		"""
 		u, w = self.velocity(x, z, t)
-		return np.array([np.exp(2 * z) - u / self.epsilon ** 2,
-						 w * (2 * np.exp(2 * z) - 1 / self.epsilon ** 2)])
+		Fr = self.froude_num
+		return np.array([np.exp(2 * z) / Fr - u / Fr ** 2,
+						 w * (2 * np.exp(2 * z) - 1 / Fr ** 2)])

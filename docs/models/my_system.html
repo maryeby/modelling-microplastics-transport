@@ -38,7 +38,7 @@ from transport_framework import particle, transport_system
 
 class MyTransportSystem(transport_system.TransportSystem):
         &#34;&#34;&#34; 
-        Represents the transport of a rigid particle in a rotating fluid flow.
+        Represents the transport of an inertial particle in a linear water wave.
         &#34;&#34;&#34;
 
         def __init__(self, particle, flow, density_ratio):
@@ -50,14 +50,15 @@ class MyTransportSystem(transport_system.TransportSystem):
                 flow : Flow (obj)
                         The flow through which the particle is transported.
                 density_ratio : float
-                        The ratio between the particle&#39;s density and the fluid&#39;s density.
+                        The ratio between the particle and fluid densities.
                 &#34;&#34;&#34;
                 super().__init__(particle, flow, density_ratio)
 
         def maxey_riley(self, include_history, t, y, order):
                 r&#34;&#34;&#34;
-                Implements the integration scheme for the full Maxey-Riley equation with
-                history effects, as outlined in Daitche (2013) Section 3.
+                Implements the integration scheme for the full Maxey-Riley equation, as
+                outlined in Daitche (2013) Section 3, with a slight modification to
+                include buoyancy force.
 
                 Parameters
                 ----------
@@ -73,7 +74,8 @@ class MyTransportSystem(transport_system.TransportSystem):
                 Returns
                 -------
                 Array
-                        The components of the particle&#39;s position and velocity.
+                        The components of the particle&#39;s position and velocity, and the
+                        times where the Maxey-Riley equation was evaluated.
                 &#34;&#34;&#34;
                 # initialize local variables
                 R = self.density_ratio
@@ -81,17 +83,20 @@ class MyTransportSystem(transport_system.TransportSystem):
                 delta_t = t[1] - t[0]
 
                 # compute the number of time steps and create arrays to store solutions
-                num_mini_steps = 2 * int(np.sqrt(2) / delta_t)
-                mini_step = delta_t / (num_mini_steps / 2)
-                mini_steps = np.arange(0, num_mini_steps * mini_step + mini_step,
-                               mini_step)
-                mini_x = np.empty((num_mini_steps + 1, 2)) 
-                mini_v = np.empty((num_mini_steps + 1, 2))
-                mini_u = np.empty((num_mini_steps + 1, 2))
+                mini_step = delta_t / (np.sqrt(2) / delta_t)
+                mini_steps = np.arange(0, 2 * np.sqrt(2) / delta_t
+                                                                        * mini_step + mini_step, mini_step)
+                mini_x = np.empty((mini_steps.size, 2)) 
+                mini_v = np.empty((mini_steps.size, 2))
+                mini_u = np.empty((mini_steps.size, 2))
                 num_steps = t.size - 1
                 x = np.empty((t.size, 2))
                 v = np.empty((t.size, 2))
                 u = np.empty((t.size, 2))
+                if mini_x[:, 0].T.size != mini_steps.size:
+                        print(&#39;x: &#39;, mini_x[:, 0].T.size)
+                        print(&#39;t: &#39;, mini_steps.size)
+                        print(&#39;size of mini_steps: &#39;, mini_steps.size)
 
                 # set initial conditions
                 x[0] = y[:2]
@@ -108,32 +113,33 @@ class MyTransportSystem(transport_system.TransportSystem):
 
                         # compute matrices containing the values of alpha, beta, and gamma
                         if order == 1:
-                                mini_alpha = compute_alpha(num_mini_steps + 1)
+                                mini_alpha = compute_alpha(mini_steps.size)
                                 alpha = compute_alpha(t.size)
                         elif order == 2:
                                 mini_alpha = compute_alpha(2)
-                                mini_beta = compute_beta(num_mini_steps + 1, mini_alpha[:, 1]) 
+                                mini_beta = compute_beta(mini_steps.size, mini_alpha[:, 1]) 
                                 alpha = mini_alpha
                                 beta = compute_beta(t.size, alpha[:, 1])
                         else: # order == 3
                                 mini_alpha = compute_alpha(2)
                                 mini_beta = compute_beta(3, mini_alpha[:, 1]) 
-                                mini_gamma = compute_gamma(num_mini_steps + 1, mini_beta[:, 2]) 
+                                mini_gamma = compute_gamma(mini_steps.size, mini_beta[:, 2]) 
                                 alpha = mini_alpha
                                 beta = mini_beta
                                 gamma = compute_gamma(t.size, beta[:, 2])
 
                 # compute solutions for the first two intervals using finer time steps
-                for n_prime in range(num_mini_steps):
+                for n_prime in range(mini_steps.size - 1):
                         mini_w = mini_v - mini_u
                         G = (3 / 2 * R - 1) \
-                                   * np.transpose(self.flow.derivative_along_trajectory(
-                                                                  mini_x[:, 0], mini_x[:, 1],
-                                                                  mini_steps, np.transpose(mini_v))) \
-                                   - 3 / 2 * R * np.transpose(self.flow.dot_jacobian(
-                                                                                          np.transpose(mini_w),
-                                                                                          mini_x[:, 0], mini_x[:, 1],
-                                                                                          mini_steps)) \
+                                   * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
+                                                                                                                   mini_x[:, 1].T,
+                                                                                                                   mini_steps,
+                                                                                                                   mini_v.T).T \
+                                   - 3 / 2 * R * self.flow.dot_jacobian(mini_w.T,
+                                                                                                                mini_x[:, 0].T,
+                                                                                                                mini_x[:, 1].T,
+                                                                                                                mini_steps).T \
                                    - R / St * mini_w + (1 - 3 * R / 2) * self.flow.gravity
                         sum_term = 0
                         # equation (15)
@@ -210,9 +216,9 @@ class MyTransportSystem(transport_system.TransportSystem):
                                                                                         + mini_u[n_prime + 1]
 
                 # store solutions for the first two intervals
-                x[1] = mini_x[int(num_mini_steps / 2)]
-                v[1] = mini_v[int(num_mini_steps / 2)]
-                u[1] = mini_u[int(num_mini_steps / 2)]
+                x[1] = mini_x[int(mini_steps.size / 2)]
+                v[1] = mini_v[int(mini_steps.size / 2)]
+                u[1] = mini_u[int(mini_steps.size / 2)]
                 x[2] = mini_x[-1]
                 v[2] = mini_v[-1]
                 u[2] = mini_u[-1]
@@ -221,11 +227,10 @@ class MyTransportSystem(transport_system.TransportSystem):
                 for n in tqdm(range(2, num_steps)):
                         w = v - u
                         G = (3 / 2 * R - 1) \
-                                   * np.transpose(self.flow.derivative_along_trajectory(x[:, 0],
-                                                                  x[:, 1], t, np.transpose(v))) \
+                                   * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
+                                                                                                                   t, v.T).T \
                                    - 3 / 2 * R \
-                                   * np.transpose(self.flow.dot_jacobian(np.transpose(w),
-                                                                                                                 x[:, 0], x[:, 1], t)) \
+                                   * self.flow.dot_jacobian(w.T, x[:, 0].T, x[:, 1].T, t).T \
                                    - R / St * w + (1 - 3 * R / 2) * self.flow.gravity
                         sum_term = 0
                         if order == 1 or n == 0:
@@ -270,8 +275,8 @@ class MyTransportSystem(transport_system.TransportSystem):
                                                                         + 5 * G[n - 2]) + u[n + 1]
                 return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-        def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
-                                         zdot_0=1, num_periods=50, delta_t=5e-3):
+        def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
+                                         num_periods, delta_t, order=3):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
@@ -279,20 +284,20 @@ class MyTransportSystem(transport_system.TransportSystem):
                 ----------
                 include_history : boolean
                         Whether to include history effects.
-                order : int
-                        The order of the integration scheme (first, second, or third).
-                x_0 : float, default=0
+                x_0 : float
                         The initial horizontal position of the particle.
-                z_0 : float, default=0
+                z_0 : float
                         The initial vertical position of the particle.
-                xdot_0 : float, default=1
+                xdot_0 : float
                         The initial horizontal velocity of the particle.
-                zdot_0 : float, default=1
+                zdot_0 : float
                         The initial vertical velocity of the particle.
-                num_periods : int, default=50
-                        The number of oscillation periods to integrate over.
-                delta_t : float, default=5e-3
+                num_periods : int
+                        The number of wave periods to integrate over.
+                delta_t : float
                         The size of the time steps used for integration.
+                order : int, default=3
+                        The order of the integration scheme.
 
                 Returns
                 -------
@@ -309,7 +314,7 @@ class MyTransportSystem(transport_system.TransportSystem):
                 &#34;&#34;&#34;
                 # initialize parameters for the solver
                 t_final = num_periods * self.flow.period
-                t_eval = np.arange(0, t_final + delta_t, delta_t)
+                t_eval = np.arange(0, t_final, delta_t)
                 y = [x_0, z_0, xdot_0, zdot_0]
 
                 # run computations
@@ -1038,7 +1043,7 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 <span>(</span><span>particle, flow, density_ratio)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Represents the transport of a rigid particle in a rotating fluid flow.</p>
+<div class="desc"><p>Represents the transport of an inertial particle in a linear water wave.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
 <dt><strong><code>particle</code></strong> :&ensp;<code>Particle (obj)</code></dt>
@@ -1046,7 +1051,7 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 <dt><strong><code>flow</code></strong> :&ensp;<code>Flow (obj)</code></dt>
 <dd>The flow through which the particle is transported.</dd>
 <dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
-<dd>The ratio between the particle's density and the fluid's density.</dd>
+<dd>The ratio between the particle and fluid densities.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1054,7 +1059,7 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 </summary>
 <pre><code class="python">class MyTransportSystem(transport_system.TransportSystem):
         &#34;&#34;&#34; 
-        Represents the transport of a rigid particle in a rotating fluid flow.
+        Represents the transport of an inertial particle in a linear water wave.
         &#34;&#34;&#34;
 
         def __init__(self, particle, flow, density_ratio):
@@ -1066,14 +1071,15 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
                 flow : Flow (obj)
                         The flow through which the particle is transported.
                 density_ratio : float
-                        The ratio between the particle&#39;s density and the fluid&#39;s density.
+                        The ratio between the particle and fluid densities.
                 &#34;&#34;&#34;
                 super().__init__(particle, flow, density_ratio)
 
         def maxey_riley(self, include_history, t, y, order):
                 r&#34;&#34;&#34;
-                Implements the integration scheme for the full Maxey-Riley equation with
-                history effects, as outlined in Daitche (2013) Section 3.
+                Implements the integration scheme for the full Maxey-Riley equation, as
+                outlined in Daitche (2013) Section 3, with a slight modification to
+                include buoyancy force.
 
                 Parameters
                 ----------
@@ -1089,7 +1095,8 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
                 Returns
                 -------
                 Array
-                        The components of the particle&#39;s position and velocity.
+                        The components of the particle&#39;s position and velocity, and the
+                        times where the Maxey-Riley equation was evaluated.
                 &#34;&#34;&#34;
                 # initialize local variables
                 R = self.density_ratio
@@ -1097,17 +1104,20 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
                 delta_t = t[1] - t[0]
 
                 # compute the number of time steps and create arrays to store solutions
-                num_mini_steps = 2 * int(np.sqrt(2) / delta_t)
-                mini_step = delta_t / (num_mini_steps / 2)
-                mini_steps = np.arange(0, num_mini_steps * mini_step + mini_step,
-                               mini_step)
-                mini_x = np.empty((num_mini_steps + 1, 2)) 
-                mini_v = np.empty((num_mini_steps + 1, 2))
-                mini_u = np.empty((num_mini_steps + 1, 2))
+                mini_step = delta_t / (np.sqrt(2) / delta_t)
+                mini_steps = np.arange(0, 2 * np.sqrt(2) / delta_t
+                                                                        * mini_step + mini_step, mini_step)
+                mini_x = np.empty((mini_steps.size, 2)) 
+                mini_v = np.empty((mini_steps.size, 2))
+                mini_u = np.empty((mini_steps.size, 2))
                 num_steps = t.size - 1
                 x = np.empty((t.size, 2))
                 v = np.empty((t.size, 2))
                 u = np.empty((t.size, 2))
+                if mini_x[:, 0].T.size != mini_steps.size:
+                        print(&#39;x: &#39;, mini_x[:, 0].T.size)
+                        print(&#39;t: &#39;, mini_steps.size)
+                        print(&#39;size of mini_steps: &#39;, mini_steps.size)
 
                 # set initial conditions
                 x[0] = y[:2]
@@ -1124,32 +1134,33 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 
                         # compute matrices containing the values of alpha, beta, and gamma
                         if order == 1:
-                                mini_alpha = compute_alpha(num_mini_steps + 1)
+                                mini_alpha = compute_alpha(mini_steps.size)
                                 alpha = compute_alpha(t.size)
                         elif order == 2:
                                 mini_alpha = compute_alpha(2)
-                                mini_beta = compute_beta(num_mini_steps + 1, mini_alpha[:, 1]) 
+                                mini_beta = compute_beta(mini_steps.size, mini_alpha[:, 1]) 
                                 alpha = mini_alpha
                                 beta = compute_beta(t.size, alpha[:, 1])
                         else: # order == 3
                                 mini_alpha = compute_alpha(2)
                                 mini_beta = compute_beta(3, mini_alpha[:, 1]) 
-                                mini_gamma = compute_gamma(num_mini_steps + 1, mini_beta[:, 2]) 
+                                mini_gamma = compute_gamma(mini_steps.size, mini_beta[:, 2]) 
                                 alpha = mini_alpha
                                 beta = mini_beta
                                 gamma = compute_gamma(t.size, beta[:, 2])
 
                 # compute solutions for the first two intervals using finer time steps
-                for n_prime in range(num_mini_steps):
+                for n_prime in range(mini_steps.size - 1):
                         mini_w = mini_v - mini_u
                         G = (3 / 2 * R - 1) \
-                                   * np.transpose(self.flow.derivative_along_trajectory(
-                                                                  mini_x[:, 0], mini_x[:, 1],
-                                                                  mini_steps, np.transpose(mini_v))) \
-                                   - 3 / 2 * R * np.transpose(self.flow.dot_jacobian(
-                                                                                          np.transpose(mini_w),
-                                                                                          mini_x[:, 0], mini_x[:, 1],
-                                                                                          mini_steps)) \
+                                   * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
+                                                                                                                   mini_x[:, 1].T,
+                                                                                                                   mini_steps,
+                                                                                                                   mini_v.T).T \
+                                   - 3 / 2 * R * self.flow.dot_jacobian(mini_w.T,
+                                                                                                                mini_x[:, 0].T,
+                                                                                                                mini_x[:, 1].T,
+                                                                                                                mini_steps).T \
                                    - R / St * mini_w + (1 - 3 * R / 2) * self.flow.gravity
                         sum_term = 0
                         # equation (15)
@@ -1226,9 +1237,9 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
                                                                                         + mini_u[n_prime + 1]
 
                 # store solutions for the first two intervals
-                x[1] = mini_x[int(num_mini_steps / 2)]
-                v[1] = mini_v[int(num_mini_steps / 2)]
-                u[1] = mini_u[int(num_mini_steps / 2)]
+                x[1] = mini_x[int(mini_steps.size / 2)]
+                v[1] = mini_v[int(mini_steps.size / 2)]
+                u[1] = mini_u[int(mini_steps.size / 2)]
                 x[2] = mini_x[-1]
                 v[2] = mini_v[-1]
                 u[2] = mini_u[-1]
@@ -1237,11 +1248,10 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
                 for n in tqdm(range(2, num_steps)):
                         w = v - u
                         G = (3 / 2 * R - 1) \
-                                   * np.transpose(self.flow.derivative_along_trajectory(x[:, 0],
-                                                                  x[:, 1], t, np.transpose(v))) \
+                                   * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
+                                                                                                                   t, v.T).T \
                                    - 3 / 2 * R \
-                                   * np.transpose(self.flow.dot_jacobian(np.transpose(w),
-                                                                                                                 x[:, 0], x[:, 1], t)) \
+                                   * self.flow.dot_jacobian(w.T, x[:, 0].T, x[:, 1].T, t).T \
                                    - R / St * w + (1 - 3 * R / 2) * self.flow.gravity
                         sum_term = 0
                         if order == 1 or n == 0:
@@ -1286,8 +1296,8 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
                                                                         + 5 * G[n - 2]) + u[n + 1]
                 return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-        def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
-                                         zdot_0=1, num_periods=50, delta_t=5e-3):
+        def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
+                                         num_periods, delta_t, order=3):
                 &#34;&#34;&#34;
                 Computes the position and velocity of the particle over time.
 
@@ -1295,20 +1305,20 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
                 ----------
                 include_history : boolean
                         Whether to include history effects.
-                order : int
-                        The order of the integration scheme (first, second, or third).
-                x_0 : float, default=0
+                x_0 : float
                         The initial horizontal position of the particle.
-                z_0 : float, default=0
+                z_0 : float
                         The initial vertical position of the particle.
-                xdot_0 : float, default=1
+                xdot_0 : float
                         The initial horizontal velocity of the particle.
-                zdot_0 : float, default=1
+                zdot_0 : float
                         The initial vertical velocity of the particle.
-                num_periods : int, default=50
-                        The number of oscillation periods to integrate over.
-                delta_t : float, default=5e-3
+                num_periods : int
+                        The number of wave periods to integrate over.
+                delta_t : float
                         The size of the time steps used for integration.
+                order : int, default=3
+                        The order of the integration scheme.
 
                 Returns
                 -------
@@ -1325,7 +1335,7 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
                 &#34;&#34;&#34;
                 # initialize parameters for the solver
                 t_final = num_periods * self.flow.period
-                t_eval = np.arange(0, t_final + delta_t, delta_t)
+                t_eval = np.arange(0, t_final, delta_t)
                 y = [x_0, z_0, xdot_0, zdot_0]
 
                 # run computations
@@ -1341,8 +1351,9 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 <span>def <span class="ident">maxey_riley</span></span>(<span>self, include_history, t, y, order)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Implements the integration scheme for the full Maxey-Riley equation with
-history effects, as outlined in Daitche (2013) Section 3.</p>
+<div class="desc"><p>Implements the integration scheme for the full Maxey-Riley equation, as
+outlined in Daitche (2013) Section 3, with a slight modification to
+include buoyancy force.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>include_history</code></strong> :&ensp;<code>boolean</code></dt>
@@ -1357,7 +1368,8 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>Array</code></dt>
-<dd>The components of the particle's position and velocity.</dd>
+<dd>The components of the particle's position and velocity, and the
+times where the Maxey-Riley equation was evaluated.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1365,8 +1377,9 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 </summary>
 <pre><code class="python">def maxey_riley(self, include_history, t, y, order):
         r&#34;&#34;&#34;
-        Implements the integration scheme for the full Maxey-Riley equation with
-        history effects, as outlined in Daitche (2013) Section 3.
+        Implements the integration scheme for the full Maxey-Riley equation, as
+        outlined in Daitche (2013) Section 3, with a slight modification to
+        include buoyancy force.
 
         Parameters
         ----------
@@ -1382,7 +1395,8 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
         Returns
         -------
         Array
-                The components of the particle&#39;s position and velocity.
+                The components of the particle&#39;s position and velocity, and the
+                times where the Maxey-Riley equation was evaluated.
         &#34;&#34;&#34;
         # initialize local variables
         R = self.density_ratio
@@ -1390,17 +1404,20 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
         delta_t = t[1] - t[0]
 
         # compute the number of time steps and create arrays to store solutions
-        num_mini_steps = 2 * int(np.sqrt(2) / delta_t)
-        mini_step = delta_t / (num_mini_steps / 2)
-        mini_steps = np.arange(0, num_mini_steps * mini_step + mini_step,
-                       mini_step)
-        mini_x = np.empty((num_mini_steps + 1, 2)) 
-        mini_v = np.empty((num_mini_steps + 1, 2))
-        mini_u = np.empty((num_mini_steps + 1, 2))
+        mini_step = delta_t / (np.sqrt(2) / delta_t)
+        mini_steps = np.arange(0, 2 * np.sqrt(2) / delta_t
+                                                                * mini_step + mini_step, mini_step)
+        mini_x = np.empty((mini_steps.size, 2)) 
+        mini_v = np.empty((mini_steps.size, 2))
+        mini_u = np.empty((mini_steps.size, 2))
         num_steps = t.size - 1
         x = np.empty((t.size, 2))
         v = np.empty((t.size, 2))
         u = np.empty((t.size, 2))
+        if mini_x[:, 0].T.size != mini_steps.size:
+                print(&#39;x: &#39;, mini_x[:, 0].T.size)
+                print(&#39;t: &#39;, mini_steps.size)
+                print(&#39;size of mini_steps: &#39;, mini_steps.size)
 
         # set initial conditions
         x[0] = y[:2]
@@ -1417,32 +1434,33 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 
                 # compute matrices containing the values of alpha, beta, and gamma
                 if order == 1:
-                        mini_alpha = compute_alpha(num_mini_steps + 1)
+                        mini_alpha = compute_alpha(mini_steps.size)
                         alpha = compute_alpha(t.size)
                 elif order == 2:
                         mini_alpha = compute_alpha(2)
-                        mini_beta = compute_beta(num_mini_steps + 1, mini_alpha[:, 1]) 
+                        mini_beta = compute_beta(mini_steps.size, mini_alpha[:, 1]) 
                         alpha = mini_alpha
                         beta = compute_beta(t.size, alpha[:, 1])
                 else: # order == 3
                         mini_alpha = compute_alpha(2)
                         mini_beta = compute_beta(3, mini_alpha[:, 1]) 
-                        mini_gamma = compute_gamma(num_mini_steps + 1, mini_beta[:, 2]) 
+                        mini_gamma = compute_gamma(mini_steps.size, mini_beta[:, 2]) 
                         alpha = mini_alpha
                         beta = mini_beta
                         gamma = compute_gamma(t.size, beta[:, 2])
 
         # compute solutions for the first two intervals using finer time steps
-        for n_prime in range(num_mini_steps):
+        for n_prime in range(mini_steps.size - 1):
                 mini_w = mini_v - mini_u
                 G = (3 / 2 * R - 1) \
-                           * np.transpose(self.flow.derivative_along_trajectory(
-                                                          mini_x[:, 0], mini_x[:, 1],
-                                                          mini_steps, np.transpose(mini_v))) \
-                           - 3 / 2 * R * np.transpose(self.flow.dot_jacobian(
-                                                                                  np.transpose(mini_w),
-                                                                                  mini_x[:, 0], mini_x[:, 1],
-                                                                                  mini_steps)) \
+                           * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
+                                                                                                           mini_x[:, 1].T,
+                                                                                                           mini_steps,
+                                                                                                           mini_v.T).T \
+                           - 3 / 2 * R * self.flow.dot_jacobian(mini_w.T,
+                                                                                                        mini_x[:, 0].T,
+                                                                                                        mini_x[:, 1].T,
+                                                                                                        mini_steps).T \
                            - R / St * mini_w + (1 - 3 * R / 2) * self.flow.gravity
                 sum_term = 0
                 # equation (15)
@@ -1519,9 +1537,9 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
                                                                                 + mini_u[n_prime + 1]
 
         # store solutions for the first two intervals
-        x[1] = mini_x[int(num_mini_steps / 2)]
-        v[1] = mini_v[int(num_mini_steps / 2)]
-        u[1] = mini_u[int(num_mini_steps / 2)]
+        x[1] = mini_x[int(mini_steps.size / 2)]
+        v[1] = mini_v[int(mini_steps.size / 2)]
+        u[1] = mini_u[int(mini_steps.size / 2)]
         x[2] = mini_x[-1]
         v[2] = mini_v[-1]
         u[2] = mini_u[-1]
@@ -1530,11 +1548,10 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
         for n in tqdm(range(2, num_steps)):
                 w = v - u
                 G = (3 / 2 * R - 1) \
-                           * np.transpose(self.flow.derivative_along_trajectory(x[:, 0],
-                                                          x[:, 1], t, np.transpose(v))) \
+                           * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
+                                                                                                           t, v.T).T \
                            - 3 / 2 * R \
-                           * np.transpose(self.flow.dot_jacobian(np.transpose(w),
-                                                                                                         x[:, 0], x[:, 1], t)) \
+                           * self.flow.dot_jacobian(w.T, x[:, 0].T, x[:, 1].T, t).T \
                            - R / St * w + (1 - 3 * R / 2) * self.flow.gravity
                 sum_term = 0
                 if order == 1 or n == 0:
@@ -1581,7 +1598,7 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.run_numerics"><code class="name flex">
-<span>def <span class="ident">run_numerics</span></span>(<span>self, include_history, order=3, x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50, delta_t=0.005)</span>
+<span>def <span class="ident">run_numerics</span></span>(<span>self, include_history, x_0, z_0, xdot_0, zdot_0, num_periods, delta_t, order=3)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the position and velocity of the particle over time.</p>
@@ -1589,20 +1606,20 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 <dl>
 <dt><strong><code>include_history</code></strong> :&ensp;<code>boolean</code></dt>
 <dd>Whether to include history effects.</dd>
-<dt><strong><code>order</code></strong> :&ensp;<code>int</code></dt>
-<dd>The order of the integration scheme (first, second, or third).</dd>
-<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial horizontal position of the particle.</dd>
-<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code>, default=<code>0</code></dt>
+<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial vertical position of the particle.</dd>
-<dt><strong><code>xdot_0</code></strong> :&ensp;<code>float</code>, default=<code>1</code></dt>
+<dt><strong><code>xdot_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial horizontal velocity of the particle.</dd>
-<dt><strong><code>zdot_0</code></strong> :&ensp;<code>float</code>, default=<code>1</code></dt>
+<dt><strong><code>zdot_0</code></strong> :&ensp;<code>float</code></dt>
 <dd>The initial vertical velocity of the particle.</dd>
-<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code>, default=<code>50</code></dt>
-<dd>The number of oscillation periods to integrate over.</dd>
-<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code>, default=<code>5e-3</code></dt>
+<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code></dt>
+<dd>The number of wave periods to integrate over.</dd>
+<dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
 <dd>The size of the time steps used for integration.</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>int</code>, default=<code>3</code></dt>
+<dd>The order of the integration scheme.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1621,8 +1638,8 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_numerics(self, include_history, order=3, x_0=0, z_0=0, xdot_0=1,
-                                 zdot_0=1, num_periods=50, delta_t=5e-3):
+<pre><code class="python">def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
+                                 num_periods, delta_t, order=3):
         &#34;&#34;&#34;
         Computes the position and velocity of the particle over time.
 
@@ -1630,20 +1647,20 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
         ----------
         include_history : boolean
                 Whether to include history effects.
-        order : int
-                The order of the integration scheme (first, second, or third).
-        x_0 : float, default=0
+        x_0 : float
                 The initial horizontal position of the particle.
-        z_0 : float, default=0
+        z_0 : float
                 The initial vertical position of the particle.
-        xdot_0 : float, default=1
+        xdot_0 : float
                 The initial horizontal velocity of the particle.
-        zdot_0 : float, default=1
+        zdot_0 : float
                 The initial vertical velocity of the particle.
-        num_periods : int, default=50
-                The number of oscillation periods to integrate over.
-        delta_t : float, default=5e-3
+        num_periods : int
+                The number of wave periods to integrate over.
+        delta_t : float
                 The size of the time steps used for integration.
+        order : int, default=3
+                The order of the integration scheme.
 
         Returns
         -------
@@ -1660,7 +1677,7 @@ history effects, as outlined in Daitche (2013) Section 3.</p>
         &#34;&#34;&#34;
         # initialize parameters for the solver
         t_final = num_periods * self.flow.period
-        t_eval = np.arange(0, t_final + delta_t, delta_t)
+        t_eval = np.arange(0, t_final, delta_t)
         y = [x_0, z_0, xdot_0, zdot_0]
 
         # run computations

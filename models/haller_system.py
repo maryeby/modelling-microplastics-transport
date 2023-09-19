@@ -13,7 +13,7 @@ class HallerTransportSystem(transport_system.TransportSystem):
 	"""
 
 	def __init__(self, particle, flow, density_ratio):
-		"""
+		r"""
 		Attributes
 		----------
 		particle : Particle (obj)
@@ -21,29 +21,37 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle's density and the fluid's density.
+			The ratio between the particle and fluid densities.
 		epsilon : float
-			A relationship between the Stokes number *St* and density ratio *R*.
+			A relationship between the Stokes number *St* and density ratio *R*,
+			$$\epsilon = \frac{St}{R}.$$
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.epsilon = self.particle.stokes_num / self.density_ratio
 
 	def maxey_riley(self, t, y):
 		r"""
-		Evaluates the Maxey-Riley equation without the history term,
+		Evaluates the Maxey-Riley equation without history effects,
 		corresponding to equation (3) in Haller and Sapsis (2008),
-		$$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
-		$$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
-			- \textbf{v}}{\epsilon}
-			+ \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-			+ (1 - \frac{3R}{2}) \textbf{g}.$$
+		$$\frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{v},$$
+		$$\frac{\mathrm{d}\mathbf{v}}{\mathrm{d}t} = \frac{\mathbf{u}
+			- \mathbf{v}}{\epsilon}
+			+ \frac{3R}{2} \frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
+			+ \Bigg(1 - \frac{3R}{2}\Bigg) \mathbf{g}$$ with
+		$$R = \frac{2 \rho_f}{\rho_f + 2 \rho_p},
+			\qquad \epsilon = \frac{St}{R},
+			\qquad St = \frac 29 \Bigg(\frac{a}{L}\Bigg)^2 Re,
+			\qquad Re = \frac{UL}{\nu},$$
+		where *a* is the particle radius, *ν* is the kinematic viscosity, *U*
+		and *L* are the characteristic velocity and length scales respectively,
+		and *ρ* is the density of the particle or the fluid.
 		
 		Parameters
 		----------
-		t : float
-			The time to use in the computations
+		t : float or array
+			The time(s) when the Maxey-Riley equation should be evaluated.
 		y : list (array-like)
-			A list containing the x, z, xdot, zdot values to use.
+			A list containing the initial particle position and velocity.
 
 		Returns
 		-------
@@ -67,23 +75,29 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		r"""
 		Evalutes the inertial equation, corresponding to equation (10) in
 		Haller and Sapsis (2008),
-		$$\textbf{v} = \textbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
-		\Bigg[\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg]
+		$$\mathbf{v} = \mathbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+		\Bigg[\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t} - \mathbf{g}\Bigg]
 		+ \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
-		\Bigg[\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2}
-		+ \Bigg(\frac{\mathrm{D}\textbf{u}}{\mathrm{D}t} - \textbf{g}\Bigg)
-		\cdot \nabla \textbf{u}\Bigg]
-		+ \mathcal{O}(\epsilon^3).$$
+		\Bigg[\frac{\mathrm{D}^2\mathbf{u}}{\mathrm{D}t^2}
+		+ \Bigg(\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t} - \mathbf{g}\Bigg)
+		\cdot \nabla \mathbf{u}\Bigg]
+		+ \mathcal{O}(\epsilon^3)$$ with
+		$$R = \frac{2 \rho_f}{\rho_f + 2 \rho_p},
+			\qquad \epsilon = \frac{St}{R},
+			\qquad St = \frac 29 \Bigg(\frac{a}{L}\Bigg)^2 Re,
+			\qquad Re = \frac{UL}{\nu},$$
+		where *a* is the particle radius, *ν* is the kinematic viscosity, *U*
+		and *L* are the characteristic velocity and length scales respectively,
+		and *ρ* is the density of the particle or the fluid.
 
 		Parameters
 		----------
 		t : float
-			The time to use in the computations
+			The time(s) when the inertial equation should be evaluated.
 		y : list (array-like)
-			A list containing the x and z values to use, and the order of the
-			equation.
+			A list containing the x and z values to use in the computations.
 		order : int
-			The order at which to evaluate the inertial equation.
+			The order of the inertial equation (leading, first, or second).
 
 		Returns
 		-------
@@ -102,16 +116,12 @@ class HallerTransportSystem(transport_system.TransportSystem):
 			particle_velocity = fluid_velocity + self.epsilon * (3 * R / 2 - 1)\
 											   * (material_dv - g)
 		elif order == 2:
-			u, w = fluid_velocity
-			Du, Dw = material_dv
-			gx, gz = g
-			jacobian_term = np.array([Dw * u - Du * w, Du * u + Dw * w]) \
-							- np.array([u * gz - w * gx, u * gx + w * gz])
 			particle_velocity = fluid_velocity + self.epsilon * (3 * R / 2 - 1)\
 								* (material_dv - g) \
 								+ self.epsilon ** 2 * (1 - 3 * R / 2) \
 								* (self.flow.material_derivative2(x, z, t)
-								+ jacobian_term)
+								+ self.flow.dot_jacobian(material_dv - g,
+														 x, z, t))
 		else:
 			print('Could not identify the order for the inertial equation.')
 
@@ -122,8 +132,8 @@ class HallerTransportSystem(transport_system.TransportSystem):
 
 		return np.concatenate((particle_velocity, particle_accel))
 
-	def run_numerics(self, equation, order=2, x_0=0, z_0=0, num_periods=50,
-					 delta_t=1e-3, method='BDF'):
+	def run_numerics(self, equation, x_0, z_0, num_periods, delta_t, order=2,
+					 method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -131,16 +141,16 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		----------
 		equation : fun
 			The equation to evaluate, either M-R or the inertial equation.
-		order : int
-			The order at which to evaluate the inertial equation.
-		x_0 : float, default=0
+		x_0 : float
 			The initial horizontal position of the particle.
-		z_0 : float, default=0
+		z_0 : float
 			The initial vertical position of the particle.
-		num_periods : int, default=50
-			The number of oscillation periods to integrate over.
-		delta_t : float, default=5e-3
-			The size of the timesteps of integration.
+		num_periods : int
+			The number of wave periods to integrate over.
+		delta_t : float
+			The size of the timesteps used for integration.
+		order : int, default=2
+			The order of the inertial equation (leading, first, or second).
 		method : str, default='BDF'
 			The method of integration to use.
 
@@ -163,9 +173,9 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		fluid.
 		"""
 		# initial parameters
-		num_steps = int(np.rint(num_periods * self.flow.period / delta_t))
-		t_span = (0, num_periods * self.flow.period)
-		t_eval = np.linspace(0, num_periods * self.flow.period, num_steps)
+		t_final = num_periods * self.flow.period
+		t_span = (0, t_final)
+		t_eval = np.arange(0, t_final, delta_t)
 		xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
 
 		# run computations

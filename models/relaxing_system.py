@@ -22,7 +22,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle's density and the fluid's density.
+			The ratio between the particle and fluid densities.
 		epsilon : float
 			A relationship between the Stokes number and density ratio,
 			$$\epsilon = \frac{St}{R}.$$
@@ -69,24 +69,21 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
 	def maxey_riley(self, t, y):
 		r"""
-		Evaluates the Maxey-Riley equation,
+		Evaluates the Maxey-Riley equation without history effects,
 		$$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
 		$$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
 			- \textbf{v}}{\epsilon}
 			+ \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-			+ (1 - \frac{3R}{2}) \textbf{g}
-			- \sqrt{\frac{9}{2\pi}} \frac{R}{\sqrt{St}} \int_0^t
-			\frac{1}{\sqrt{t - s}} \mathrm{d}s
-			[\textbf{v} - \textbf{u}] \frac{\mathrm{d}}{\mathrm{d}s},$$
+			+ (1 - \frac{3R}{2}) \textbf{g},$$
 		with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
 			\quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
 		
 		Parameters
 		----------
 		t : float
-			The time to use in the computations.
+			The time(s) to use in the computations.
 		y : list (array-like)
-			A list containing the x, z, xdot, zdot values to use.
+			A list containing the initial particle position and velocity.
 
 		Returns
 		-------
@@ -125,7 +122,8 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		Returns
 		-------
 		Array
-			The components of the particle's position and velocity.
+			The components of the particle's position and velocity, and the
+			times where the Maxey-Riley equation was evaluated.
 		"""
 		# initialize local variables
 		R = self.density_ratio
@@ -238,9 +236,8 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 								 / (1 + xi * gamma[0, n + 1])
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-	def run_numerics(self, include_history, order=3,
-					 x_0=0, z_0=0, xdot_0=1, zdot_0=1, num_periods=50,
-					 delta_t=5e-3, method='BDF'):
+	def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
+					 num_periods, delta_t, order=3, method='BDF'):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -248,20 +245,20 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		----------
 		include_history : boolean
 			Whether to include history effects.
-		order : int
-			The order of the integration scheme (first, second, or third).
-		x_0 : float, default=0
+		x_0 : float
 			The initial horizontal position of the particle.
-		z_0 : float, default=0
+		z_0 : float
 			The initial vertical position of the particle.
-		xdot_0 : float, default=1
+		xdot_0 : float
 			The initial horizontal velocity of the particle.
-		zdot_0 : float, default=1
+		zdot_0 : float
 			The initial vertical velocity of the particle.
-		num_periods : int, default=50
-			The number of oscillation periods to integrate over.
-		delta_t : float, default=5e-3
+		num_periods : int
+			The number of periods to integrate over.
+		delta_t : float
 			The size of the time steps used for integration.
+		order : int, default=3
+			The order of the integration scheme (first, second, or third).
 		method : str, default='BDF'
 			The method of integration to use when neglecting history effects.
 
