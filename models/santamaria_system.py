@@ -172,7 +172,7 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 			sols = integrate.solve_ivp(equation, t_span,
 									   [x_0, z_0, xdot_0, zdot_0],
 									   method=method, t_eval=t_eval,
-									   rtol=1e-8, atol=1e-10)
+									   rtol=1e-10, atol=1e-12)
 		elif 'inertial' in str(equation):
 			sols = integrate.solve_ivp(equation, t_span,
 									   [x_0, z_0, xdot_0, zdot_0],
