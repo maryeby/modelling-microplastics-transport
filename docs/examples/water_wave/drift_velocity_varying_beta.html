@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig2_numerics API documentation</title>
+<title>modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig2_numerics</code></h1>
+<h1 class="title">Module <code>modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -34,84 +34,73 @@ import numpy as np
 import pandas as pd
 
 from transport_framework import particle as prt
-from models import dim_deep_water_wave as dim_fl
-from models import deep_water_wave as fl
-from models import santamaria_system as sm
+from models import water_wave as fl
 from models import my_system as ts
 
 def main():
         &#34;&#34;&#34;
-        This program reproduces numerical results from Figure 2 in Santamaria et al.
-        (2013) and saves the results to the `data/deep_water_wave` directory.
+        This program computes numerical solutions for the Stokes drift velocity of
+        inertial particles of varying buoyancies in linear water waves and saves the
+        results to the `data/water_wave` directory.
         &#34;&#34;&#34;
-        # initialize the particle, flow, and transport system
-        my_flow = fl.DeepWaterWave(amplitude=0.02, wavelength=1)
-        R = 2 / 3 * 0.9
-        St = my_flow.froude_num * R * 0.157
-        my_particle = prt.Particle(stokes_num=St)
-        my_system = ts.MyTransportSystem(my_particle, my_flow, R)
-        my_dict = dict.fromkeys([&#39;coarse_t&#39;, &#39;coarse_u_d&#39;, &#39;coarse_w_d&#39;, &#39;medium_t&#39;,
-                                                         &#39;medium_u_d&#39;, &#39;medium_w_d&#39;, &#39;fine_t&#39;, &#39;fine_u_d&#39;,
-                                                         &#39;fine_w_d&#39;])
+        # initialize the flow (wave)
+        my_dict = {}
+        depth = 50
+        amplitude = 0.02
+        wavelength = 1
+        my_dict[&#39;amplitude&#39;] = amplitude
+        my_dict[&#39;wavelength&#39;] = wavelength
+        my_wave = fl.WaterWave(depth=depth, amplitude=amplitude,
+                                                   wavelength=wavelength)
 
-        # intialize Santamaria particle, flow, transport system
-        sm_flow = dim_fl.DimensionalDeepWaterWave(amplitude=0.02, wavelength=1)
-        sm_particle = prt.Particle(stokes_num=0.157)
-        sm_system = sm.SantamariaTransportSystem(sm_particle, sm_flow, 0.9)
-        omega = sm_flow.angular_freq
-        U = sm_flow.max_velocity
-        T = 1 / (omega * sm_flow.froude_num)
-        num_periods = 50
-        x_0 = 0
-        z_0 = 0
-        xdot_0, zdot_0 = my_flow.velocity(x_0, z_0, t=0)
+        # initialize the parameters for the numerics
+        Fr = my_wave.froude_num
+        T = my_wave.angular_freq * Fr
+        num_periods = 20 * T
+        delta_t = 1e-2 * T
+        x_0, z_0 = 0, 0
+        xdot_0, zdot_0 = my_wave.velocity(x_0, z_0, t=0)
+        betas = [0.1, 0.5, 0.9, 1]
+#       betas = [0.9]
+        my_dict[&#39;beta&#39;] = betas
 
-        # run numerical simulations and compute drift velocity for Santamaria
-        x, z, xdot, _, t = sm_system.run_numerics(sm_system.maxey_riley,
-                                                                                          x_0=x_0, z_0=z_0, delta_t=1e-3,
-                                                                                          num_periods=num_periods)
-        sm_u_d, sm_w_d, sm_t = compute_drift_velocity(x, z, xdot, t)
-        my_dict[&#39;sm_u_d&#39;] = sm_u_d / U
-        my_dict[&#39;sm_w_d&#39;] = sm_w_d / U
-        my_dict[&#39;sm_t&#39;] = omega * sm_t
+        for beta in betas:
+                R = 2 / 3 * beta
+                my_particle = prt.Particle(stokes_num=0.157 * R * Fr)
+                my_system = ts.MyTransportSystem(my_particle, my_wave, R)
 
-        # run numerical simulation and compute drift velocity for fine delta_t
-        x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-                                                                                          x_0=x_0, z_0=z_0,
-                                                                                          xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                          delta_t=1e-3 / T,
-                                                                                          num_periods=num_periods / T)
-        fine_u_d, fine_w_d, fine_t = compute_drift_velocity(x, z, xdot, t)
-        my_dict[&#39;fine_u_d&#39;] = fine_u_d
-        my_dict[&#39;fine_w_d&#39;] = fine_w_d
-        my_dict[&#39;fine_t&#39;] = fine_t * omega
+                # run numerics without history
+                x, z, xdot, _, t = my_system.run_numerics(include_history=False,
+                                                                                                  x_0=x_0, z_0=z_0,
+                                                                                                  xdot_0=xdot_0, zdot_0=zdot_0,
+                                                                                                  delta_t=delta_t,
+                                                                                                  num_periods=num_periods)
+                # compute drift velocity &amp; store results
+                u_d, w_d, t_d = compute_drift_velocity(x, z, xdot, t)
+                my_dict[&#39;x_%g&#39; % beta] = x
+                my_dict[&#39;z_%g&#39; % beta] = z
+                my_dict[&#39;u_d_%g&#39; % beta] = u_d
+                my_dict[&#39;w_d_%g&#39; % beta] = w_d
+                my_dict[&#39;t_%g&#39; % beta] = t_d / Fr
 
-        # run numerical simulation and compute drift velocity for medium delta_t
-        x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-                                                                                          x_0=x_0, z_0=z_0,
-                                                                                          xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                          delta_t=5e-3 / T,
-                                                                                          num_periods=num_periods / T)
-        medium_u_d, medium_w_d, medium_t = compute_drift_velocity(x, z, xdot, t)
-        my_dict[&#39;medium_u_d&#39;] = medium_u_d
-        my_dict[&#39;medium_w_d&#39;] = medium_w_d
-        my_dict[&#39;medium_t&#39;] = medium_t * omega
-
-        # run numerical simulation and compute drift velocity for coarse delta_t
-        x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-                                                                                          x_0=x_0, z_0=z_0,
-                                                                                          xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                          delta_t=1e-2 / T,
-                                                                                          num_periods=num_periods / T)
-        coarse_u_d, coarse_w_d, coarse_t = compute_drift_velocity(x, z, xdot, t)
-        my_dict[&#39;coarse_u_d&#39;] = coarse_u_d
-        my_dict[&#39;coarse_w_d&#39;] = coarse_w_d
-        my_dict[&#39;coarse_t&#39;] = coarse_t * omega
+                # run numerics with history
+#               x, z, xdot, _, t = my_system.run_numerics(include_history=True,
+#                                                                                                 x_0=x_0, z_0=z_0,
+#                                                                                                 xdot_0=xdot_0, zdot_0=zdot_0,
+#                                                                                                 delta_t=delta_t,
+#                                                                                                 num_periods=num_periods)
+                # compute drift velocity &amp; store results
+#               u_d, w_d, t_d = compute_drift_velocity(x, z, xdot, t)
+#               my_dict[&#39;x_history_%g&#39; % beta] = x
+#               my_dict[&#39;z_history_%g&#39; % beta] = z
+#               my_dict[&#39;u_d_history_%g&#39; % beta] = u_d / Fr
+#               my_dict[&#39;w_d_history_%g&#39; % beta] = w_d / Fr
+#               my_dict[&#39;t_history_%g&#39; % beta] = t_d / Fr
 
         # write results to data file
         my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
         numerics = pd.DataFrame(my_dict)
-        numerics.to_csv(&#39;../data/deep_water_wave/santamaria_fig2_recreation.csv&#39;,
+        numerics.to_csv(&#39;../data/water_wave/drift_velocity_varying_beta.csv&#39;,
                                         index=False)
 
 def compute_drift_velocity(x, z, xdot, t):
@@ -161,7 +150,7 @@ if __name__ == &#39;__main__&#39;:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig2_numerics.compute_drift_velocity"><code class="name flex">
+<dt id="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta.compute_drift_velocity"><code class="name flex">
 <span>def <span class="ident">compute_drift_velocity</span></span>(<span>x, z, xdot, t)</span>
 </code></dt>
 <dd>
@@ -210,89 +199,81 @@ using the distance travelled by the particle averaged over each wave period,
         return np.array(u_d), np.array(w_d), np.array(interpd_t)</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig2_numerics.main"><code class="name flex">
+<dt id="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta.main"><code class="name flex">
 <span>def <span class="ident">main</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>This program reproduces numerical results from Figure 2 in Santamaria et al.
-(2013) and saves the results to the <code>data/deep_water_wave</code> directory.</p></div>
+<div class="desc"><p>This program computes numerical solutions for the Stokes drift velocity of
+inertial particles of varying buoyancies in linear water waves and saves the
+results to the <code>data/water_wave</code> directory.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
         &#34;&#34;&#34;
-        This program reproduces numerical results from Figure 2 in Santamaria et al.
-        (2013) and saves the results to the `data/deep_water_wave` directory.
+        This program computes numerical solutions for the Stokes drift velocity of
+        inertial particles of varying buoyancies in linear water waves and saves the
+        results to the `data/water_wave` directory.
         &#34;&#34;&#34;
-        # initialize the particle, flow, and transport system
-        my_flow = fl.DeepWaterWave(amplitude=0.02, wavelength=1)
-        R = 2 / 3 * 0.9
-        St = my_flow.froude_num * R * 0.157
-        my_particle = prt.Particle(stokes_num=St)
-        my_system = ts.MyTransportSystem(my_particle, my_flow, R)
-        my_dict = dict.fromkeys([&#39;coarse_t&#39;, &#39;coarse_u_d&#39;, &#39;coarse_w_d&#39;, &#39;medium_t&#39;,
-                                                         &#39;medium_u_d&#39;, &#39;medium_w_d&#39;, &#39;fine_t&#39;, &#39;fine_u_d&#39;,
-                                                         &#39;fine_w_d&#39;])
+        # initialize the flow (wave)
+        my_dict = {}
+        depth = 50
+        amplitude = 0.02
+        wavelength = 1
+        my_dict[&#39;amplitude&#39;] = amplitude
+        my_dict[&#39;wavelength&#39;] = wavelength
+        my_wave = fl.WaterWave(depth=depth, amplitude=amplitude,
+                                                   wavelength=wavelength)
 
-        # intialize Santamaria particle, flow, transport system
-        sm_flow = dim_fl.DimensionalDeepWaterWave(amplitude=0.02, wavelength=1)
-        sm_particle = prt.Particle(stokes_num=0.157)
-        sm_system = sm.SantamariaTransportSystem(sm_particle, sm_flow, 0.9)
-        omega = sm_flow.angular_freq
-        U = sm_flow.max_velocity
-        T = 1 / (omega * sm_flow.froude_num)
-        num_periods = 50
-        x_0 = 0
-        z_0 = 0
-        xdot_0, zdot_0 = my_flow.velocity(x_0, z_0, t=0)
+        # initialize the parameters for the numerics
+        Fr = my_wave.froude_num
+        T = my_wave.angular_freq * Fr
+        num_periods = 20 * T
+        delta_t = 1e-2 * T
+        x_0, z_0 = 0, 0
+        xdot_0, zdot_0 = my_wave.velocity(x_0, z_0, t=0)
+        betas = [0.1, 0.5, 0.9, 1]
+#       betas = [0.9]
+        my_dict[&#39;beta&#39;] = betas
 
-        # run numerical simulations and compute drift velocity for Santamaria
-        x, z, xdot, _, t = sm_system.run_numerics(sm_system.maxey_riley,
-                                                                                          x_0=x_0, z_0=z_0, delta_t=1e-3,
-                                                                                          num_periods=num_periods)
-        sm_u_d, sm_w_d, sm_t = compute_drift_velocity(x, z, xdot, t)
-        my_dict[&#39;sm_u_d&#39;] = sm_u_d / U
-        my_dict[&#39;sm_w_d&#39;] = sm_w_d / U
-        my_dict[&#39;sm_t&#39;] = omega * sm_t
+        for beta in betas:
+                R = 2 / 3 * beta
+                my_particle = prt.Particle(stokes_num=0.157 * R * Fr)
+                my_system = ts.MyTransportSystem(my_particle, my_wave, R)
 
-        # run numerical simulation and compute drift velocity for fine delta_t
-        x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-                                                                                          x_0=x_0, z_0=z_0,
-                                                                                          xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                          delta_t=1e-3 / T,
-                                                                                          num_periods=num_periods / T)
-        fine_u_d, fine_w_d, fine_t = compute_drift_velocity(x, z, xdot, t)
-        my_dict[&#39;fine_u_d&#39;] = fine_u_d
-        my_dict[&#39;fine_w_d&#39;] = fine_w_d
-        my_dict[&#39;fine_t&#39;] = fine_t * omega
+                # run numerics without history
+                x, z, xdot, _, t = my_system.run_numerics(include_history=False,
+                                                                                                  x_0=x_0, z_0=z_0,
+                                                                                                  xdot_0=xdot_0, zdot_0=zdot_0,
+                                                                                                  delta_t=delta_t,
+                                                                                                  num_periods=num_periods)
+                # compute drift velocity &amp; store results
+                u_d, w_d, t_d = compute_drift_velocity(x, z, xdot, t)
+                my_dict[&#39;x_%g&#39; % beta] = x
+                my_dict[&#39;z_%g&#39; % beta] = z
+                my_dict[&#39;u_d_%g&#39; % beta] = u_d
+                my_dict[&#39;w_d_%g&#39; % beta] = w_d
+                my_dict[&#39;t_%g&#39; % beta] = t_d / Fr
 
-        # run numerical simulation and compute drift velocity for medium delta_t
-        x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-                                                                                          x_0=x_0, z_0=z_0,
-                                                                                          xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                          delta_t=5e-3 / T,
-                                                                                          num_periods=num_periods / T)
-        medium_u_d, medium_w_d, medium_t = compute_drift_velocity(x, z, xdot, t)
-        my_dict[&#39;medium_u_d&#39;] = medium_u_d
-        my_dict[&#39;medium_w_d&#39;] = medium_w_d
-        my_dict[&#39;medium_t&#39;] = medium_t * omega
-
-        # run numerical simulation and compute drift velocity for coarse delta_t
-        x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-                                                                                          x_0=x_0, z_0=z_0,
-                                                                                          xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                          delta_t=1e-2 / T,
-                                                                                          num_periods=num_periods / T)
-        coarse_u_d, coarse_w_d, coarse_t = compute_drift_velocity(x, z, xdot, t)
-        my_dict[&#39;coarse_u_d&#39;] = coarse_u_d
-        my_dict[&#39;coarse_w_d&#39;] = coarse_w_d
-        my_dict[&#39;coarse_t&#39;] = coarse_t * omega
+                # run numerics with history
+#               x, z, xdot, _, t = my_system.run_numerics(include_history=True,
+#                                                                                                 x_0=x_0, z_0=z_0,
+#                                                                                                 xdot_0=xdot_0, zdot_0=zdot_0,
+#                                                                                                 delta_t=delta_t,
+#                                                                                                 num_periods=num_periods)
+                # compute drift velocity &amp; store results
+#               u_d, w_d, t_d = compute_drift_velocity(x, z, xdot, t)
+#               my_dict[&#39;x_history_%g&#39; % beta] = x
+#               my_dict[&#39;z_history_%g&#39; % beta] = z
+#               my_dict[&#39;u_d_history_%g&#39; % beta] = u_d / Fr
+#               my_dict[&#39;w_d_history_%g&#39; % beta] = w_d / Fr
+#               my_dict[&#39;t_history_%g&#39; % beta] = t_d / Fr
 
         # write results to data file
         my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
         numerics = pd.DataFrame(my_dict)
-        numerics.to_csv(&#39;../data/deep_water_wave/santamaria_fig2_recreation.csv&#39;,
+        numerics.to_csv(&#39;../data/water_wave/drift_velocity_varying_beta.csv&#39;,
                                         index=False)</code></pre>
 </details>
 </dd>
@@ -309,13 +290,13 @@ using the distance travelled by the particle averaged over each wave period,
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave" href="index.html">modelling-microplastics-transport.examples.deep_water_wave</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave" href="index.html">modelling-microplastics-transport.examples.water_wave</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig2_numerics.compute_drift_velocity" href="#modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig2_numerics.compute_drift_velocity">compute_drift_velocity</a></code></li>
-<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig2_numerics.main" href="#modelling-microplastics-transport.examples.deep_water_wave.santamaria_fig2_numerics.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta.compute_drift_velocity" href="#modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta.compute_drift_velocity">compute_drift_velocity</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta.main" href="#modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta.main">main</a></code></li>
 </ul>
 </li>
 </ul>

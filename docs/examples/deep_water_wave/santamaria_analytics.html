@@ -42,24 +42,23 @@ def main():
         &#34;&#34;&#34;
         This program computes analytical solutions for the Stokes drift velocity of
         an inertial particle in linear water waves, following the approach outlined
-        in Santamaria et al. (2013), and saves the results to the `data` directory.
+        in Santamaria et al. (2013), and saves the results to the
+        `data/deep_water_wave` directory.
         &#34;&#34;&#34;
-        # initialize the particle, flow, and transport system
-        beta = 0.9
-        my_particle = prt.Particle(stokes_num=0.157)
+        # initialize the flow and related parameters
         my_flow = fl.DimensionalDeepWaterWave(amplitude=0.02, wavelength=1)
-        my_system = ts.SantamariaTransportSystem(my_particle, my_flow, beta)
+        omega = my_flow.angular_freq
+        U = my_flow.max_velocity
+        c = my_flow.phase_velocity
 
-        # initialize variables for computing the analytics
+        # initialize the remaining variables for computing the analytics
         num_periods = 50
         delta_t = 1e-3
         t = np.arange(0, num_periods * my_flow.period, delta_t)
         z_0 = 0
-        omega = my_flow.angular_freq
-        U = my_flow.max_velocity
-        St = my_particle.stokes_num
-        c = my_flow.phase_velocity
-        bprime = 1 - my_system.density_ratio
+        beta = 0.9
+        bprime = 1 - beta
+        St = 0.157
         e_2z0t = np.exp(2 * (my_flow.wavenum * z_0 - St * bprime * t * omega))
 
         # compute analytical drift velocity and settling velocity
@@ -92,7 +91,8 @@ if __name__ == &#39;__main__&#39;:
 <dd>
 <div class="desc"><p>This program computes analytical solutions for the Stokes drift velocity of
 an inertial particle in linear water waves, following the approach outlined
-in Santamaria et al. (2013), and saves the results to the <code>data</code> directory.</p></div>
+in Santamaria et al. (2013), and saves the results to the
+<code>data/deep_water_wave</code> directory.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -101,24 +101,23 @@ in Santamaria et al. (2013), and saves the results to the <code>data</code> dire
         &#34;&#34;&#34;
         This program computes analytical solutions for the Stokes drift velocity of
         an inertial particle in linear water waves, following the approach outlined
-        in Santamaria et al. (2013), and saves the results to the `data` directory.
+        in Santamaria et al. (2013), and saves the results to the
+        `data/deep_water_wave` directory.
         &#34;&#34;&#34;
-        # initialize the particle, flow, and transport system
-        beta = 0.9
-        my_particle = prt.Particle(stokes_num=0.157)
+        # initialize the flow and related parameters
         my_flow = fl.DimensionalDeepWaterWave(amplitude=0.02, wavelength=1)
-        my_system = ts.SantamariaTransportSystem(my_particle, my_flow, beta)
+        omega = my_flow.angular_freq
+        U = my_flow.max_velocity
+        c = my_flow.phase_velocity
 
-        # initialize variables for computing the analytics
+        # initialize the remaining variables for computing the analytics
         num_periods = 50
         delta_t = 1e-3
         t = np.arange(0, num_periods * my_flow.period, delta_t)
         z_0 = 0
-        omega = my_flow.angular_freq
-        U = my_flow.max_velocity
-        St = my_particle.stokes_num
-        c = my_flow.phase_velocity
-        bprime = 1 - my_system.density_ratio
+        beta = 0.9
+        bprime = 1 - beta
+        St = 0.157
         e_2z0t = np.exp(2 * (my_flow.wavenum * z_0 - St * bprime * t * omega))
 
         # compute analytical drift velocity and settling velocity

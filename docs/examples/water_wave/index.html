@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>modelling-microplastics-transport.examples.rigid_body_rotation.rel_error API documentation</title>
+<title>modelling-microplastics-transport.examples.water_wave API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,109 +20,42 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>modelling-microplastics-transport.examples.rigid_body_rotation.rel_error</code></h1>
+<h1 class="title">Module <code>modelling-microplastics-transport.examples.water_wave</code></h1>
 </header>
 <section id="section-intro">
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">import sys 
-sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
-                                + &#39;modelling-microplastics-transport&#39;)
-import pandas as pd
-import numpy as np
-
-def main():
-        &#34;&#34;&#34;
-        This program computes the relative error for the numerical solutions of a
-        rotating particle in a flow and saves the results to the
-        `data/rigid_body_rotation` directory.
-        &#34;&#34;&#34;
-        # read data
-        data_path = &#39;../data/rigid_body_rotation/&#39;
-        numerics = pd.read_csv(data_path + &#39;numerics.csv&#39;)
-        analytics = pd.read_csv(data_path + &#39;analytics.csv&#39;)
-
-        # compute relative error
-        exact = analytics[[&#39;x_ana&#39;, &#39;z_ana&#39;]].to_numpy()
-        x_num1 = numerics[[&#39;first_x&#39;, &#39;first_z&#39;]].to_numpy()
-        x_num2 = numerics[[&#39;second_x&#39;, &#39;second_z&#39;]].to_numpy()
-        x_num3 = numerics[[&#39;third_x&#39;, &#39;third_z&#39;]].to_numpy()
-        my_dict = dict.fromkeys([&#39;e_rel1&#39;, &#39;e_rel2&#39;, &#39;e_rel3&#39;, &#39;global_error1&#39;,
-                                                         &#39;global_error2&#39;, &#39;global_error3&#39;])
-        my_dict[&#39;t&#39;] = numerics[&#39;t&#39;]
-        my_dict[&#39;e_rel1&#39;] = np.linalg.norm(exact - x_num1, axis=1) \
-                                                / np.linalg.norm(exact, axis=1)
-        my_dict[&#39;e_rel2&#39;] = np.linalg.norm(exact - x_num2, axis=1) \
-                                                / np.linalg.norm(exact, axis=1)
-        my_dict[&#39;e_rel3&#39;] = np.linalg.norm(exact - x_num3, axis=1) \
-                                                / np.linalg.norm(exact, axis=1)
-        my_dict[&#39;global_error1&#39;] = np.linalg.norm(exact - x_num1, axis=1).max()
-        my_dict[&#39;global_error2&#39;] = np.linalg.norm(exact - x_num2, axis=1).max()
-        my_dict[&#39;global_error3&#39;] = np.linalg.norm(exact - x_num3, axis=1).max()
-
-        # write results to data file
-        rel_error = pd.DataFrame(my_dict)
-        rel_error.to_csv(data_path + &#39;rel_error.csv&#39;, index=False)
-
-if __name__ == &#39;__main__&#39;:
-        main()</code></pre>
-</details>
 </section>
 <section>
-</section>
-<section>
-</section>
-<section>
-<h2 class="section-title" id="header-functions">Functions</h2>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
-<dt id="modelling-microplastics-transport.examples.rigid_body_rotation.rel_error.main"><code class="name flex">
-<span>def <span class="ident">main</span></span>(<span>)</span>
-</code></dt>
+<dt><code class="name"><a title="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta" href="drift_velocity_varying_beta.html">modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta</a></code></dt>
 <dd>
-<div class="desc"><p>This program computes the relative error for the numerical solutions of a
-rotating particle in a flow and saves the results to the
-<code>data/rigid_body_rotation</code> directory.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def main():
-        &#34;&#34;&#34;
-        This program computes the relative error for the numerical solutions of a
-        rotating particle in a flow and saves the results to the
-        `data/rigid_body_rotation` directory.
-        &#34;&#34;&#34;
-        # read data
-        data_path = &#39;../data/rigid_body_rotation/&#39;
-        numerics = pd.read_csv(data_path + &#39;numerics.csv&#39;)
-        analytics = pd.read_csv(data_path + &#39;analytics.csv&#39;)
-
-        # compute relative error
-        exact = analytics[[&#39;x_ana&#39;, &#39;z_ana&#39;]].to_numpy()
-        x_num1 = numerics[[&#39;first_x&#39;, &#39;first_z&#39;]].to_numpy()
-        x_num2 = numerics[[&#39;second_x&#39;, &#39;second_z&#39;]].to_numpy()
-        x_num3 = numerics[[&#39;third_x&#39;, &#39;third_z&#39;]].to_numpy()
-        my_dict = dict.fromkeys([&#39;e_rel1&#39;, &#39;e_rel2&#39;, &#39;e_rel3&#39;, &#39;global_error1&#39;,
-                                                         &#39;global_error2&#39;, &#39;global_error3&#39;])
-        my_dict[&#39;t&#39;] = numerics[&#39;t&#39;]
-        my_dict[&#39;e_rel1&#39;] = np.linalg.norm(exact - x_num1, axis=1) \
-                                                / np.linalg.norm(exact, axis=1)
-        my_dict[&#39;e_rel2&#39;] = np.linalg.norm(exact - x_num2, axis=1) \
-                                                / np.linalg.norm(exact, axis=1)
-        my_dict[&#39;e_rel3&#39;] = np.linalg.norm(exact - x_num3, axis=1) \
-                                                / np.linalg.norm(exact, axis=1)
-        my_dict[&#39;global_error1&#39;] = np.linalg.norm(exact - x_num1, axis=1).max()
-        my_dict[&#39;global_error2&#39;] = np.linalg.norm(exact - x_num2, axis=1).max()
-        my_dict[&#39;global_error3&#39;] = np.linalg.norm(exact - x_num3, axis=1).max()
-
-        # write results to data file
-        rel_error = pd.DataFrame(my_dict)
-        rel_error.to_csv(data_path + &#39;rel_error.csv&#39;, index=False)</code></pre>
-</details>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st" href="drift_velocity_varying_st.html">modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="modelling-microplastics-transport.examples.water_wave.neutrally_buoyant_analytics" href="neutrally_buoyant_analytics.html">modelling-microplastics-transport.examples.water_wave.neutrally_buoyant_analytics</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="modelling-microplastics-transport.examples.water_wave.plot_drift_velocity_vs_depth" href="plot_drift_velocity_vs_depth.html">modelling-microplastics-transport.examples.water_wave.plot_drift_velocity_vs_depth</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="modelling-microplastics-transport.examples.water_wave.plot_time_vs_drift_velocity" href="plot_time_vs_drift_velocity.html">modelling-microplastics-transport.examples.water_wave.plot_time_vs_drift_velocity</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="modelling-microplastics-transport.examples.water_wave.santamaria_analytics" href="santamaria_analytics.html">modelling-microplastics-transport.examples.water_wave.santamaria_analytics</a></code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 </dl>
+</section>
+<section>
+</section>
+<section>
 </section>
 <section>
 </section>
@@ -135,12 +68,17 @@ rotating particle in a flow and saves the results to the
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="modelling-microplastics-transport.examples.rigid_body_rotation" href="index.html">modelling-microplastics-transport.examples.rigid_body_rotation</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples" href="../index.html">modelling-microplastics-transport.examples</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="modelling-microplastics-transport.examples.rigid_body_rotation.rel_error.main" href="#modelling-microplastics-transport.examples.rigid_body_rotation.rel_error.main">main</a></code></li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta" href="drift_velocity_varying_beta.html">modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_beta</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st" href="drift_velocity_varying_st.html">modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.neutrally_buoyant_analytics" href="neutrally_buoyant_analytics.html">modelling-microplastics-transport.examples.water_wave.neutrally_buoyant_analytics</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.plot_drift_velocity_vs_depth" href="plot_drift_velocity_vs_depth.html">modelling-microplastics-transport.examples.water_wave.plot_drift_velocity_vs_depth</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.plot_time_vs_drift_velocity" href="plot_time_vs_drift_velocity.html">modelling-microplastics-transport.examples.water_wave.plot_time_vs_drift_velocity</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.santamaria_analytics" href="santamaria_analytics.html">modelling-microplastics-transport.examples.water_wave.santamaria_analytics</a></code></li>
 </ul>
 </li>
 </ul>

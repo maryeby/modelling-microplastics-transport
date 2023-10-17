@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>modelling-microplastics-transport.models.dim_deep_water_wave API documentation</title>
+<title>modelling-microplastics-transport.models.dim_water_wave API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>modelling-microplastics-transport.models.dim_deep_water_wave</code></h1>
+<h1 class="title">Module <code>modelling-microplastics-transport.models.dim_water_wave</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -34,17 +34,16 @@ import numpy as np
 from scipy import constants
 from transport_framework import wave
 
-class DimensionalDeepWaterWave(wave.Wave):
+class DimensionalWaterWave(wave.Wave):
         &#34;&#34;&#34;
-        Represents the fluid flow described in Santamaria et al., (2013). The flow
-        is a linear water wave with infinite depth.
+        Represents a dimensional linear water wave with arbitrary depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15):
+        def __init__(self, amplitude, wavelength, depth):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
-                depth : float, default=15
+                depth : float
                         The depth of the fluid *h*.
                 amplitude : float
                         The amplitude of the wave *A*.
@@ -56,7 +55,7 @@ class DimensionalDeepWaterWave(wave.Wave):
                         The gravity **g** acting on the fluid.
                 angular_freq : float
                         The angular frequency *ω*, computed using the dispersion relation,
-                        $$\omega = \sqrt{gk}.$$
+                        $$\omega = \sqrt{g \tanh(kh)}.$$
                 phase_velocity : float
                         The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
                 period : float
@@ -80,15 +79,16 @@ class DimensionalDeepWaterWave(wave.Wave):
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
                 Defines the angular frequency omega with the dispersion relation,
-                $$\omega = \sqrt{gk}.$$
+                $$\omega = \sqrt{g \tanh(kh)}.$$
                 &#34;&#34;&#34;
-                self.angular_freq = np.sqrt(constants.g * self.wavenum)
+                self.angular_freq = np.sqrt(constants.g
+                                                        * np.tanh(self.wavenum * self.depth))
 
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
-                $$u(x, z, t) = Ue^{kz} \cos(kx - \omega t),$$
-                $$w(x, z, t) = Ue^{kz} \sin(kx - \omega t).$$
+                Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle,$$
+                $$u(x, z, t) = U\frac{\cosh(k(z + h))}{\sinh(kh)}\sin(\omega t - kx),$$
+                $$w(x, z, t) = U\frac{\sinh(k(z + h))}{\sinh(kh)}\cos(\omega t - kx).$$
 
                 Parameters
                 ----------
@@ -105,16 +105,22 @@ class DimensionalDeepWaterWave(wave.Wave):
                 &#34;&#34;&#34;
                 U = self.max_velocity
                 k = self.wavenum
+                h = self.depth
                 omega = self.angular_freq
 
-                return np.array([U * np.exp(k * z) * np.cos(k * x - omega * t), 
-                                                 U * np.exp(k * z) * np.sin(k * x - omega * t)])
+                return np.array([U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.sin(omega * t - k * x),
+                                                 U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.cos(omega * t - k * x)])
 
         def partial_t(self, x, z, t): 
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to time,
                 $$\frac{\partial \mathbf{u}}{\partial t} =
-                \langle \omega w, \; -\omega u \rangle.$$
+                        \Bigg\langle \omega U \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                                 \cos(\omega t - kx), \;
+                                                -\omega U\frac{\sinh(k(z + h))}{\sinh(kh)}
+                                                 \sin(\omega t - kx)\Bigg\rangle.$$
 
                 Parameters
                 ----------
@@ -129,15 +135,24 @@ class DimensionalDeepWaterWave(wave.Wave):
                 -------
                 Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
+                U = self.max_velocity
+                k = self.wavenum
+                h = self.depth
                 omega = self.angular_freq
-                u, w = self.velocity(x, z, t)
-                return np.array([omega * w, omega * -u])
+                return np.array([omega * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                           * np.cos(omega * t - k * x),
+                                                 -omega * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                                * np.sin(omega * t - k * x)])
 
         def partial_x(self, x, z, t): 
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to the
                 horizontal position,
-                $$\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.$$
+                $$\frac{\partial \mathbf{u}}{\partial x} =
+                        \Bigg\langle -kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                                 \cos(\omega t - kx), \;
+                                                 kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+                                                 \sin(\omega t - kx)\Bigg\rangle.$$
 
                 Parameters
                 ----------
@@ -152,15 +167,24 @@ class DimensionalDeepWaterWave(wave.Wave):
                 -------
                 Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
+                U = self.max_velocity
                 k = self.wavenum
-                u, w = self.velocity(x, z, t)
-                return np.array([k * -w, k * u])
+                h = self.depth
+                omega = self.angular_freq
+                return np.array([-k * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                        * np.cos(omega * t - k * x),
+                                                 k * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.sin(omega * t - k * x)])
 
         def partial_z(self, x, z, t):
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to the
                 vertical position,
-                $$\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.$$
+                $$\frac{\partial \mathbf{u}}{\partial z} =
+                        \Bigg\langle kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+                                                 \sin(\omega t - kx), \;
+                                                 kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                                 \cos(\omega t - kx)\Bigg\rangle.$$
 
                 Parameters
                 ----------
@@ -175,37 +199,14 @@ class DimensionalDeepWaterWave(wave.Wave):
                 -------
                 Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
-                return self.wavenum * self.velocity(x, z, t)
-
-        def material_derivative2(self, x, z, t):
-                r&#34;&#34;&#34;
-                Computes the second order material derivative, where
-                $$\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-                \langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-                w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.$$
-
-                Parameters
-                ----------
-                x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
-                z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
-                t : float or array
-                        The time(s) at which to evaluate the velocity.
-
-                Returns
-                -------
-                Array containing the second order material derivative vector components.
-                &#34;&#34;&#34;
                 U = self.max_velocity
                 k = self.wavenum
-                epsilon = self.amplitude * k
+                h = self.depth
                 omega = self.angular_freq
-                u, w = self.velocity(x, z, t)
-
-                return np.array([k * w * U ** 2 * np.exp(2 * k * z) - omega ** 2 * u,
-                                                 w * (2 * np.exp(2 * k * z) * (U * k) ** 2
-                                                   - omega ** 2)])</code></pre>
+                return np.array([k * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.sin(omega * t - k * x),
+                                                 k * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.cos(omega * t - k * x)])</code></pre>
 </details>
 </section>
 <section>
@@ -217,16 +218,15 @@ class DimensionalDeepWaterWave(wave.Wave):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave"><code class="flex name class">
-<span>class <span class="ident">DimensionalDeepWaterWave</span></span>
-<span>(</span><span>amplitude, wavelength, depth=15)</span>
+<dt id="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave"><code class="flex name class">
+<span>class <span class="ident">DimensionalWaterWave</span></span>
+<span>(</span><span>amplitude, wavelength, depth)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Represents the fluid flow described in Santamaria et al., (2013). The flow
-is a linear water wave with infinite depth.</p>
+<div class="desc"><p>Represents a dimensional linear water wave with arbitrary depth.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
-<dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>15</code></dt>
+<dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
 <dd>The depth of the fluid <em>h</em>.</dd>
 <dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
 <dd>The amplitude of the wave <em>A</em>.</dd>
@@ -238,7 +238,7 @@ is a linear water wave with infinite depth.</p>
 <dd>The gravity <strong>g</strong> acting on the fluid.</dd>
 <dt><strong><code>angular_freq</code></strong> :&ensp;<code>float</code></dt>
 <dd>The angular frequency <em>ω</em>, computed using the dispersion relation,
-<span><span class="MathJax_Preview">\omega = \sqrt{gk}.</span><script type="math/tex; mode=display">\omega = \sqrt{gk}.</script></span></dd>
+<span><span class="MathJax_Preview">\omega = \sqrt{g \tanh(kh)}.</span><script type="math/tex; mode=display">\omega = \sqrt{g \tanh(kh)}.</script></span></dd>
 <dt><strong><code>phase_velocity</code></strong> :&ensp;<code>float</code></dt>
 <dd>The phase velocity <em>c</em>, computed as <span><span class="MathJax_Preview">c = \frac{\omega}{k}.</span><script type="math/tex; mode=display">c = \frac{\omega}{k}.</script></span></dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
@@ -254,17 +254,16 @@ is a linear water wave with infinite depth.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class DimensionalDeepWaterWave(wave.Wave):
+<pre><code class="python">class DimensionalWaterWave(wave.Wave):
         &#34;&#34;&#34;
-        Represents the fluid flow described in Santamaria et al., (2013). The flow
-        is a linear water wave with infinite depth.
+        Represents a dimensional linear water wave with arbitrary depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15):
+        def __init__(self, amplitude, wavelength, depth):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
-                depth : float, default=15
+                depth : float
                         The depth of the fluid *h*.
                 amplitude : float
                         The amplitude of the wave *A*.
@@ -276,7 +275,7 @@ is a linear water wave with infinite depth.</p>
                         The gravity **g** acting on the fluid.
                 angular_freq : float
                         The angular frequency *ω*, computed using the dispersion relation,
-                        $$\omega = \sqrt{gk}.$$
+                        $$\omega = \sqrt{g \tanh(kh)}.$$
                 phase_velocity : float
                         The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
                 period : float
@@ -300,15 +299,16 @@ is a linear water wave with infinite depth.</p>
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
                 Defines the angular frequency omega with the dispersion relation,
-                $$\omega = \sqrt{gk}.$$
+                $$\omega = \sqrt{g \tanh(kh)}.$$
                 &#34;&#34;&#34;
-                self.angular_freq = np.sqrt(constants.g * self.wavenum)
+                self.angular_freq = np.sqrt(constants.g
+                                                        * np.tanh(self.wavenum * self.depth))
 
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
-                $$u(x, z, t) = Ue^{kz} \cos(kx - \omega t),$$
-                $$w(x, z, t) = Ue^{kz} \sin(kx - \omega t).$$
+                Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle,$$
+                $$u(x, z, t) = U\frac{\cosh(k(z + h))}{\sinh(kh)}\sin(\omega t - kx),$$
+                $$w(x, z, t) = U\frac{\sinh(k(z + h))}{\sinh(kh)}\cos(\omega t - kx).$$
 
                 Parameters
                 ----------
@@ -325,16 +325,22 @@ is a linear water wave with infinite depth.</p>
                 &#34;&#34;&#34;
                 U = self.max_velocity
                 k = self.wavenum
+                h = self.depth
                 omega = self.angular_freq
 
-                return np.array([U * np.exp(k * z) * np.cos(k * x - omega * t), 
-                                                 U * np.exp(k * z) * np.sin(k * x - omega * t)])
+                return np.array([U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.sin(omega * t - k * x),
+                                                 U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.cos(omega * t - k * x)])
 
         def partial_t(self, x, z, t): 
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to time,
                 $$\frac{\partial \mathbf{u}}{\partial t} =
-                \langle \omega w, \; -\omega u \rangle.$$
+                        \Bigg\langle \omega U \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                                 \cos(\omega t - kx), \;
+                                                -\omega U\frac{\sinh(k(z + h))}{\sinh(kh)}
+                                                 \sin(\omega t - kx)\Bigg\rangle.$$
 
                 Parameters
                 ----------
@@ -349,15 +355,24 @@ is a linear water wave with infinite depth.</p>
                 -------
                 Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
+                U = self.max_velocity
+                k = self.wavenum
+                h = self.depth
                 omega = self.angular_freq
-                u, w = self.velocity(x, z, t)
-                return np.array([omega * w, omega * -u])
+                return np.array([omega * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                           * np.cos(omega * t - k * x),
+                                                 -omega * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                                * np.sin(omega * t - k * x)])
 
         def partial_x(self, x, z, t): 
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to the
                 horizontal position,
-                $$\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.$$
+                $$\frac{\partial \mathbf{u}}{\partial x} =
+                        \Bigg\langle -kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                                 \cos(\omega t - kx), \;
+                                                 kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+                                                 \sin(\omega t - kx)\Bigg\rangle.$$
 
                 Parameters
                 ----------
@@ -372,15 +387,24 @@ is a linear water wave with infinite depth.</p>
                 -------
                 Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
+                U = self.max_velocity
                 k = self.wavenum
-                u, w = self.velocity(x, z, t)
-                return np.array([k * -w, k * u])
+                h = self.depth
+                omega = self.angular_freq
+                return np.array([-k * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                        * np.cos(omega * t - k * x),
+                                                 k * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.sin(omega * t - k * x)])
 
         def partial_z(self, x, z, t):
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to the
                 vertical position,
-                $$\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.$$
+                $$\frac{\partial \mathbf{u}}{\partial z} =
+                        \Bigg\langle kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+                                                 \sin(\omega t - kx), \;
+                                                 kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                                 \cos(\omega t - kx)\Bigg\rangle.$$
 
                 Parameters
                 ----------
@@ -395,37 +419,14 @@ is a linear water wave with infinite depth.</p>
                 -------
                 Array containing the vector components of the derivative.
                 &#34;&#34;&#34;
-                return self.wavenum * self.velocity(x, z, t)
-
-        def material_derivative2(self, x, z, t):
-                r&#34;&#34;&#34;
-                Computes the second order material derivative, where
-                $$\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-                \langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-                w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.$$
-
-                Parameters
-                ----------
-                x : float or array
-                        The x position(s) at which to evaluate the fluid velocity.
-                z : float or array
-                        The z position(s) at which to evaluate the velocity and derivative.
-                t : float or array
-                        The time(s) at which to evaluate the velocity.
-
-                Returns
-                -------
-                Array containing the second order material derivative vector components.
-                &#34;&#34;&#34;
                 U = self.max_velocity
                 k = self.wavenum
-                epsilon = self.amplitude * k
+                h = self.depth
                 omega = self.angular_freq
-                u, w = self.velocity(x, z, t)
-
-                return np.array([k * w * U ** 2 * np.exp(2 * k * z) - omega ** 2 * u,
-                                                 w * (2 * np.exp(2 * k * z) * (U * k) ** 2
-                                                   - omega ** 2)])</code></pre>
+                return np.array([k * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.sin(omega * t - k * x),
+                                                 k * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.cos(omega * t - k * x)])</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -435,70 +436,20 @@ is a linear water wave with infinite depth.</p>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.material_derivative2"><code class="name flex">
-<span>def <span class="ident">material_derivative2</span></span>(<span>self, x, z, t)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Computes the second order material derivative, where
-<span><span class="MathJax_Preview">\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-\langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</span><script type="math/tex; mode=display">\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-\langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</script></span></p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The x position(s) at which to evaluate the fluid velocity.</dd>
-<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The z position(s) at which to evaluate the velocity and derivative.</dd>
-<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
-<dd>The time(s) at which to evaluate the velocity.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>Array containing the second order material derivative vector components.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def material_derivative2(self, x, z, t):
-        r&#34;&#34;&#34;
-        Computes the second order material derivative, where
-        $$\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-        \langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-        w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.$$
-
-        Parameters
-        ----------
-        x : float or array
-                The x position(s) at which to evaluate the fluid velocity.
-        z : float or array
-                The z position(s) at which to evaluate the velocity and derivative.
-        t : float or array
-                The time(s) at which to evaluate the velocity.
-
-        Returns
-        -------
-        Array containing the second order material derivative vector components.
-        &#34;&#34;&#34;
-        U = self.max_velocity
-        k = self.wavenum
-        epsilon = self.amplitude * k
-        omega = self.angular_freq
-        u, w = self.velocity(x, z, t)
-
-        return np.array([k * w * U ** 2 * np.exp(2 * k * z) - omega ** 2 * u,
-                                         w * (2 * np.exp(2 * k * z) * (U * k) ** 2
-                                           - omega ** 2)])</code></pre>
-</details>
-</dd>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_t"><code class="name flex">
+<dt id="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_t"><code class="name flex">
 <span>def <span class="ident">partial_t</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the partial derivative of the fluid with respect to time,
 <span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial t} =
-\langle \omega w, \; -\omega u \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial t} =
-\langle \omega w, \; -\omega u \rangle.</script></span></p>
+\Bigg\langle \omega U \frac{\cosh(k(z + h))}{\sinh(kh)}
+\cos(\omega t - kx), \;
+-\omega U\frac{\sinh(k(z + h))}{\sinh(kh)}
+\sin(\omega t - kx)\Bigg\rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial t} =
+\Bigg\langle \omega U \frac{\cosh(k(z + h))}{\sinh(kh)}
+\cos(\omega t - kx), \;
+-\omega U\frac{\sinh(k(z + h))}{\sinh(kh)}
+\sin(\omega t - kx)\Bigg\rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -518,7 +469,10 @@ w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</script></span></p>
         r&#34;&#34;&#34;
         Computes the partial derivative of the fluid with respect to time,
         $$\frac{\partial \mathbf{u}}{\partial t} =
-        \langle \omega w, \; -\omega u \rangle.$$
+                \Bigg\langle \omega U \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                         \cos(\omega t - kx), \;
+                                        -\omega U\frac{\sinh(k(z + h))}{\sinh(kh)}
+                                         \sin(\omega t - kx)\Bigg\rangle.$$
 
         Parameters
         ----------
@@ -533,18 +487,31 @@ w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</script></span></p>
         -------
         Array containing the vector components of the derivative.
         &#34;&#34;&#34;
+        U = self.max_velocity
+        k = self.wavenum
+        h = self.depth
         omega = self.angular_freq
-        u, w = self.velocity(x, z, t)
-        return np.array([omega * w, omega * -u])</code></pre>
+        return np.array([omega * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                   * np.cos(omega * t - k * x),
+                                         -omega * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                                        * np.sin(omega * t - k * x)])</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_x"><code class="name flex">
+<dt id="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_x"><code class="name flex">
 <span>def <span class="ident">partial_x</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the partial derivative of the fluid with respect to the
 horizontal position,
-<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.</script></span></p>
+<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial x} =
+\Bigg\langle -kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+\cos(\omega t - kx), \;
+kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+\sin(\omega t - kx)\Bigg\rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial x} =
+\Bigg\langle -kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+\cos(\omega t - kx), \;
+kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+\sin(\omega t - kx)\Bigg\rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -564,7 +531,11 @@ horizontal position,
         r&#34;&#34;&#34;
         Computes the partial derivative of the fluid with respect to the
         horizontal position,
-        $$\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.$$
+        $$\frac{\partial \mathbf{u}}{\partial x} =
+                \Bigg\langle -kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                         \cos(\omega t - kx), \;
+                                         kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+                                         \sin(\omega t - kx)\Bigg\rangle.$$
 
         Parameters
         ----------
@@ -579,18 +550,31 @@ horizontal position,
         -------
         Array containing the vector components of the derivative.
         &#34;&#34;&#34;
+        U = self.max_velocity
         k = self.wavenum
-        u, w = self.velocity(x, z, t)
-        return np.array([k * -w, k * u])</code></pre>
+        h = self.depth
+        omega = self.angular_freq
+        return np.array([-k * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                                * np.cos(omega * t - k * x),
+                                         k * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                           * np.sin(omega * t - k * x)])</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_z"><code class="name flex">
+<dt id="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_z"><code class="name flex">
 <span>def <span class="ident">partial_z</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the partial derivative of the fluid with respect to the
 vertical position,
-<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.</script></span></p>
+<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial z} =
+\Bigg\langle kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+\sin(\omega t - kx), \;
+kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+\cos(\omega t - kx)\Bigg\rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial z} =
+\Bigg\langle kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+\sin(\omega t - kx), \;
+kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+\cos(\omega t - kx)\Bigg\rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -610,7 +594,11 @@ vertical position,
         r&#34;&#34;&#34;
         Computes the partial derivative of the fluid with respect to the
         vertical position,
-        $$\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.$$
+        $$\frac{\partial \mathbf{u}}{\partial z} =
+                \Bigg\langle kU \frac{\sinh(k(z + h))}{\sinh(kh)}
+                                         \sin(\omega t - kx), \;
+                                         kU \frac{\cosh(k(z + h))}{\sinh(kh)}
+                                         \cos(\omega t - kx)\Bigg\rangle.$$
 
         Parameters
         ----------
@@ -625,15 +613,22 @@ vertical position,
         -------
         Array containing the vector components of the derivative.
         &#34;&#34;&#34;
-        return self.wavenum * self.velocity(x, z, t)</code></pre>
+        U = self.max_velocity
+        k = self.wavenum
+        h = self.depth
+        omega = self.angular_freq
+        return np.array([k * U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                           * np.sin(omega * t - k * x),
+                                         k * U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                           * np.cos(omega * t - k * x)])</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_angular_freq"><code class="name flex">
+<dt id="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.set_angular_freq"><code class="name flex">
 <span>def <span class="ident">set_angular_freq</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Defines the angular frequency omega with the dispersion relation,
-<span><span class="MathJax_Preview">\omega = \sqrt{gk}.</span><script type="math/tex; mode=display">\omega = \sqrt{gk}.</script></span></p></div>
+<span><span class="MathJax_Preview">\omega = \sqrt{g \tanh(kh)}.</span><script type="math/tex; mode=display">\omega = \sqrt{g \tanh(kh)}.</script></span></p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -641,12 +636,13 @@ vertical position,
 <pre><code class="python">def set_angular_freq(self):
         r&#34;&#34;&#34;
         Defines the angular frequency omega with the dispersion relation,
-        $$\omega = \sqrt{gk}.$$
+        $$\omega = \sqrt{g \tanh(kh)}.$$
         &#34;&#34;&#34;
-        self.angular_freq = np.sqrt(constants.g * self.wavenum)</code></pre>
+        self.angular_freq = np.sqrt(constants.g
+                                                * np.tanh(self.wavenum * self.depth))</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_gravity"><code class="name flex">
+<dt id="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.set_gravity"><code class="name flex">
 <span>def <span class="ident">set_gravity</span></span>(<span>self)</span>
 </code></dt>
 <dd>
@@ -664,13 +660,13 @@ vertical position,
         self.gravity = np.array([0, -constants.g])</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.velocity"><code class="name flex">
+<dt id="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.velocity"><code class="name flex">
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\textbf{u} = \langle u, w \rangle,</span><script type="math/tex; mode=display">\textbf{u} = \langle u, w \rangle,</script></span>
-<span><span class="MathJax_Preview">u(x, z, t) = Ue^{kz} \cos(kx - \omega t),</span><script type="math/tex; mode=display">u(x, z, t) = Ue^{kz} \cos(kx - \omega t),</script></span>
-<span><span class="MathJax_Preview">w(x, z, t) = Ue^{kz} \sin(kx - \omega t).</span><script type="math/tex; mode=display">w(x, z, t) = Ue^{kz} \sin(kx - \omega t).</script></span></p>
+<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\mathbf{u} = \langle u, w \rangle,</span><script type="math/tex; mode=display">\mathbf{u} = \langle u, w \rangle,</script></span>
+<span><span class="MathJax_Preview">u(x, z, t) = U\frac{\cosh(k(z + h))}{\sinh(kh)}\sin(\omega t - kx),</span><script type="math/tex; mode=display">u(x, z, t) = U\frac{\cosh(k(z + h))}{\sinh(kh)}\sin(\omega t - kx),</script></span>
+<span><span class="MathJax_Preview">w(x, z, t) = U\frac{\sinh(k(z + h))}{\sinh(kh)}\cos(\omega t - kx).</span><script type="math/tex; mode=display">w(x, z, t) = U\frac{\sinh(k(z + h))}{\sinh(kh)}\cos(\omega t - kx).</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -688,9 +684,9 @@ vertical position,
 </summary>
 <pre><code class="python">def velocity(self, x, z, t):
         r&#34;&#34;&#34;
-        Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
-        $$u(x, z, t) = Ue^{kz} \cos(kx - \omega t),$$
-        $$w(x, z, t) = Ue^{kz} \sin(kx - \omega t).$$
+        Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle,$$
+        $$u(x, z, t) = U\frac{\cosh(k(z + h))}{\sinh(kh)}\sin(\omega t - kx),$$
+        $$w(x, z, t) = U\frac{\sinh(k(z + h))}{\sinh(kh)}\cos(\omega t - kx).$$
 
         Parameters
         ----------
@@ -707,10 +703,13 @@ vertical position,
         &#34;&#34;&#34;
         U = self.max_velocity
         k = self.wavenum
+        h = self.depth
         omega = self.angular_freq
 
-        return np.array([U * np.exp(k * z) * np.cos(k * x - omega * t), 
-                                         U * np.exp(k * z) * np.sin(k * x - omega * t)])</code></pre>
+        return np.array([U * np.cosh(k * (z + h)) / np.sinh(k * h)
+                                           * np.sin(omega * t - k * x),
+                                         U * np.sinh(k * (z + h)) / np.sinh(k * h)
+                                           * np.cos(omega * t - k * x)])</code></pre>
 </details>
 </dd>
 </dl>
@@ -732,15 +731,14 @@ vertical position,
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave">DimensionalDeepWaterWave</a></code></h4>
-<ul class="">
-<li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.material_derivative2" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.material_derivative2">material_derivative2</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_t" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_t">partial_t</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_x" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_x">partial_x</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_z" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_z">partial_z</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_angular_freq" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_angular_freq">set_angular_freq</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_gravity" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_gravity">set_gravity</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.velocity" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.velocity">velocity</a></code></li>
+<h4><code><a title="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave" href="#modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave">DimensionalWaterWave</a></code></h4>
+<ul class="two-column">
+<li><code><a title="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_t" href="#modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_t">partial_t</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_x" href="#modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_x">partial_x</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_z" href="#modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.partial_z">partial_z</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.set_angular_freq" href="#modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.set_angular_freq">set_angular_freq</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.set_gravity" href="#modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.set_gravity">set_gravity</a></code></li>
+<li><code><a title="modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.velocity" href="#modelling-microplastics-transport.models.dim_water_wave.DimensionalWaterWave.velocity">velocity</a></code></li>
 </ul>
 </li>
 </ul>

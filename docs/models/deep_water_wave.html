@@ -41,11 +41,11 @@ class DeepWaterWave(wave.Wave):
         depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15):
+        def __init__(self, amplitude, wavelength, depth=50):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
-                depth : float
+                depth : float, default=50
                         The depth of the fluid *h*.
                 amplitude : float
                         The amplitude of the wave *A*.
@@ -64,7 +64,8 @@ class DeepWaterWave(wave.Wave):
                         The period of the wave, computed as
                         $$\text{period} = \frac{2\pi}{\omega}.$$
                 max_velocity : float
-                        The maximum velocity *U* at the surface z = 0.
+                        The maximum velocity *U* at the surface z = 0, computed as
+                        $$U = \omega A.$$
                 froude_num : float
                         The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
                 &#34;&#34;&#34;
@@ -76,7 +77,7 @@ class DeepWaterWave(wave.Wave):
                 Defines the gravity **g** as,
                 $$\mathbf{g} = \langle 0, g \rangle,$$
                 which is non-dimensionalized as,
-                $$\mathbf{g} = \Bigg\langle 0, \frac{g}{k(\omega A)^2} \Bigg\rangle.$$
+                $$\mathbf{g} = \Bigg\langle 0, \frac{g}{kU^2} \Bigg\rangle.$$
                 &#34;&#34;&#34;
                 self.gravity = np.array([0, -constants.g])
 
@@ -89,7 +90,7 @@ class DeepWaterWave(wave.Wave):
 
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity, $$\textbf{u} = (u, w),$$
+                Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
                 $$u(x, z, t) = e^{z} \cos\Bigg(x - \frac{t}{Fr}\Bigg),$$
                 $$w(x, z, t) = e^{z} \sin\Bigg(x - \frac{t}{Fr}\Bigg).$$
 
@@ -211,7 +212,7 @@ class DeepWaterWave(wave.Wave):
 <dl>
 <dt id="modelling-microplastics-transport.models.deep_water_wave.DeepWaterWave"><code class="flex name class">
 <span>class <span class="ident">DeepWaterWave</span></span>
-<span>(</span><span>amplitude, wavelength, depth=15)</span>
+<span>(</span><span>amplitude, wavelength, depth=50)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents a non-dimensional version of the fluid flow described in
@@ -219,7 +220,7 @@ Santamaria et al., (2013). The flow is a linear water wave with infinite
 depth.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
-<dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
+<dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>50</code></dt>
 <dd>The depth of the fluid <em>h</em>.</dd>
 <dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
 <dd>The amplitude of the wave <em>A</em>.</dd>
@@ -238,7 +239,8 @@ depth.</p>
 <dd>The period of the wave, computed as
 <span><span class="MathJax_Preview">\text{period} = \frac{2\pi}{\omega}.</span><script type="math/tex; mode=display">\text{period} = \frac{2\pi}{\omega}.</script></span></dd>
 <dt><strong><code>max_velocity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The maximum velocity <em>U</em> at the surface z = 0.</dd>
+<dd>The maximum velocity <em>U</em> at the surface z = 0, computed as
+<span><span class="MathJax_Preview">U = \omega A.</span><script type="math/tex; mode=display">U = \omega A.</script></span></dd>
 <dt><strong><code>froude_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Froude number <em>Fr</em>, computed as <span><span class="MathJax_Preview">Fr = \frac{U}{c}.</span><script type="math/tex; mode=display">Fr = \frac{U}{c}.</script></span></dd>
 </dl></div>
@@ -253,11 +255,11 @@ depth.</p>
         depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15):
+        def __init__(self, amplitude, wavelength, depth=50):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
-                depth : float
+                depth : float, default=50
                         The depth of the fluid *h*.
                 amplitude : float
                         The amplitude of the wave *A*.
@@ -276,7 +278,8 @@ depth.</p>
                         The period of the wave, computed as
                         $$\text{period} = \frac{2\pi}{\omega}.$$
                 max_velocity : float
-                        The maximum velocity *U* at the surface z = 0.
+                        The maximum velocity *U* at the surface z = 0, computed as
+                        $$U = \omega A.$$
                 froude_num : float
                         The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
                 &#34;&#34;&#34;
@@ -288,7 +291,7 @@ depth.</p>
                 Defines the gravity **g** as,
                 $$\mathbf{g} = \langle 0, g \rangle,$$
                 which is non-dimensionalized as,
-                $$\mathbf{g} = \Bigg\langle 0, \frac{g}{k(\omega A)^2} \Bigg\rangle.$$
+                $$\mathbf{g} = \Bigg\langle 0, \frac{g}{kU^2} \Bigg\rangle.$$
                 &#34;&#34;&#34;
                 self.gravity = np.array([0, -constants.g])
 
@@ -301,7 +304,7 @@ depth.</p>
 
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity, $$\textbf{u} = (u, w),$$
+                Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
                 $$u(x, z, t) = e^{z} \cos\Bigg(x - \frac{t}{Fr}\Bigg),$$
                 $$w(x, z, t) = e^{z} \sin\Bigg(x - \frac{t}{Fr}\Bigg).$$
 
@@ -630,7 +633,7 @@ vertical position,
 <div class="desc"><p>Defines the gravity <strong>g</strong> as,
 <span><span class="MathJax_Preview">\mathbf{g} = \langle 0, g \rangle,</span><script type="math/tex; mode=display">\mathbf{g} = \langle 0, g \rangle,</script></span>
 which is non-dimensionalized as,
-<span><span class="MathJax_Preview">\mathbf{g} = \Bigg\langle 0, \frac{g}{k(\omega A)^2} \Bigg\rangle.</span><script type="math/tex; mode=display">\mathbf{g} = \Bigg\langle 0, \frac{g}{k(\omega A)^2} \Bigg\rangle.</script></span></p></div>
+<span><span class="MathJax_Preview">\mathbf{g} = \Bigg\langle 0, \frac{g}{kU^2} \Bigg\rangle.</span><script type="math/tex; mode=display">\mathbf{g} = \Bigg\langle 0, \frac{g}{kU^2} \Bigg\rangle.</script></span></p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -640,7 +643,7 @@ which is non-dimensionalized as,
         Defines the gravity **g** as,
         $$\mathbf{g} = \langle 0, g \rangle,$$
         which is non-dimensionalized as,
-        $$\mathbf{g} = \Bigg\langle 0, \frac{g}{k(\omega A)^2} \Bigg\rangle.$$
+        $$\mathbf{g} = \Bigg\langle 0, \frac{g}{kU^2} \Bigg\rangle.$$
         &#34;&#34;&#34;
         self.gravity = np.array([0, -constants.g])</code></pre>
 </details>
@@ -649,7 +652,7 @@ which is non-dimensionalized as,
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\textbf{u} = (u, w),</span><script type="math/tex; mode=display">\textbf{u} = (u, w),</script></span>
+<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\textbf{u} = \langle u, w \rangle,</span><script type="math/tex; mode=display">\textbf{u} = \langle u, w \rangle,</script></span>
 <span><span class="MathJax_Preview">u(x, z, t) = e^{z} \cos\Bigg(x - \frac{t}{Fr}\Bigg),</span><script type="math/tex; mode=display">u(x, z, t) = e^{z} \cos\Bigg(x - \frac{t}{Fr}\Bigg),</script></span>
 <span><span class="MathJax_Preview">w(x, z, t) = e^{z} \sin\Bigg(x - \frac{t}{Fr}\Bigg).</span><script type="math/tex; mode=display">w(x, z, t) = e^{z} \sin\Bigg(x - \frac{t}{Fr}\Bigg).</script></span></p>
 <h2 id="parameters">Parameters</h2>
@@ -669,7 +672,7 @@ which is non-dimensionalized as,
 </summary>
 <pre><code class="python">def velocity(self, x, z, t):
         r&#34;&#34;&#34;
-        Computes the fluid velocity, $$\textbf{u} = (u, w),$$
+        Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
         $$u(x, z, t) = e^{z} \cos\Bigg(x - \frac{t}{Fr}\Bigg),$$
         $$w(x, z, t) = e^{z} \sin\Bigg(x - \frac{t}{Fr}\Bigg).$$
 

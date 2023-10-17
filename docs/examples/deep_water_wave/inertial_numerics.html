@@ -46,6 +46,7 @@ def main():
         (2013) and Haller &amp; Sapsis (2008) to the numerical results produced by the
         method outlined in Section 3 of Daitche (2013), the method outlined in
         Santamaria et al. (2013), and the method outlined in Haller &amp; Sapsis (2008).
+        The results are saved to the `data/deep_water_wave` directory. 
         &#34;&#34;&#34;
         # initialize variables for the Santamaria system
         beta = 0.98
@@ -65,10 +66,10 @@ def main():
 
         # initialize variables for numerical simulations
         x_0, z_0 = 0, 0
-        xdot_0, zdot_0 = haller_flow.velocity(0, 0, 0)
+        xdot_0, zdot_0 = haller_flow.velocity(x_0, z_0, 0)
         num_periods = 20
         delta_t = 1e-2 / 5
-        T = 1 / (sm_flow.angular_freq * sm_flow.froude_num)     # time scaling
+        T = sm_flow.angular_freq * sm_flow.froude_num   # time scaling
         my_dict = dict.fromkeys([&#39;x_daitche&#39;, &#39;z_daitche&#39;, &#39;x_haller&#39;, &#39;z_haller&#39;,
                                                          &#39;x_santamaria&#39;, &#39;z_santamaria&#39;, &#39;x0_haller&#39;,
                                                          &#39;z0_haller&#39;, &#39;x0_santamaria&#39;, &#39;z0_santamaria&#39;,
@@ -80,63 +81,63 @@ def main():
         x, z, _, _, t = my_system.run_numerics(include_history=False,
                                                                                    x_0=x_0, z_0=z_0,
                                                                                    xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                   delta_t=delta_t / T,
-                                                                                   num_periods=num_periods / T)
+                                                                                   delta_t=delta_t * T,
+                                                                                   num_periods=num_periods * T)
         my_dict[&#39;x_daitche&#39;] = x
         my_dict[&#39;z_daitche&#39;] = z
         my_dict[&#39;t_daitche&#39;] = t
         x, z, _, _, t = haller_system.run_numerics(haller_system.maxey_riley,
                                                                                            x_0=x_0, z_0=z_0,
-                                                                                           delta_t=delta_t / T,
-                                                                                           num_periods=num_periods / T)
+                                                                                           delta_t=delta_t * T,
+                                                                                           num_periods=num_periods * T)
         my_dict[&#39;x_haller&#39;] = x
         my_dict[&#39;z_haller&#39;] = z
         my_dict[&#39;t_haller&#39;] = t
         x, z, _, _, t = sm_system.run_numerics(sm_system.maxey_riley,
                                                                                    x_0=x_0, z_0=z_0, delta_t=delta_t,
                                                                                    num_periods=num_periods)
-        my_dict[&#39;x_santamaria&#39;] = k * x
-        my_dict[&#39;z_santamaria&#39;] = k * z
+        my_dict[&#39;x_santamaria&#39;] = x * k
+        my_dict[&#39;z_santamaria&#39;] = z * k
         my_dict[&#39;t_santamaria&#39;] = t
 
         # generate leading order results
         x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-                                                                                           order=0, x_0=x_0, z_0=z_0,
-                                                                                           delta_t=delta_t / T,
-                                                                                           num_periods=num_periods / T)
+                                                                                           x_0=x_0, z_0=z_0,
+                                                                                           order=0, delta_t=delta_t * T,
+                                                                                           num_periods=num_periods * T)
         my_dict[&#39;x0_haller&#39;] = x
         my_dict[&#39;z0_haller&#39;] = z
         x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation, order=0,
                                                                                    x_0=x_0, z_0=z_0, delta_t=delta_t,
                                                                                    num_periods=num_periods)
-        my_dict[&#39;x0_santamaria&#39;] = k * x
-        my_dict[&#39;z0_santamaria&#39;] = k * z
+        my_dict[&#39;x0_santamaria&#39;] = x * k
+        my_dict[&#39;z0_santamaria&#39;] = z * k
 
         # generate first order results
         x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-                                                                                           x_0=x_0, z_0=z_0, order=1,
-                                                                                           delta_t=delta_t / T,
-                                                                                           num_periods=num_periods / T)
+                                                                                           x_0=x_0, z_0=z_0,
+                                                                                           order=1, delta_t=delta_t * T,
+                                                                                           num_periods=num_periods * T)
         my_dict[&#39;x1_haller&#39;] = x
         my_dict[&#39;z1_haller&#39;] = z
         x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation, order=1,
                                                                                    x_0=x_0, z_0=z_0, delta_t=delta_t,
                                                                                    num_periods=num_periods)
-        my_dict[&#39;x1_santamaria&#39;] = k * x
-        my_dict[&#39;z1_santamaria&#39;] = k * z
+        my_dict[&#39;x1_santamaria&#39;] = x * k
+        my_dict[&#39;z1_santamaria&#39;] = z * k
 
         # generate second order results
         x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-                                                                                           x_0=x_0, z_0=z_0, order=2,
-                                                                                           delta_t=delta_t / T,
-                                                                                           num_periods=num_periods / T)
+                                                                                           x_0=x_0, z_0=z_0,
+                                                                                           order=2, delta_t=delta_t * T,
+                                                                                           num_periods=num_periods * T)
         my_dict[&#39;x2_haller&#39;] = x
         my_dict[&#39;z2_haller&#39;] = z
         x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation, order=2,
                                                                                    x_0=x_0, z_0=z_0, delta_t=delta_t,
                                                                                    num_periods=num_periods)
-        my_dict[&#39;x2_santamaria&#39;] = k * x
-        my_dict[&#39;z2_santamaria&#39;] = k * z
+        my_dict[&#39;x2_santamaria&#39;] = x * k
+        my_dict[&#39;z2_santamaria&#39;] = z * k
 
         # write results to data file
         my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
@@ -161,7 +162,8 @@ if __name__ == &#39;__main__&#39;:
 <div class="desc"><p>This program compares the inertial equation as derived in Santamaria et al.
 (2013) and Haller &amp; Sapsis (2008) to the numerical results produced by the
 method outlined in Section 3 of Daitche (2013), the method outlined in
-Santamaria et al. (2013), and the method outlined in Haller &amp; Sapsis (2008).</p></div>
+Santamaria et al. (2013), and the method outlined in Haller &amp; Sapsis (2008).
+The results are saved to the <code>data/deep_water_wave</code> directory.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -172,6 +174,7 @@ Santamaria et al. (2013), and the method outlined in Haller &amp; Sapsis (2008).
         (2013) and Haller &amp; Sapsis (2008) to the numerical results produced by the
         method outlined in Section 3 of Daitche (2013), the method outlined in
         Santamaria et al. (2013), and the method outlined in Haller &amp; Sapsis (2008).
+        The results are saved to the `data/deep_water_wave` directory. 
         &#34;&#34;&#34;
         # initialize variables for the Santamaria system
         beta = 0.98
@@ -191,10 +194,10 @@ Santamaria et al. (2013), and the method outlined in Haller &amp; Sapsis (2008).
 
         # initialize variables for numerical simulations
         x_0, z_0 = 0, 0
-        xdot_0, zdot_0 = haller_flow.velocity(0, 0, 0)
+        xdot_0, zdot_0 = haller_flow.velocity(x_0, z_0, 0)
         num_periods = 20
         delta_t = 1e-2 / 5
-        T = 1 / (sm_flow.angular_freq * sm_flow.froude_num)     # time scaling
+        T = sm_flow.angular_freq * sm_flow.froude_num   # time scaling
         my_dict = dict.fromkeys([&#39;x_daitche&#39;, &#39;z_daitche&#39;, &#39;x_haller&#39;, &#39;z_haller&#39;,
                                                          &#39;x_santamaria&#39;, &#39;z_santamaria&#39;, &#39;x0_haller&#39;,
                                                          &#39;z0_haller&#39;, &#39;x0_santamaria&#39;, &#39;z0_santamaria&#39;,
@@ -206,63 +209,63 @@ Santamaria et al. (2013), and the method outlined in Haller &amp; Sapsis (2008).
         x, z, _, _, t = my_system.run_numerics(include_history=False,
                                                                                    x_0=x_0, z_0=z_0,
                                                                                    xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                   delta_t=delta_t / T,
-                                                                                   num_periods=num_periods / T)
+                                                                                   delta_t=delta_t * T,
+                                                                                   num_periods=num_periods * T)
         my_dict[&#39;x_daitche&#39;] = x
         my_dict[&#39;z_daitche&#39;] = z
         my_dict[&#39;t_daitche&#39;] = t
         x, z, _, _, t = haller_system.run_numerics(haller_system.maxey_riley,
                                                                                            x_0=x_0, z_0=z_0,
-                                                                                           delta_t=delta_t / T,
-                                                                                           num_periods=num_periods / T)
+                                                                                           delta_t=delta_t * T,
+                                                                                           num_periods=num_periods * T)
         my_dict[&#39;x_haller&#39;] = x
         my_dict[&#39;z_haller&#39;] = z
         my_dict[&#39;t_haller&#39;] = t
         x, z, _, _, t = sm_system.run_numerics(sm_system.maxey_riley,
                                                                                    x_0=x_0, z_0=z_0, delta_t=delta_t,
                                                                                    num_periods=num_periods)
-        my_dict[&#39;x_santamaria&#39;] = k * x
-        my_dict[&#39;z_santamaria&#39;] = k * z
+        my_dict[&#39;x_santamaria&#39;] = x * k
+        my_dict[&#39;z_santamaria&#39;] = z * k
         my_dict[&#39;t_santamaria&#39;] = t
 
         # generate leading order results
         x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-                                                                                           order=0, x_0=x_0, z_0=z_0,
-                                                                                           delta_t=delta_t / T,
-                                                                                           num_periods=num_periods / T)
+                                                                                           x_0=x_0, z_0=z_0,
+                                                                                           order=0, delta_t=delta_t * T,
+                                                                                           num_periods=num_periods * T)
         my_dict[&#39;x0_haller&#39;] = x
         my_dict[&#39;z0_haller&#39;] = z
         x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation, order=0,
                                                                                    x_0=x_0, z_0=z_0, delta_t=delta_t,
                                                                                    num_periods=num_periods)
-        my_dict[&#39;x0_santamaria&#39;] = k * x
-        my_dict[&#39;z0_santamaria&#39;] = k * z
+        my_dict[&#39;x0_santamaria&#39;] = x * k
+        my_dict[&#39;z0_santamaria&#39;] = z * k
 
         # generate first order results
         x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-                                                                                           x_0=x_0, z_0=z_0, order=1,
-                                                                                           delta_t=delta_t / T,
-                                                                                           num_periods=num_periods / T)
+                                                                                           x_0=x_0, z_0=z_0,
+                                                                                           order=1, delta_t=delta_t * T,
+                                                                                           num_periods=num_periods * T)
         my_dict[&#39;x1_haller&#39;] = x
         my_dict[&#39;z1_haller&#39;] = z
         x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation, order=1,
                                                                                    x_0=x_0, z_0=z_0, delta_t=delta_t,
                                                                                    num_periods=num_periods)
-        my_dict[&#39;x1_santamaria&#39;] = k * x
-        my_dict[&#39;z1_santamaria&#39;] = k * z
+        my_dict[&#39;x1_santamaria&#39;] = x * k
+        my_dict[&#39;z1_santamaria&#39;] = z * k
 
         # generate second order results
         x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-                                                                                           x_0=x_0, z_0=z_0, order=2,
-                                                                                           delta_t=delta_t / T,
-                                                                                           num_periods=num_periods / T)
+                                                                                           x_0=x_0, z_0=z_0,
+                                                                                           order=2, delta_t=delta_t * T,
+                                                                                           num_periods=num_periods * T)
         my_dict[&#39;x2_haller&#39;] = x
         my_dict[&#39;z2_haller&#39;] = z
         x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation, order=2,
                                                                                    x_0=x_0, z_0=z_0, delta_t=delta_t,
                                                                                    num_periods=num_periods)
-        my_dict[&#39;x2_santamaria&#39;] = k * x
-        my_dict[&#39;z2_santamaria&#39;] = k * z
+        my_dict[&#39;x2_santamaria&#39;] = x * k
+        my_dict[&#39;z2_santamaria&#39;] = z * k
 
         # write results to data file
         my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])

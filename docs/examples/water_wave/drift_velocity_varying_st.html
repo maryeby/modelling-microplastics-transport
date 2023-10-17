@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import sys 
+sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
+                                + &#39;modelling-microplastics-transport&#39;)
+import numpy as np
+import pandas as pd
+import scipy.constants as constants
+
+from transport_framework import particle as prt
+from models import water_wave as fl
+from models import my_system as ts
+
+def main():
+        r&#34;&#34;&#34;
+        This program numerically computes the horizontal Stokes drift velocity of an
+        inertial particle in linear water waves for various Stokes numbers and saves
+        the results to the `data/water_wave` directory.
+        &#34;&#34;&#34;
+        # initialize Stokes numbers, depths, &amp; create a dictionary to store results
+        stokes_nums = [0.01, 0.1, 1, 10]
+        h = [8, 2, 1] # depths
+        my_dict = {}
+        my_dict[&#39;St&#39;] = stokes_nums
+
+        # run numerics and compute drift velocity for each Stokes number
+        for St in stokes_nums:
+                my_particle = prt.Particle(stokes_num=St)
+                deep_u_d, _ = compute_drift_velocity(&#39;deep&#39;, h[0], my_dict, my_particle,
+                                                                                         include_history=False)
+                intermediate_u_d, _ = compute_drift_velocity(&#39;intermediate&#39;, h[1],
+                                                                                                         my_dict, my_particle,
+                                                                                                         include_history=False)
+                shallow_u_d, _ = compute_drift_velocity(&#39;shallow&#39;, h[2], my_dict,
+                                                                                                my_particle,
+                                                                                                include_history=False)
+                deep_u_d_history, _ = compute_drift_velocity(&#39;deep&#39;, h[0], my_dict,
+                                                                                                         my_particle,
+                                                                                                         include_history=True)
+                intermediate_u_d_history, _ = compute_drift_velocity(&#39;intermediate&#39;,
+                                                                                        h[1], my_dict, my_particle,
+                                                                                        include_history=True)
+                shallow_u_d_history, _ = compute_drift_velocity(&#39;shallow&#39;, h[2],
+                                                                                                                my_dict, my_particle,
+                                                                                                                include_history=True)
+                # store results
+                my_dict[&#39;deep_u_d_%g&#39; % St] = deep_u_d
+                my_dict[&#39;intermediate_u_d_%g&#39; % St] = intermediate_u_d
+                my_dict[&#39;shallow_u_d_%g&#39; % St] = shallow_u_d
+                my_dict[&#39;deep_u_d_history_%g&#39; % St] = deep_u_d_history
+                my_dict[&#39;intermediate_u_d_history_%g&#39; % St] = intermediate_u_d_history
+                my_dict[&#39;shallow_u_d_history_%g&#39; % St] = shallow_u_d_history
+
+        # write results to data file
+        my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
+        numerics = pd.DataFrame(my_dict)
+        numerics.to_csv(&#39;../data/water_wave/drift_velocity_varying_st.csv&#39;,
+                                        index=False)
+
+def compute_drift_velocity(label, depth, my_dict, particle, include_history):
+        r&#34;&#34;&#34;
+        Computes the Stokes drift velocity
+        $$\mathbf{u}_d = \langle u_d, w_d \rangle$$
+        using the distance travelled by the particle averaged over each wave period,
+        $$\mathbf{u}_d = \frac{\mathbf{x}_{n + 1} - \mathbf{x}_n}{\text{period}}.$$
+
+        Parameters
+        ----------
+        label : str
+                The label used to store the initial depth values.
+        depth : int
+                The depth of the water.
+        my_dict : dictionary
+                The dictionary to store the initial depths.
+        particle : Particle (obj)
+                The particle travelling through the wave.
+        include_history : boolean
+                Whether to include history effects.
+
+        Returns
+        -------
+        u_d : float
+                The normalized horizontal Stokes drift velocity.
+        w_d : float
+                The normalized vertical Stokes drift velocity.
+        &#34;&#34;&#34;
+        # initialize and store initial depths
+        initial_depths = np.linspace(0, -depth, 10, endpoint=False)
+        my_dict[label + &#39;_z&#39;] = initial_depths
+        my_dict[label + &#39;_h&#39;] = depth
+        my_dict[label + &#39;_z/h&#39;] = initial_depths / depth
+
+        # initialize and store wave parameters
+        amplitude, wavelength = 0.02, 10
+        if label == &#39;deep&#39;:
+                my_dict[&#39;amplitude&#39;] = amplitude
+                my_dict[&#39;wavelength&#39;] = wavelength
+
+        # initialize the flow (wave) and transport system
+        my_wave = fl.WaterWave(depth=depth, amplitude=amplitude,
+                                                   wavelength=wavelength)
+        T = my_wave.angular_freq * my_wave.froude_num
+        R = 2 / 3 # neutrally buoyant particle
+        my_system = ts.MyTransportSystem(particle, my_wave, R)
+
+        # initialize parameters for the numerics
+        x_0 = 0
+        delta_t = 2e-2 * T
+        num_periods = 20 * T
+
+        u_d, w_d = [], []
+        for z_0 in initial_depths:
+                # run numerics
+                xdot_0, zdot_0 = my_wave.velocity(x_0, z_0, t=0)
+                x, z, xdot, zdot, t = my_system.run_numerics(x_0=x_0, z_0=z_0,
+                                                                                xdot_0=xdot_0, zdot_0=zdot_0,
+                                                                                include_history=include_history,
+                                                                                delta_t=delta_t,
+                                                                                num_periods=num_periods)
+                # find estimated endpoints of periods
+                estimated_endpoints = []
+                for i in range(1, len(xdot)):
+                        if xdot[i - 1] &lt; 0 and 0 &lt;= xdot[i]:
+                                estimated_endpoints.append(i)
+
+                # find exact endpoints of periods using interpolation
+                interpd_x, interpd_z, interpd_t = [], [], []
+                for i in range(1, len(estimated_endpoints)):
+                        current = estimated_endpoints[i]
+                        previous = current - 1
+
+                        new_t = np.interp(0, [xdot[previous], xdot[current]], [t[previous],
+                                                                                                                                   t[current]])
+                        interpd_t.append(new_t)
+                        interpd_x.append(np.interp(new_t, [t[previous], t[current]],
+                                                                           [x[previous], x[current]]))
+                        interpd_z.append(np.interp(new_t, [t[previous], t[current]],
+                                                                           [z[previous], z[current]]))
+
+                # compute drift velocity
+                u_d_list, w_d_list = [], []
+                for i in range(1, len(interpd_t)):
+                        u_d_list.append((interpd_x[i] - interpd_x[i - 1])
+                                                        / (interpd_t[i] - interpd_t[i - 1]))
+                        w_d_list.append((interpd_z[i] - interpd_z[i - 1])
+                                                        / (interpd_t[i] - interpd_t[i - 1]))
+                avg_u_d = np.mean(u_d_list)
+                avg_w_d = np.mean(w_d_list)
+                u_d.append(avg_u_d)
+                w_d.append(avg_w_d)
+
+        # normalize and return results
+        Fr = my_wave.froude_num
+        u_d /= Fr
+        w_d /= Fr
+        return u_d, w_d
+
+if __name__ == &#39;__main__&#39;:
+        main()</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st.compute_drift_velocity"><code class="name flex">
+<span>def <span class="ident">compute_drift_velocity</span></span>(<span>label, depth, my_dict, particle, include_history)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Computes the Stokes drift velocity
+<span><span class="MathJax_Preview">\mathbf{u}_d = \langle u_d, w_d \rangle</span><script type="math/tex; mode=display">\mathbf{u}_d = \langle u_d, w_d \rangle</script></span>
+using the distance travelled by the particle averaged over each wave period,
+<span><span class="MathJax_Preview">\mathbf{u}_d = \frac{\mathbf{x}_{n + 1} - \mathbf{x}_n}{\text{period}}.</span><script type="math/tex; mode=display">\mathbf{u}_d = \frac{\mathbf{x}_{n + 1} - \mathbf{x}_n}{\text{period}}.</script></span></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>label</code></strong> :&ensp;<code>str</code></dt>
+<dd>The label used to store the initial depth values.</dd>
+<dt><strong><code>depth</code></strong> :&ensp;<code>int</code></dt>
+<dd>The depth of the water.</dd>
+<dt><strong><code>my_dict</code></strong> :&ensp;<code>dictionary</code></dt>
+<dd>The dictionary to store the initial depths.</dd>
+<dt><strong><code>particle</code></strong> :&ensp;<code>Particle (obj)</code></dt>
+<dd>The particle travelling through the wave.</dd>
+<dt><strong><code>include_history</code></strong> :&ensp;<code>boolean</code></dt>
+<dd>Whether to include history effects.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>u_d</code></strong> :&ensp;<code>float</code></dt>
+<dd>The normalized horizontal Stokes drift velocity.</dd>
+<dt><strong><code>w_d</code></strong> :&ensp;<code>float</code></dt>
+<dd>The normalized vertical Stokes drift velocity.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_drift_velocity(label, depth, my_dict, particle, include_history):
+        r&#34;&#34;&#34;
+        Computes the Stokes drift velocity
+        $$\mathbf{u}_d = \langle u_d, w_d \rangle$$
+        using the distance travelled by the particle averaged over each wave period,
+        $$\mathbf{u}_d = \frac{\mathbf{x}_{n + 1} - \mathbf{x}_n}{\text{period}}.$$
+
+        Parameters
+        ----------
+        label : str
+                The label used to store the initial depth values.
+        depth : int
+                The depth of the water.
+        my_dict : dictionary
+                The dictionary to store the initial depths.
+        particle : Particle (obj)
+                The particle travelling through the wave.
+        include_history : boolean
+                Whether to include history effects.
+
+        Returns
+        -------
+        u_d : float
+                The normalized horizontal Stokes drift velocity.
+        w_d : float
+                The normalized vertical Stokes drift velocity.
+        &#34;&#34;&#34;
+        # initialize and store initial depths
+        initial_depths = np.linspace(0, -depth, 10, endpoint=False)
+        my_dict[label + &#39;_z&#39;] = initial_depths
+        my_dict[label + &#39;_h&#39;] = depth
+        my_dict[label + &#39;_z/h&#39;] = initial_depths / depth
+
+        # initialize and store wave parameters
+        amplitude, wavelength = 0.02, 10
+        if label == &#39;deep&#39;:
+                my_dict[&#39;amplitude&#39;] = amplitude
+                my_dict[&#39;wavelength&#39;] = wavelength
+
+        # initialize the flow (wave) and transport system
+        my_wave = fl.WaterWave(depth=depth, amplitude=amplitude,
+                                                   wavelength=wavelength)
+        T = my_wave.angular_freq * my_wave.froude_num
+        R = 2 / 3 # neutrally buoyant particle
+        my_system = ts.MyTransportSystem(particle, my_wave, R)
+
+        # initialize parameters for the numerics
+        x_0 = 0
+        delta_t = 2e-2 * T
+        num_periods = 20 * T
+
+        u_d, w_d = [], []
+        for z_0 in initial_depths:
+                # run numerics
+                xdot_0, zdot_0 = my_wave.velocity(x_0, z_0, t=0)
+                x, z, xdot, zdot, t = my_system.run_numerics(x_0=x_0, z_0=z_0,
+                                                                                xdot_0=xdot_0, zdot_0=zdot_0,
+                                                                                include_history=include_history,
+                                                                                delta_t=delta_t,
+                                                                                num_periods=num_periods)
+                # find estimated endpoints of periods
+                estimated_endpoints = []
+                for i in range(1, len(xdot)):
+                        if xdot[i - 1] &lt; 0 and 0 &lt;= xdot[i]:
+                                estimated_endpoints.append(i)
+
+                # find exact endpoints of periods using interpolation
+                interpd_x, interpd_z, interpd_t = [], [], []
+                for i in range(1, len(estimated_endpoints)):
+                        current = estimated_endpoints[i]
+                        previous = current - 1
+
+                        new_t = np.interp(0, [xdot[previous], xdot[current]], [t[previous],
+                                                                                                                                   t[current]])
+                        interpd_t.append(new_t)
+                        interpd_x.append(np.interp(new_t, [t[previous], t[current]],
+                                                                           [x[previous], x[current]]))
+                        interpd_z.append(np.interp(new_t, [t[previous], t[current]],
+                                                                           [z[previous], z[current]]))
+
+                # compute drift velocity
+                u_d_list, w_d_list = [], []
+                for i in range(1, len(interpd_t)):
+                        u_d_list.append((interpd_x[i] - interpd_x[i - 1])
+                                                        / (interpd_t[i] - interpd_t[i - 1]))
+                        w_d_list.append((interpd_z[i] - interpd_z[i - 1])
+                                                        / (interpd_t[i] - interpd_t[i - 1]))
+                avg_u_d = np.mean(u_d_list)
+                avg_w_d = np.mean(w_d_list)
+                u_d.append(avg_u_d)
+                w_d.append(avg_w_d)
+
+        # normalize and return results
+        Fr = my_wave.froude_num
+        u_d /= Fr
+        w_d /= Fr
+        return u_d, w_d</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This program numerically computes the horizontal Stokes drift velocity of an
+inertial particle in linear water waves for various Stokes numbers and saves
+the results to the <code>data/water_wave</code> directory.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main():
+        r&#34;&#34;&#34;
+        This program numerically computes the horizontal Stokes drift velocity of an
+        inertial particle in linear water waves for various Stokes numbers and saves
+        the results to the `data/water_wave` directory.
+        &#34;&#34;&#34;
+        # initialize Stokes numbers, depths, &amp; create a dictionary to store results
+        stokes_nums = [0.01, 0.1, 1, 10]
+        h = [8, 2, 1] # depths
+        my_dict = {}
+        my_dict[&#39;St&#39;] = stokes_nums
+
+        # run numerics and compute drift velocity for each Stokes number
+        for St in stokes_nums:
+                my_particle = prt.Particle(stokes_num=St)
+                deep_u_d, _ = compute_drift_velocity(&#39;deep&#39;, h[0], my_dict, my_particle,
+                                                                                         include_history=False)
+                intermediate_u_d, _ = compute_drift_velocity(&#39;intermediate&#39;, h[1],
+                                                                                                         my_dict, my_particle,
+                                                                                                         include_history=False)
+                shallow_u_d, _ = compute_drift_velocity(&#39;shallow&#39;, h[2], my_dict,
+                                                                                                my_particle,
+                                                                                                include_history=False)
+                deep_u_d_history, _ = compute_drift_velocity(&#39;deep&#39;, h[0], my_dict,
+                                                                                                         my_particle,
+                                                                                                         include_history=True)
+                intermediate_u_d_history, _ = compute_drift_velocity(&#39;intermediate&#39;,
+                                                                                        h[1], my_dict, my_particle,
+                                                                                        include_history=True)
+                shallow_u_d_history, _ = compute_drift_velocity(&#39;shallow&#39;, h[2],
+                                                                                                                my_dict, my_particle,
+                                                                                                                include_history=True)
+                # store results
+                my_dict[&#39;deep_u_d_%g&#39; % St] = deep_u_d
+                my_dict[&#39;intermediate_u_d_%g&#39; % St] = intermediate_u_d
+                my_dict[&#39;shallow_u_d_%g&#39; % St] = shallow_u_d
+                my_dict[&#39;deep_u_d_history_%g&#39; % St] = deep_u_d_history
+                my_dict[&#39;intermediate_u_d_history_%g&#39; % St] = intermediate_u_d_history
+                my_dict[&#39;shallow_u_d_history_%g&#39; % St] = shallow_u_d_history
+
+        # write results to data file
+        my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
+        numerics = pd.DataFrame(my_dict)
+        numerics.to_csv(&#39;../data/water_wave/drift_velocity_varying_st.csv&#39;,
+                                        index=False)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave" href="index.html">modelling-microplastics-transport.examples.water_wave</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st.compute_drift_velocity" href="#modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st.compute_drift_velocity">compute_drift_velocity</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st.main" href="#modelling-microplastics-transport.examples.water_wave.drift_velocity_varying_st.main">main</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -56,7 +56,7 @@ class Flow(ABC):
         @abstractmethod
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity, $$\mathbf{u} = (u, w).$$
+                Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle.$$
 
                 Parameters
                 ----------
@@ -265,7 +265,7 @@ class Flow(ABC):
         @abstractmethod
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity, $$\mathbf{u} = (u, w).$$
+                Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle.$$
 
                 Parameters
                 ----------
@@ -726,7 +726,7 @@ def set_gravity(self):
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\mathbf{u} = (u, w).</span><script type="math/tex; mode=display">\mathbf{u} = (u, w).</script></span></p>
+<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\mathbf{u} = \langle u, w \rangle.</span><script type="math/tex; mode=display">\mathbf{u} = \langle u, w \rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -745,7 +745,7 @@ def set_gravity(self):
 <pre><code class="python">@abstractmethod
 def velocity(self, x, z, t):
         r&#34;&#34;&#34;
-        Computes the fluid velocity, $$\mathbf{u} = (u, w).$$
+        Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle.$$
 
         Parameters
         ----------
