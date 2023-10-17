@@ -36,7 +36,7 @@ class RotatingFlow(flow.Flow):
 			The horizontal position(s) at which to evaluate the velocity.
 		z : float or array
 			The vertical position(s) at which to evaluate the velocity.
-		t : float or array
+		t : float or array, default=None
 			The time(s) at which to evaluate the velocity.
 
 		Returns

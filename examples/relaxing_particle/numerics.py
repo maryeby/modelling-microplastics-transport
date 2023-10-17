@@ -10,7 +10,8 @@ from models import relaxing_system as ts
 def main():
 	"""
 	This program runs numerical simulations for a relaxing particle in a
-	quiescent flow, and saves the results to the `data` directory.
+	quiescent flow, and saves the results to the `data/relaxing_particle`
+	directory.
 	"""
 	# initialize variables for the transport system
 	R_light = 2 / (1 + 2 * 0.01)

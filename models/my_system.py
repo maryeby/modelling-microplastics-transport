@@ -54,9 +54,10 @@ class MyTransportSystem(transport_system.TransportSystem):
 		delta_t = t[1] - t[0]
 
 		# compute the number of time steps and create arrays to store solutions
-		mini_step = delta_t / (np.sqrt(2) / delta_t)
-		mini_steps = np.arange(0, 2 * np.sqrt(2) / delta_t
-									* mini_step + mini_step, mini_step)
+		num_mini_steps = int(np.ceil(2 * np.sqrt(2) / delta_t))
+		mini_step = 2 * delta_t / num_mini_steps
+		mini_steps = np.arange(0, num_mini_steps * mini_step + mini_step,
+							   mini_step)
 		mini_x = np.empty((mini_steps.size, 2)) 
 		mini_v = np.empty((mini_steps.size, 2))
 		mini_u = np.empty((mini_steps.size, 2))
@@ -64,10 +65,6 @@ class MyTransportSystem(transport_system.TransportSystem):
 		x = np.empty((t.size, 2))
 		v = np.empty((t.size, 2))
 		u = np.empty((t.size, 2))
-		if mini_x[:, 0].T.size != mini_steps.size:
-			print('x: ', mini_x[:, 0].T.size)
-			print('t: ', mini_steps.size)
-			print('size of mini_steps: ', mini_steps.size)
 
 		# set initial conditions
 		x[0] = y[:2]
@@ -284,7 +281,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The times at which the model was evaluated.
 		"""
 		# initialize parameters for the solver
-		t_final = num_periods * self.flow.period
+		t_final = num_periods * self.flow.period + self.flow.period * 0.1
 		t_eval = np.arange(0, t_final, delta_t)
 		y = [x_0, z_0, xdot_0, zdot_0]
 

@@ -15,7 +15,7 @@ class DimensionalDeepWaterWave(wave.Wave):
 		r"""
 		Attributes
 		----------
-		depth : float
+		depth : float, default=15
 			The depth of the fluid *h*.
 		amplitude : float
 			The amplitude of the wave *A*.
@@ -34,7 +34,8 @@ class DimensionalDeepWaterWave(wave.Wave):
 			The period of the wave, computed as
 			$$\text{period} = \frac{2\pi}{\omega}.$$
 		max_velocity : float
-			The maximum velocity *U* at the surface z = 0.
+			The maximum velocity *U* at the surface z = 0, computed as
+			$$U = \omega A.$$
 		froude_num : float
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
 		"""
@@ -56,7 +57,7 @@ class DimensionalDeepWaterWave(wave.Wave):
 
 	def velocity(self, x, z, t):
 		r"""
-		Computes the fluid velocity, $$\textbf{u} = (u, w),$$
+		Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
 		$$u(x, z, t) = Ue^{kz} \cos(kx - \omega t),$$
 		$$w(x, z, t) = Ue^{kz} \sin(kx - \omega t).$$
 

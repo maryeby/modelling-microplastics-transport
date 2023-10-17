@@ -30,7 +30,8 @@ class Wave(flow.Flow):
 			The period of the wave, computed as
 			$$\text{period} = \frac{2\pi}{\omega}.$$
 		max_velocity : float
-			The maximum velocity *U* at the surface z = 0.
+			The maximum velocity *U* at the surface z = 0, computed as
+			$$U = \omega A.$$
 		froude_num : float
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
 		"""

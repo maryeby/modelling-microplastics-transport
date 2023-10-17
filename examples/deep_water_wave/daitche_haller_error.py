@@ -17,7 +17,7 @@ def main():
 	This program computes the global error between the numerical solutions of an
 	inertial particle in a deep water wave as produced by the Haller & Sapsis
 	(2008) method and the Daitche (2013) method, and saves the results to the
-	`data` directory.
+	`data/deep_water_wave` directory.
 	"""
 	# initialize delta_t values and dictionaries to store numerical solutions
 	timesteps = np.linspace(1e-3, 5e-2, 10)

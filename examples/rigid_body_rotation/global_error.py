@@ -14,7 +14,8 @@ from models import rotating_system as ts
 def main():
 	"""
 	This program computes the global error for the numerical solutions of a
-	rotating particle in a flow and saves the results to the `data` directory.
+	rotating particle in a flow and saves the results to the
+	`data/rigid_body_rotation` directory.
 	"""
 	# read analytical data
 	data_path = '../data/rigid_body_rotation/'

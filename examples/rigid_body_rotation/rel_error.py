@@ -7,7 +7,8 @@ import numpy as np
 def main():
 	"""
 	This program computes the relative error for the numerical solutions of a
-	rotating particle in a flow and saves the results to the `data` directory.
+	rotating particle in a flow and saves the results to the
+	`data/rigid_body_rotation` directory.
 	"""
 	# read data
 	data_path = '../data/rigid_body_rotation/'

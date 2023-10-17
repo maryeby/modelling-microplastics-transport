@@ -13,7 +13,7 @@ from models import my_system as my
 def main():
 	"""
 	This program reproduces numerical results from Figure 1 in Santamaria et al.
-	(2013).
+	(2013) and saves the results to the `data/deep_water_wave` directory.
 	"""
 
 	# initialize variables for the Santamaria system

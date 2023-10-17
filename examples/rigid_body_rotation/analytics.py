@@ -15,7 +15,7 @@ def main():
 	"""
 	This program computes analytical solutions for the Maxey-Riley equation for
 	rigid body rotation, following the approach outlined in Candelier et al.
-	(2004), and saves the results to the `data` directory.
+	(2004), and saves the results to the `data/rigid_body_rotation` directory.
 	"""
 	# initialize translated variables
 	R = 2 / 3 * 0.75

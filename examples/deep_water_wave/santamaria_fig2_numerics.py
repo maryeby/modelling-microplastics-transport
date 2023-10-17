@@ -13,7 +13,7 @@ from models import my_system as ts
 def main():
 	"""
 	This program reproduces numerical results from Figure 2 in Santamaria et al.
-	(2013).
+	(2013) and saves the results to the `data/deep_water_wave` directory.
 	"""
 	# initialize the particle, flow, and transport system
 	my_flow = fl.DeepWaterWave(amplitude=0.02, wavelength=1)
@@ -86,6 +86,12 @@ def main():
 					index=False)
 
 def compute_drift_velocity(x, z, xdot, t):
+	r"""
+	Computes the Stokes drift velocity
+	$$\mathbf{u}_d = \langle u_d, w_d \rangle$$
+	using the distance travelled by the particle averaged over each wave period,
+	$$\mathbf{u}_d = \frac{\mathbf{x}_{n + 1} - \mathbf{x}_n}{\text{period}}.$$
+	"""
 	# find estimated endpoints of periods
 	estimated_endpoints = []
 	for i in range(1, len(xdot)):

@@ -12,11 +12,11 @@ class DeepWaterWave(wave.Wave):
 	depth.
 	"""
 
-	def __init__(self, amplitude, wavelength, depth=15):
+	def __init__(self, amplitude, wavelength, depth=50):
 		r"""
 		Attributes
 		----------
-		depth : float
+		depth : float, default=50
 			The depth of the fluid *h*.
 		amplitude : float
 			The amplitude of the wave *A*.
@@ -35,7 +35,8 @@ class DeepWaterWave(wave.Wave):
 			The period of the wave, computed as
 			$$\text{period} = \frac{2\pi}{\omega}.$$
 		max_velocity : float
-			The maximum velocity *U* at the surface z = 0.
+			The maximum velocity *U* at the surface z = 0, computed as
+			$$U = \omega A.$$
 		froude_num : float
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
 		"""
@@ -47,7 +48,7 @@ class DeepWaterWave(wave.Wave):
 		Defines the gravity **g** as,
 		$$\mathbf{g} = \langle 0, g \rangle,$$
 		which is non-dimensionalized as,
-		$$\mathbf{g} = \Bigg\langle 0, \frac{g}{k(\omega A)^2} \Bigg\rangle.$$
+		$$\mathbf{g} = \Bigg\langle 0, \frac{g}{kU^2} \Bigg\rangle.$$
 		"""
 		self.gravity = np.array([0, -constants.g])
 
@@ -60,7 +61,7 @@ class DeepWaterWave(wave.Wave):
 
 	def velocity(self, x, z, t):
 		r"""
-		Computes the fluid velocity, $$\textbf{u} = (u, w),$$
+		Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
 		$$u(x, z, t) = e^{z} \cos\Bigg(x - \frac{t}{Fr}\Bigg),$$
 		$$w(x, z, t) = e^{z} \sin\Bigg(x - \frac{t}{Fr}\Bigg).$$
 

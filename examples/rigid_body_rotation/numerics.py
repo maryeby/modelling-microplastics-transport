@@ -11,7 +11,7 @@ from models import rotating_system as ts
 def main():
 	"""
 	This program runs numerical simulations for a rotating rigid body, and saves
-	the results to the `data` directory.
+	the results to the `data/rigid_body_rotation` directory.
 	"""
 	# initialize variables for the transport system
 	R = 2 / 3 * 0.75

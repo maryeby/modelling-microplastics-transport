@@ -54,12 +54,12 @@ def main():
 	plt.xscale('log')
 	plt.yscale('log')
 	plt.minorticks_on()
-#	plt.axis([1e-3, 1e-1, 1e-11, 1e3])
-#	h_scale = np.linspace(2e-3, 5e-2, 10)
+	plt.axis([1e-3, 5e-2, 1e-7, 10])
+	h_scale = np.linspace(2e-3, 2e-2, 10)
 
-#	plt.plot(h_scale, h_scale, c='grey', ls='--', label=r'~$h$')
-#	plt.plot(h_scale, h_scale ** 2, c='grey', ls='-.', label=r'~$h^2$')
-#	plt.plot(h_scale, h_scale ** 3, c='grey', ls=':', label='~$h^3$')
+	plt.plot(h_scale, h_scale, c='grey', ls='--', label=r'~$h$')
+	plt.plot(h_scale, (h_scale ** 2) * 2, c='grey', ls='-.', label=r'~$h^2$')
+#	plt.plot(h_scale, (h_scale ** 3), c='grey', ls=':', label=r'~$h^3$')
 	plt.plot('delta_t', 'global_error1', '.--k', data=global_error,
 			 label='first order')
 	plt.plot('delta_t', 'global_error2', '.-.k', data=global_error,

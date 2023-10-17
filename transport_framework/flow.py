@@ -27,7 +27,7 @@ class Flow(ABC):
 	@abstractmethod
 	def velocity(self, x, z, t):
 		r"""
-		Computes the fluid velocity, $$\mathbf{u} = (u, w).$$
+		Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle.$$
 
 		Parameters
 		----------
