@@ -11,11 +11,11 @@ class DimensionalDeepWaterWave(wave.Wave):
 	is a linear water wave with infinite depth.
 	"""
 
-	def __init__(self, amplitude, wavelength, depth=15):
+	def __init__(self, amplitude, wavelength, depth=10):
 		r"""
 		Attributes
 		----------
-		depth : float, default=15
+		depth : float, default=10
 			The depth of the fluid *h*.
 		amplitude : float
 			The amplitude of the wave *A*.
@@ -40,13 +40,6 @@ class DimensionalDeepWaterWave(wave.Wave):
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
-
-	def set_gravity(self):
-		r"""
-		Defines the gravity vector **g** as,
-		$$\mathbf{g} = \langle 0, -g \rangle.$$
-		"""
-		self.gravity = np.array([0, -constants.g])
 
 	def set_angular_freq(self):
 		r"""

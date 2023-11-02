@@ -23,10 +23,11 @@ class WaterWave(wave.Wave):
 		wavenum : float
 			The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
 		gravity : float
-			The gravity **g** acting on the fluid.
+			The gravity **g** acting on the fluid, non-dimensionalized as,
+			$$g' = g \frac{L'}{U^{\prime 2}}.$$
 		angular_freq : float
 			The angular frequency *ω*, computed using the dispersion relation,
-			$$\omega = \sqrt{g \tanh(kh)}.$$
+			$$\omega = \sqrt{gk \tanh(kh)}.$$
 		phase_velocity : float
 			The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
 		period : float
@@ -39,32 +40,23 @@ class WaterWave(wave.Wave):
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
-		self.gravity /= self.wavenum * self.max_velocity ** 2
-
-	def set_gravity(self):
-		r"""
-		Defines the gravity **g** as,
-		$$\mathbf{g} = \langle 0, g \rangle,$$
-		which is non-dimensionalized as,
-		$$\mathbf{g} = \Bigg\langle 0, \frac{g}{kU^2} \Bigg\rangle.$$
-		"""
-		self.gravity = np.array([0, -constants.g])
+		self.gravity /= constants.g * self.froude_num ** 2
 
 	def set_angular_freq(self):
 		r"""
 		Defines the angular frequency omega with the dispersion relation,
-		$$\omega = \sqrt{g \tanh(kh)}.$$
+		$$\omega = \sqrt{gk \tanh(kh)}.$$
 		"""
-		self.angular_freq = np.sqrt(constants.g
-							* np.tanh(self.wavenum * self.depth))
+		k, h = self.wavenum, self.depth
+		self.angular_freq = np.sqrt(constants.g * k * np.tanh(k * h))
 
 	def velocity(self, x, z, t):
 		r"""
 		Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle,$$
-		$$u(x, z, t) = \frac{\cosh(z + h)}{\sinh(h)}
-					   \sin\Bigg(\frac{t}{Fr} - x\Bigg),$$
-		$$w(x, z, t) = \frac{\sinh(z + h)}{\sinh(h)}
-					   \cos\Bigg(\frac{t}{Fr} - x\Bigg).$$
+		$$u(x, z, t) = \frac{\cosh(z + h)}{\cosh(h)}
+					   \cos\Bigg(x - \frac{t}{Fr}\Bigg),$$
+		$$w(x, z, t) = \frac{\sinh(z + h)}{\cosh(h)}
+					   \sin\Bigg(x - \frac{t}{Fr}\Bigg).$$
 
 		Parameters
 		----------
@@ -79,19 +71,18 @@ class WaterWave(wave.Wave):
 		-------
 		Array containing the velocity field vector components *u* and *w*.
 		"""
-		h = self.depth
-		Fr = self.froude_num
-		return np.array([np.cosh(z + h) / np.sinh(h) * np.sin(t / Fr - x),
-						 np.sinh(z + h) / np.sinh(h) * np.cos(t / Fr - x)])
+		h, Fr = self.depth, self.froude_num
+		return np.array([np.cosh(z + h) / np.cosh(h) * np.cos(x - t / Fr),
+						 np.sinh(z + h) / np.cosh(h) * np.sin(x - t / Fr)])
 
 	def partial_t(self, x, z, t): 
 		r"""
 		Computes the partial derivative of the fluid with respect to time,
 		$$\frac{\partial \mathbf{u}}{\partial t} =
-			\Bigg\langle \frac{1}{Fr} \frac{\cosh(z + h)}{\sinh(h)}
-						 \cos\Bigg(\frac{t}{Fr} - x\Bigg), \;
-						-\frac{1}{Fr} \frac{\sinh(z + h)}{\sinh(h)}
-						 \sin\Bigg(\frac{t}{Fr} - x\Bigg)\Bigg\rangle.$$
+			\Bigg\langle \frac{1}{Fr} \frac{\cosh(z + h)}{\cosh(h)}
+						 \sin\Bigg(x - \frac{t}{Fr}\Bigg), \;
+						-\frac{1}{Fr} \frac{\sinh(z + h)}{\cosh(h)}
+						 \cos\Bigg(x - \frac{t}{Fr}\Bigg)\Bigg\rangle.$$
 
 		Parameters
 		----------
@@ -106,20 +97,19 @@ class WaterWave(wave.Wave):
 		-------
 		Array containing the vector components of the derivative.
 		"""
-		h = self.depth
-		Fr = self.froude_num
-		return np.array([np.cosh(z + h) / np.sinh(h) * np.cos(t / Fr - x) / Fr,
-						-np.sinh(z + h) / np.sinh(h) * np.sin(t / Fr - x) / Fr])
+		h, Fr = self.depth, self.froude_num
+		return np.array([np.cosh(z + h) / np.cosh(h) * np.sin(x - t / Fr) / Fr,
+						-np.sinh(z + h) / np.cosh(h) * np.cos(x - t / Fr) / Fr])
 
 	def partial_x(self, x, z, t): 
 		r"""
 		Computes the partial derivative of the fluid with respect to the
 		horizontal position,
 		$$\frac{\partial \mathbf{u}}{\partial x} =
-			\Bigg\langle -\frac{\cosh(z + h)}{\sinh(h)}
-						 \cos\Bigg(\frac{t}{Fr} - x\Bigg), \;
-						 \frac{\sinh(z + h)}{\sinh(h)}
-						 \sin\Bigg(\frac{t}{Fr} - x\Bigg)\Bigg\rangle.$$
+			\Bigg\langle -\frac{\cosh(z + h)}{\cosh(h)}
+						 \sin\Bigg(x - \frac{t}{Fr}\Bigg), \;
+						 \frac{\sinh(z + h)}{\cosh(h)}
+						 \cos\Bigg(x - \frac{t}{Fr}\Bigg)\Bigg\rangle.$$
 
 		Parameters
 		----------
@@ -134,20 +124,19 @@ class WaterWave(wave.Wave):
 		-------
 		Array containing the vector components of the derivative.
 		"""
-		h = self.depth
-		Fr = self.froude_num
-		return np.array([-np.cosh(z + h) / np.sinh(h) * np.cos(t / Fr - x),
-						  np.sinh(z + h) / np.sinh(h) * np.sin(t / Fr - x)])
+		h, Fr = self.depth, self.froude_num
+		return np.array([-np.cosh(z + h) / np.cosh(h) * np.sin(x - t / Fr),
+						  np.sinh(z + h) / np.cosh(h) * np.cos(x - t / Fr)])
 
 	def partial_z(self, x, z, t):
 		r"""
 		Computes the partial derivative of the fluid with respect to the
 		vertical position,
 		$$\frac{\partial \mathbf{u}}{\partial z} =
-			\Bigg\langle \frac{\sinh(z + h)}{\sinh(h)}
-						 \sin\Bigg(\frac{t}{Fr} - x\Bigg), \;
-						 \frac{\cosh(z + h)}{\sinh(h)}
-						 \cos\Bigg(\frac{t}{Fr} - x\Bigg)\Bigg\rangle.$$
+			\Bigg\langle \frac{\sinh(z + h)}{\cosh(h)}
+						 \sin\Bigg(x - \frac{t}{Fr}\Bigg), \;
+						 \frac{\cosh(z + h)}{\cosh(h)}
+						 \cos\Bigg(x - \frac{t}{Fr}\Bigg)\Bigg\rangle.$$
 
 		Parameters
 		----------
@@ -162,7 +151,6 @@ class WaterWave(wave.Wave):
 		-------
 		Array containing the vector components of the derivative.
 		"""
-		h = self.depth
-		Fr = self.froude_num
-		return np.array([np.sinh(z + h) / np.sinh(h) * np.sin(t / Fr - x),
-						 np.cosh(z + h) / np.sinh(h) * np.cos(t / Fr - x)])
+		h, Fr = self.depth, self.froude_num
+		return np.array([np.sinh(z + h) / np.cosh(h) * np.cos(x - t / Fr),
+						 np.cosh(z + h) / np.cosh(h) * np.sin(x - t / Fr)])

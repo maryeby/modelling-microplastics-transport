@@ -46,7 +46,8 @@ def main():
         &#34;&#34;&#34;
         # initialize Stokes numbers, depths, &amp; create a dictionary to store results
         stokes_nums = [0.01, 0.1, 1, 10]
-        h = [8, 2, 1] # depths
+#       stokes_nums = [0.1]
+        h = [10, 2, 1] # depths
         my_dict = {}
         my_dict[&#39;St&#39;] = stokes_nums
 
@@ -65,7 +66,7 @@ def main():
                                                                                                          my_particle,
                                                                                                          include_history=True)
                 intermediate_u_d_history, _ = compute_drift_velocity(&#39;intermediate&#39;,
-                                                                                        h[1], my_dict, my_particle,
+                                                                                h[1], my_dict, my_particle,
                                                                                         include_history=True)
                 shallow_u_d_history, _ = compute_drift_velocity(&#39;shallow&#39;, h[2],
                                                                                                                 my_dict, my_particle,
@@ -112,13 +113,13 @@ def compute_drift_velocity(label, depth, my_dict, particle, include_history):
                 The normalized vertical Stokes drift velocity.
         &#34;&#34;&#34;
         # initialize and store initial depths
-        initial_depths = np.linspace(0, -depth, 10, endpoint=False)
+        initial_depths = np.linspace(0, -depth, 4, endpoint=False)
         my_dict[label + &#39;_z&#39;] = initial_depths
         my_dict[label + &#39;_h&#39;] = depth
         my_dict[label + &#39;_z/h&#39;] = initial_depths / depth
 
         # initialize and store wave parameters
-        amplitude, wavelength = 0.02, 10
+        amplitude, wavelength = 0.02, 12
         if label == &#39;deep&#39;:
                 my_dict[&#39;amplitude&#39;] = amplitude
                 my_dict[&#39;wavelength&#39;] = wavelength
@@ -126,13 +127,13 @@ def compute_drift_velocity(label, depth, my_dict, particle, include_history):
         # initialize the flow (wave) and transport system
         my_wave = fl.WaterWave(depth=depth, amplitude=amplitude,
                                                    wavelength=wavelength)
-        T = my_wave.angular_freq * my_wave.froude_num
         R = 2 / 3 # neutrally buoyant particle
         my_system = ts.MyTransportSystem(particle, my_wave, R)
 
         # initialize parameters for the numerics
         x_0 = 0
-        delta_t = 2e-2 * T
+        T =  my_wave.froude_num * my_wave.angular_freq
+        delta_t = 1e-2 * T
         num_periods = 20 * T
 
         u_d, w_d = [], []
@@ -178,8 +179,8 @@ def compute_drift_velocity(label, depth, my_dict, particle, include_history):
 
         # normalize and return results
         Fr = my_wave.froude_num
-        u_d /= Fr
-        w_d /= Fr
+        u_d = np.array(u_d) / Fr
+        w_d = np.array(w_d) / Fr
         return u_d, w_d
 
 if __name__ == &#39;__main__&#39;:
@@ -253,13 +254,13 @@ using the distance travelled by the particle averaged over each wave period,
                 The normalized vertical Stokes drift velocity.
         &#34;&#34;&#34;
         # initialize and store initial depths
-        initial_depths = np.linspace(0, -depth, 10, endpoint=False)
+        initial_depths = np.linspace(0, -depth, 4, endpoint=False)
         my_dict[label + &#39;_z&#39;] = initial_depths
         my_dict[label + &#39;_h&#39;] = depth
         my_dict[label + &#39;_z/h&#39;] = initial_depths / depth
 
         # initialize and store wave parameters
-        amplitude, wavelength = 0.02, 10
+        amplitude, wavelength = 0.02, 12
         if label == &#39;deep&#39;:
                 my_dict[&#39;amplitude&#39;] = amplitude
                 my_dict[&#39;wavelength&#39;] = wavelength
@@ -267,13 +268,13 @@ using the distance travelled by the particle averaged over each wave period,
         # initialize the flow (wave) and transport system
         my_wave = fl.WaterWave(depth=depth, amplitude=amplitude,
                                                    wavelength=wavelength)
-        T = my_wave.angular_freq * my_wave.froude_num
         R = 2 / 3 # neutrally buoyant particle
         my_system = ts.MyTransportSystem(particle, my_wave, R)
 
         # initialize parameters for the numerics
         x_0 = 0
-        delta_t = 2e-2 * T
+        T =  my_wave.froude_num * my_wave.angular_freq
+        delta_t = 1e-2 * T
         num_periods = 20 * T
 
         u_d, w_d = [], []
@@ -319,8 +320,8 @@ using the distance travelled by the particle averaged over each wave period,
 
         # normalize and return results
         Fr = my_wave.froude_num
-        u_d /= Fr
-        w_d /= Fr
+        u_d = np.array(u_d) / Fr
+        w_d = np.array(w_d) / Fr
         return u_d, w_d</code></pre>
 </details>
 </dd>
@@ -343,7 +344,8 @@ the results to the <code>data/water_wave</code> directory.</p></div>
         &#34;&#34;&#34;
         # initialize Stokes numbers, depths, &amp; create a dictionary to store results
         stokes_nums = [0.01, 0.1, 1, 10]
-        h = [8, 2, 1] # depths
+#       stokes_nums = [0.1]
+        h = [10, 2, 1] # depths
         my_dict = {}
         my_dict[&#39;St&#39;] = stokes_nums
 
@@ -362,7 +364,7 @@ the results to the <code>data/water_wave</code> directory.</p></div>
                                                                                                          my_particle,
                                                                                                          include_history=True)
                 intermediate_u_d_history, _ = compute_drift_velocity(&#39;intermediate&#39;,
-                                                                                        h[1], my_dict, my_particle,
+                                                                                h[1], my_dict, my_particle,
                                                                                         include_history=True)
                 shallow_u_d_history, _ = compute_drift_velocity(&#39;shallow&#39;, h[2],
                                                                                                                 my_dict, my_particle,

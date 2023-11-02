@@ -17,7 +17,8 @@ def main():
 	"""
 	# initialize Stokes numbers, depths, & create a dictionary to store results
 	stokes_nums = [0.01, 0.1, 1, 10]
-	h = [8, 2, 1] # depths
+#	stokes_nums = [0.1]
+	h = [10, 2, 1] # depths
 	my_dict = {}
 	my_dict['St'] = stokes_nums
 
@@ -36,7 +37,7 @@ def main():
 													 my_particle,
 													 include_history=True)
 		intermediate_u_d_history, _ = compute_drift_velocity('intermediate',
-											h[1], my_dict, my_particle,
+										h[1], my_dict, my_particle,
 											include_history=True)
 		shallow_u_d_history, _ = compute_drift_velocity('shallow', h[2],
 														my_dict, my_particle,
@@ -83,13 +84,13 @@ def compute_drift_velocity(label, depth, my_dict, particle, include_history):
 		The normalized vertical Stokes drift velocity.
 	"""
 	# initialize and store initial depths
-	initial_depths = np.linspace(0, -depth, 10, endpoint=False)
+	initial_depths = np.linspace(0, -depth, 4, endpoint=False)
 	my_dict[label + '_z'] = initial_depths
 	my_dict[label + '_h'] = depth
 	my_dict[label + '_z/h'] = initial_depths / depth
 
 	# initialize and store wave parameters
-	amplitude, wavelength = 0.02, 10
+	amplitude, wavelength = 0.02, 12
 	if label == 'deep':
 		my_dict['amplitude'] = amplitude
 		my_dict['wavelength'] = wavelength
@@ -97,13 +98,13 @@ def compute_drift_velocity(label, depth, my_dict, particle, include_history):
 	# initialize the flow (wave) and transport system
 	my_wave = fl.WaterWave(depth=depth, amplitude=amplitude,
 						   wavelength=wavelength)
-	T = my_wave.angular_freq * my_wave.froude_num
 	R = 2 / 3 # neutrally buoyant particle
 	my_system = ts.MyTransportSystem(particle, my_wave, R)
 
 	# initialize parameters for the numerics
 	x_0 = 0
-	delta_t = 2e-2 * T
+	T =  my_wave.froude_num * my_wave.angular_freq
+	delta_t = 1e-2 * T
 	num_periods = 20 * T
 
 	u_d, w_d = [], []
@@ -149,8 +150,8 @@ def compute_drift_velocity(label, depth, my_dict, particle, include_history):
 
 	# normalize and return results
 	Fr = my_wave.froude_num
-	u_d /= Fr
-	w_d /= Fr
+	u_d = np.array(u_d) / Fr
+	w_d = np.array(w_d) / Fr
 	return u_d, w_d
 
 if __name__ == '__main__':

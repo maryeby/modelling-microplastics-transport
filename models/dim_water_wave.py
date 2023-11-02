@@ -40,26 +40,19 @@ class DimensionalWaterWave(wave.Wave):
 		"""
 		super().__init__(depth, amplitude, wavelength)
 
-	def set_gravity(self):
-		r"""
-		Defines the gravity vector **g** as,
-		$$\mathbf{g} = \langle 0, -g \rangle.$$
-		"""
-		self.gravity = np.array([0, -constants.g])
-
 	def set_angular_freq(self):
 		r"""
 		Defines the angular frequency omega with the dispersion relation,
 		$$\omega = \sqrt{g \tanh(kh)}.$$
 		"""
-		self.angular_freq = np.sqrt(constants.g
-							* np.tanh(self.wavenum * self.depth))
+		k, h = self.wavenum, self.depth
+		self.angular_freq = np.sqrt(constants.g * k * np.tanh(k * h))
 
 	def velocity(self, x, z, t):
 		r"""
 		Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle,$$
-		$$u(x, z, t) = U\frac{\cosh(k(z + h))}{\sinh(kh)}\sin(\omega t - kx),$$
-		$$w(x, z, t) = U\frac{\sinh(k(z + h))}{\sinh(kh)}\cos(\omega t - kx).$$
+		$$u(x, z, t) = U\frac{\cosh(k(z + h))}{\cosh(kh)}\cos(kx - \omega t),$$
+		$$w(x, z, t) = U\frac{\sinh(k(z + h))}{\cosh(kh)}\sin(kx - \omega t).$$
 
 		Parameters
 		----------
@@ -74,24 +67,21 @@ class DimensionalWaterWave(wave.Wave):
 		-------
 		Array containing the velocity field vector components *u* and *w*.
 		"""
-		U = self.max_velocity
-		k = self.wavenum
-		h = self.depth
+		U, k, h = self.max_velocity, self.wavenum, self.depth
 		omega = self.angular_freq
-
-		return np.array([U * np.cosh(k * (z + h)) / np.sinh(k * h)
-						   * np.sin(omega * t - k * x),
-						 U * np.sinh(k * (z + h)) / np.sinh(k * h)
-						   * np.cos(omega * t - k * x)])
+		return np.array([U * np.cosh(k * (z + h)) / np.cosh(k * h)
+						   * np.cos(k * x - omega * t),
+						 U * np.sinh(k * (z + h)) / np.cosh(k * h)
+						   * np.sin(k * x - omega * t)])
 
 	def partial_t(self, x, z, t): 
 		r"""
 		Computes the partial derivative of the fluid with respect to time,
 		$$\frac{\partial \mathbf{u}}{\partial t} =
-			\Bigg\langle \omega U \frac{\cosh(k(z + h))}{\sinh(kh)}
-						 \cos(\omega t - kx), \;
-						-\omega U\frac{\sinh(k(z + h))}{\sinh(kh)}
-						 \sin(\omega t - kx)\Bigg\rangle.$$
+			\Bigg\langle \omega U \frac{\cosh(k(z + h))}{\cosh(kh)}
+						 \sin(kx - \omega t), \;
+						-\omega U\frac{\sinh(k(z + h))}{\cosh(kh)}
+						 \cos(kx - \omega t)\Bigg\rangle.$$
 
 		Parameters
 		----------
@@ -106,24 +96,22 @@ class DimensionalWaterWave(wave.Wave):
 		-------
 		Array containing the vector components of the derivative.
 		"""
-		U = self.max_velocity
-		k = self.wavenum
-		h = self.depth
+		U, k, h = self.max_velocity, self.wavenum, self.depth
 		omega = self.angular_freq
-		return np.array([omega * U * np.cosh(k * (z + h)) / np.sinh(k * h)
-							   * np.cos(omega * t - k * x),
-						 -omega * U * np.sinh(k * (z + h)) / np.sinh(k * h)
-								* np.sin(omega * t - k * x)])
+		return np.array([omega * U * np.cosh(k * (z + h)) / np.cosh(k * h)
+							   * np.sin(k * x - omega * t),
+						-omega * U * np.sinh(k * (z + h)) / np.cosh(k * h)
+							   * np.cos(k * x - omega * t)])
 
 	def partial_x(self, x, z, t): 
 		r"""
 		Computes the partial derivative of the fluid with respect to the
 		horizontal position,
 		$$\frac{\partial \mathbf{u}}{\partial x} =
-			\Bigg\langle -kU \frac{\cosh(k(z + h))}{\sinh(kh)}
-						 \cos(\omega t - kx), \;
-						 kU \frac{\sinh(k(z + h))}{\sinh(kh)}
-						 \sin(\omega t - kx)\Bigg\rangle.$$
+			\Bigg\langle -kU \frac{\cosh(k(z + h))}{\cosh(kh)}
+						 \sin(kx - \omega t), \;
+						 kU \frac{\sinh(k(z + h))}{\cosh(kh)}
+						 \cos(kx - \omega t)\Bigg\rangle.$$
 
 		Parameters
 		----------
@@ -138,24 +126,22 @@ class DimensionalWaterWave(wave.Wave):
 		-------
 		Array containing the vector components of the derivative.
 		"""
-		U = self.max_velocity
-		k = self.wavenum
-		h = self.depth
+		U, k, h = self.max_velocity, self.wavenum, self.depth
 		omega = self.angular_freq
-		return np.array([-k * U * np.cosh(k * (z + h)) / np.sinh(k * h)
-							* np.cos(omega * t - k * x),
-						 k * U * np.sinh(k * (z + h)) / np.sinh(k * h)
-						   * np.sin(omega * t - k * x)])
+		return np.array([-k * U * np.cosh(k * (z + h)) / np.cosh(k * h)
+							* np.sin(k * x - omega * t),
+						  k * U * np.sinh(k * (z + h)) / np.cosh(k * h)
+							* np.cos(k * x - omega * t)])
 
 	def partial_z(self, x, z, t):
 		r"""
 		Computes the partial derivative of the fluid with respect to the
 		vertical position,
 		$$\frac{\partial \mathbf{u}}{\partial z} =
-			\Bigg\langle kU \frac{\sinh(k(z + h))}{\sinh(kh)}
-						 \sin(\omega t - kx), \;
-						 kU \frac{\cosh(k(z + h))}{\sinh(kh)}
-						 \cos(\omega t - kx)\Bigg\rangle.$$
+			\Bigg\langle kU \frac{\sinh(k(z + h))}{\cosh(kh)}
+						 \cos(kx - \omega t), \;
+						 kU \frac{\cosh(k(z + h))}{\cosh(kh)}
+						 \sin(kx - \omega t)\Bigg\rangle.$$
 
 		Parameters
 		----------
@@ -170,11 +156,9 @@ class DimensionalWaterWave(wave.Wave):
 		-------
 		Array containing the vector components of the derivative.
 		"""
-		U = self.max_velocity
-		k = self.wavenum
-		h = self.depth
+		U, k, h = self.max_velocity, self.wavenum, self.depth
 		omega = self.angular_freq
-		return np.array([k * U * np.sinh(k * (z + h)) / np.sinh(k * h)
-						   * np.sin(omega * t - k * x),
-						 k * U * np.cosh(k * (z + h)) / np.sinh(k * h)
-						   * np.cos(omega * t - k * x)])
+		return np.array([k * U * np.sinh(k * (z + h)) / np.cosh(k * h)
+						   * np.cos(k * x - omega * t),
+						 k * U * np.cosh(k * (z + h)) / np.cosh(k * h)
+						   * np.sin(k * x - omega * t)])

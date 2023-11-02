@@ -23,11 +23,13 @@ def main():
 	my_wave = fl.DimensionalDeepWaterWave(amplitude=A, wavelength=wavelength)
 	omega = my_wave.angular_freq
 	U = my_wave.max_velocity
+	Fr = my_wave.froude_num
 	c = my_wave.phase_velocity
 
 	# initialize the remaining parameters for analytical computations
-	num_periods = 20
-	delta_t = 1e-2
+	T = omega * Fr
+	num_periods = 50
+	delta_t = 5e-3
 	t = np.arange(0, num_periods * my_wave.period, delta_t)
 	z_0 = 0
 	St = 0.157
@@ -47,9 +49,9 @@ def main():
 		settling_velocity = -bprime * constants.g * (St / omega)
 
 		# store results in dictionary
-		my_dict['u_d_%g' % beta] = u_d / U
-		my_dict['w_d_%g' % beta] = w_d / U
-		my_dict['settling_velocity_%g' % beta] = settling_velocity / U
+		my_dict['u_d_%g' % beta] = u_d / (U * Fr)
+		my_dict['w_d_%g' % beta] = w_d / (U * Fr)
+		my_dict['settling_velocity_%g' % beta] = settling_velocity / (U * Fr)
 
 	# write to csv file
 	analytics = pd.DataFrame(my_dict)

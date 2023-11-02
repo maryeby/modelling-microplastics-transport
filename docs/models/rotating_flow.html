@@ -49,9 +49,6 @@ class RotatingFlow(flow.Flow):
                         integrate.
                 &#34;&#34;&#34;
                 super().__init__(depth)
-
-        def set_gravity(self):
-                r&#34;&#34;&#34;Defines the gravity vector **g** as, $$\mathbf{g} = \mathbf{0}.$$&#34;&#34;&#34;
                 self.gravity = np.array([0, 0]) # gravity not considered for this flow
 
         def velocity(self, x, z, t=None):
@@ -182,9 +179,6 @@ integrate.</dd>
                         integrate.
                 &#34;&#34;&#34;
                 super().__init__(depth)
-
-        def set_gravity(self):
-                r&#34;&#34;&#34;Defines the gravity vector **g** as, $$\mathbf{g} = \mathbf{0}.$$&#34;&#34;&#34;
                 self.gravity = np.array([0, 0]) # gravity not considered for this flow
 
         def velocity(self, x, z, t=None):
@@ -406,20 +400,6 @@ vertical positiona as,
         return np.array([-np.ones(x.shape), np.zeros(z.shape)])</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.set_gravity"><code class="name flex">
-<span>def <span class="ident">set_gravity</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Defines the gravity vector <strong>g</strong> as, <span><span class="MathJax_Preview">\mathbf{g} = \mathbf{0}.</span><script type="math/tex; mode=display">\mathbf{g} = \mathbf{0}.</script></span></p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def set_gravity(self):
-        r&#34;&#34;&#34;Defines the gravity vector **g** as, $$\mathbf{g} = \mathbf{0}.$$&#34;&#34;&#34;
-        self.gravity = np.array([0, 0]) # gravity not considered for this flow</code></pre>
-</details>
-</dd>
 <dt id="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.velocity"><code class="name flex">
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t=None)</span>
 </code></dt>
@@ -486,7 +466,6 @@ vertical positiona as,
 <li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_t" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_t">partial_t</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_x" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_x">partial_x</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_z" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.partial_z">partial_z</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.set_gravity" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.set_gravity">set_gravity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.rotating_flow.RotatingFlow.velocity" href="#modelling-microplastics-transport.models.rotating_flow.RotatingFlow.velocity">velocity</a></code></li>
 </ul>
 </li>

@@ -50,27 +50,24 @@ def compute_drift_velocity(label, my_dict, numerics):
 	h = numerics[label + '_h'].iloc[0]
 	A = numerics['amplitude'].iloc[0]
 	wavelength = numerics['wavelength'].iloc[0]
-	my_wave = fl.DimensionalWaterWave(depth=h / (2 * np.pi / wavelength),
+	my_wave = fl.DimensionalWaterWave(depth=h * wavelength / (2 * np.pi),
 									  amplitude=A, wavelength=wavelength)
 
 	# initialize parameters for computations
-	c = my_wave.phase_velocity
 	k = my_wave.wavenum
 	Fr = my_wave.froude_num
 	U = my_wave.max_velocity
 	z = np.linspace(numerics[label + '_z'].iloc[0],
 					numerics[label + '_z'].iloc[-1], 100)
 
-	# compute drift velocity
+	# dimensionalize z and h, compute drift velocity
 	z /= k
 	h /= k
 	u_d = U * Fr * np.cosh(2 * k * (z + h)) / (2 * np.sinh(k * h) ** 2)
 
 	# store normalized results
-	z *= k
-	h *= k
 	my_dict[label + '_u_d'] = u_d / (U * Fr)
-	my_dict[label + '_z/h'] = (z / h)
+	my_dict[label + '_z/h'] = k * z / (k * h)
 
 if __name__ == '__main__':
 	main()

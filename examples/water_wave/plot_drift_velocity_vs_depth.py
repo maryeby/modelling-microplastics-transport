@@ -18,10 +18,8 @@ def main():
 
 	# create lists of labels and markers for scatter plots (numerical results)
 	stokes_nums = numerics['St'][:].dropna()
-	labels_1, labels_2 = ['deep', 'intermediate', 'shallow'], []
+	labels = ['deep', 'intermediate', 'shallow']
 	markers = ['o', '^', 's', 'd']
-	for St in stokes_nums:
-		labels_2.append('%.2e' % St)
 
 	# initialize figure
 	plt.figure()
@@ -30,6 +28,7 @@ def main():
 	plt.ylabel(r'$\frac{kz}{kh}$', fontsize=16)
 	plt.xticks(fontsize=14)
 	plt.yticks(fontsize=14)
+	plt.minorticks_on()
 
 	# plot analytical solutions
 	plt.plot('deep_u_d', 'deep_z/h', c='k', data=analytics,
@@ -40,22 +39,22 @@ def main():
 			 label='shallow analytics')
 
 	# plot numerical solutions for each Stokes number
-	for i in range(len(labels_1)):
+	for i in range(len(labels)):
 		for j in range(len(stokes_nums)):
 			if i == 0:
-				label_3 = 'St = %g without history' % stokes_nums[j]
-				label_4 = 'St = %g with history' % stokes_nums[j]
+				no_history_label = 'St = %g without history' % stokes_nums[j]
+				history_label = 'St = %g with history' % stokes_nums[j]
 			else:
-				label_3, label_4 = '', ''
+				no_history_label, history_label = '', ''
 			# numerics without history
-			plt.scatter('%s_u_d_%g' % (labels_1[i], stokes_nums[j]),
-						'%s_z/h' % labels_1[i], c='k', marker=markers[j],
-						data=numerics, label=label_3)
+			plt.scatter('%s_u_d_%g' % (labels[i], stokes_nums[j]),
+						'%s_z/h' % labels[i], c='k', marker=markers[j],
+						data=numerics, label=no_history_label)
 			# numerics with history
-			plt.scatter('%s_u_d_history_%g' % (labels_1[i], stokes_nums[j]),
-						'%s_z/h' % labels_1[i], marker=markers[j],
+			plt.scatter('%s_u_d_history_%g' % (labels[i], stokes_nums[j]),
+						'%s_z/h' % labels[i], marker=markers[j],
 						edgecolors='k', facecolors='none', data=numerics,
-						label=label_4)
+						label=history_label)
 	plt.legend(fontsize=14)
 	plt.show()
 

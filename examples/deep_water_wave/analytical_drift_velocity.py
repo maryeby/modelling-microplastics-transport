@@ -4,7 +4,7 @@ sys.path.append('/home/s2182576/Documents/academia/thesis/'
 import pandas as pd
 import numpy as np
 import scipy.constants as constants
-from models import deep_water_wave as fl
+from models import dim_deep_water_wave as fl
 
 def main():
 	r"""
@@ -21,23 +21,21 @@ def main():
 	z = np.linspace(numerics['z'].iloc[0], numerics['z'].iloc[-1], 100)
 
 	# initialize the flow (wave) and related parameters
-	my_wave = fl.DeepWaterWave(depth=h, amplitude=A, wavelength=wavelength)
-	c = my_wave.phase_velocity
+	my_wave = fl.DimensionalDeepWaterWave(depth=h, amplitude=A,
+										  wavelength=wavelength)
+	k = my_wave.wavenum
 	Fr = my_wave.froude_num
 	U = my_wave.max_velocity
-	k = my_wave.wavenum
 
-	# compute drift velocity
-	z /= k # dimensional z
-	u_d = c * Fr ** 2 * np.exp(2 * k * z)
+	# dimensionalize z and h, compute drift velocity
+	z /= k
+	h /= k
+	u_d = U * Fr * np.exp(2 * k * z)
 
-	# normalize and store results
-	z *= k
+	# store normalized results and write to csv file
 	my_dict = {}
 	my_dict['u_d'] = u_d / (U * Fr)
-	my_dict['z/h'] = z / h
-
-	# store results and write to csv files
+	my_dict['z/h'] = k * z / (k * h)
 	analytics = pd.DataFrame(my_dict)
 	analytics.to_csv('../data/deep_water_wave/analytical_drift_velocity.csv',
 					 index=False)

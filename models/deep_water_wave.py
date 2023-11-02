@@ -12,11 +12,11 @@ class DeepWaterWave(wave.Wave):
 	depth.
 	"""
 
-	def __init__(self, amplitude, wavelength, depth=50):
+	def __init__(self, amplitude, wavelength, depth=10):
 		r"""
 		Attributes
 		----------
-		depth : float, default=50
+		depth : float, default=10
 			The depth of the fluid *h*.
 		amplitude : float
 			The amplitude of the wave *A*.
@@ -25,7 +25,8 @@ class DeepWaterWave(wave.Wave):
 		wavenum : float
 			The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
 		gravity : float
-			The gravity **g** acting on the fluid.
+			The gravity **g** acting on the fluid, non-dimensionalized as,
+			$$g' = g \frac{L'}{U^{\prime 2}}.$$
 		angular_freq : float
 			The angular frequency *ω*, computed using the dispersion relation,
 			$$\omega = \sqrt{gk}.$$
@@ -41,16 +42,7 @@ class DeepWaterWave(wave.Wave):
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
-		self.gravity /= self.wavenum * self.max_velocity ** 2
-
-	def set_gravity(self):
-		r"""
-		Defines the gravity **g** as,
-		$$\mathbf{g} = \langle 0, g \rangle,$$
-		which is non-dimensionalized as,
-		$$\mathbf{g} = \Bigg\langle 0, \frac{g}{kU^2} \Bigg\rangle.$$
-		"""
-		self.gravity = np.array([0, -constants.g])
+		self.gravity /= constants.g * self.froude_num ** 2
 
 	def set_angular_freq(self):
 		r"""

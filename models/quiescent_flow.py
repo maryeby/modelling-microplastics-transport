@@ -19,12 +19,6 @@ class QuiescentFlow(flow.Flow):
 			A parameter used in the computation of the integration timespan.
 		"""
 		super().__init__(depth)
-	
-	def set_gravity(self):
-		r"""
-		Defines the gravity vector **g** as,
-		$$\mathbf{g} = \langle 0, -1 \rangle.$$
-		"""
 		self.gravity = np.array([0, -1])
 	
 	def velocity(self, x, z, t):

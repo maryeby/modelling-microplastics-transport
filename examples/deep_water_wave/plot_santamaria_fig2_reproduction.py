@@ -26,17 +26,18 @@ def main():
 	plt.xticks(fontsize=14)
 	plt.yticks(fontsize=14)
 
-	plt.plot('t', 'u_d', c='k', data=analytics, label='analytical')
+	plt.plot('t', 'u_d', c='k', data=analytics, label='analytics')
+	plt.axhline(0, c='k', ls=':', label='settling velocity')
 	plt.scatter('sm_t', 'sm_u_d', c='k', marker='x', data=numerics,
 				label='Santamaria numerics')
 	plt.scatter('fine_t', 'fine_u_d', edgecolors='k', facecolors='none',
-				data=numerics, label=r'numerical $\Delta t =$ 1e-3')
+				data=numerics, label=r'Daitche numerics ($\Delta t =$ 1e-3)')
 	plt.scatter('medium_t', 'medium_u_d', marker='s', edgecolors='k',
 				facecolors='none', data=numerics,
-				label=r'numerical $\Delta t =$ 5e-3')
+				label=r'Daitche numerics ($\Delta t =$ 5e-3)')
 	plt.scatter('coarse_t', 'coarse_u_d', marker='^', edgecolors='k',
 				facecolors='none', data=numerics,
-				label=r'numerical $\Delta t =$ 1e-2')
+				label=r'Daitche numerics ($\Delta t =$ 1e-2)')
 	plt.legend(fontsize=14)
 
 	plt.subplot(122)
@@ -48,19 +49,19 @@ def main():
 	plt.xticks(fontsize=14)
 	plt.yticks(fontsize=14)
 
-	plt.plot('t', 'w_d', c='k', data=analytics, label='analytical')
+	plt.plot('t', 'w_d', c='k', data=analytics, label='analytics')
 	plt.axhline(analytics['settling_velocity'].iloc[0], c='k', ls=':',
 				label='settling velocity')
 	plt.scatter('sm_t', 'sm_w_d', marker='x', c='k', data=numerics,
 				label='Santamaria numerics')
 	plt.scatter('fine_t', 'fine_w_d', edgecolors='k', facecolors='none',
-				data=numerics, label=r'numerical $\Delta t =$ 1e-3')
+				data=numerics, label=r'Daitche numerics ($\Delta t =$ 1e-3)')
 	plt.scatter('medium_t', 'medium_w_d', marker='s', edgecolors='k',
 				facecolors='none', data=numerics,
-				label=r'numerical $\Delta t =$ 5e-3')
+				label=r'Daitche numerics ($\Delta t =$ 5e-3)')
 	plt.scatter('coarse_t', 'coarse_w_d', marker='^', edgecolors='k',
 				facecolors='none', data=numerics,
-				label=r'numerical $\Delta t =$ 1e-2')
+				label=r'Daitche numerics ($\Delta t =$ 1e-2)')
 	plt.legend(fontsize=14)
 	plt.show()
 

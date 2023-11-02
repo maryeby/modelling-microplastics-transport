@@ -18,8 +18,8 @@ def main():
 	# initialize parameters for the flow and particle
 	stokes_nums = [0.01, 0.1, 1, 10]
 	depth = 10
-	amplitude = 0.026
-	wavelength = 8
+	amplitude = 0.01
+	wavelength = 2
 	initial_depths = np.linspace(0, -depth, 10, endpoint=False)
 
 	# store parameters
@@ -34,10 +34,11 @@ def main():
 	# initialize parameters for the transport system and numerics
 	my_wave = fl.DeepWaterWave(depth=depth, amplitude=amplitude,
 							   wavelength=wavelength)
-	T = my_wave.angular_freq * my_wave.froude_num # time scaling
 	R = 2 / 3 # density ratio for a neutrally buoyant particle
 	x_0 = 0
-	delta_t = 1e-2 * T
+	Fr = my_wave.froude_num
+	T = Fr * my_wave.angular_freq
+	delta_t = 5e-3 * T
 	num_periods = 20 * T
 
 	# run numerics and compute drift velocity for each Stokes number
@@ -55,7 +56,6 @@ def main():
 											delta_t=delta_t,
 											num_periods=num_periods)
 			u_d, _ = compute_drift_velocity(x, z, xdot, t)
-			Fr = my_wave.froude_num
 			u_d_list.append(u_d / Fr)
 		my_dict['u_d_%g' % St] = u_d_list
 

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
+import scipy.constants as constants
 
 class Flow(ABC):
 	"""Represents a fluid flow."""
@@ -17,12 +18,7 @@ class Flow(ABC):
 		"""
 		self.depth = depth
 		self.period = 1
-		self.set_gravity()
-
-	@abstractmethod
-	def set_gravity(self):
-		"""Defines the gravity vector **g**."""
-		pass
+		self.gravity = np.array([0, -constants.g])
 
 	@abstractmethod
 	def velocity(self, x, z, t):

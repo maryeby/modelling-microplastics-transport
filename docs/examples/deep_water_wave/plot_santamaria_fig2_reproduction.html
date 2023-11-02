@@ -55,17 +55,18 @@ def main():
         plt.xticks(fontsize=14)
         plt.yticks(fontsize=14)
 
-        plt.plot(&#39;t&#39;, &#39;u_d&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytical&#39;)
+        plt.plot(&#39;t&#39;, &#39;u_d&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytics&#39;)
+        plt.axhline(0, c=&#39;k&#39;, ls=&#39;:&#39;, label=&#39;settling velocity&#39;)
         plt.scatter(&#39;sm_t&#39;, &#39;sm_u_d&#39;, c=&#39;k&#39;, marker=&#39;x&#39;, data=numerics,
                                 label=&#39;Santamaria numerics&#39;)
         plt.scatter(&#39;fine_t&#39;, &#39;fine_u_d&#39;, edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;,
-                                data=numerics, label=r&#39;numerical $\Delta t =$ 1e-3&#39;)
+                                data=numerics, label=r&#39;Daitche numerics ($\Delta t =$ 1e-3)&#39;)
         plt.scatter(&#39;medium_t&#39;, &#39;medium_u_d&#39;, marker=&#39;s&#39;, edgecolors=&#39;k&#39;,
                                 facecolors=&#39;none&#39;, data=numerics,
-                                label=r&#39;numerical $\Delta t =$ 5e-3&#39;)
+                                label=r&#39;Daitche numerics ($\Delta t =$ 5e-3)&#39;)
         plt.scatter(&#39;coarse_t&#39;, &#39;coarse_u_d&#39;, marker=&#39;^&#39;, edgecolors=&#39;k&#39;,
                                 facecolors=&#39;none&#39;, data=numerics,
-                                label=r&#39;numerical $\Delta t =$ 1e-2&#39;)
+                                label=r&#39;Daitche numerics ($\Delta t =$ 1e-2)&#39;)
         plt.legend(fontsize=14)
 
         plt.subplot(122)
@@ -77,19 +78,19 @@ def main():
         plt.xticks(fontsize=14)
         plt.yticks(fontsize=14)
 
-        plt.plot(&#39;t&#39;, &#39;w_d&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytical&#39;)
+        plt.plot(&#39;t&#39;, &#39;w_d&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytics&#39;)
         plt.axhline(analytics[&#39;settling_velocity&#39;].iloc[0], c=&#39;k&#39;, ls=&#39;:&#39;,
                                 label=&#39;settling velocity&#39;)
         plt.scatter(&#39;sm_t&#39;, &#39;sm_w_d&#39;, marker=&#39;x&#39;, c=&#39;k&#39;, data=numerics,
                                 label=&#39;Santamaria numerics&#39;)
         plt.scatter(&#39;fine_t&#39;, &#39;fine_w_d&#39;, edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;,
-                                data=numerics, label=r&#39;numerical $\Delta t =$ 1e-3&#39;)
+                                data=numerics, label=r&#39;Daitche numerics ($\Delta t =$ 1e-3)&#39;)
         plt.scatter(&#39;medium_t&#39;, &#39;medium_w_d&#39;, marker=&#39;s&#39;, edgecolors=&#39;k&#39;,
                                 facecolors=&#39;none&#39;, data=numerics,
-                                label=r&#39;numerical $\Delta t =$ 5e-3&#39;)
+                                label=r&#39;Daitche numerics ($\Delta t =$ 5e-3)&#39;)
         plt.scatter(&#39;coarse_t&#39;, &#39;coarse_w_d&#39;, marker=&#39;^&#39;, edgecolors=&#39;k&#39;,
                                 facecolors=&#39;none&#39;, data=numerics,
-                                label=r&#39;numerical $\Delta t =$ 1e-2&#39;)
+                                label=r&#39;Daitche numerics ($\Delta t =$ 1e-2)&#39;)
         plt.legend(fontsize=14)
         plt.show()
 
@@ -135,17 +136,18 @@ if __name__ == &#39;__main__&#39;:
         plt.xticks(fontsize=14)
         plt.yticks(fontsize=14)
 
-        plt.plot(&#39;t&#39;, &#39;u_d&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytical&#39;)
+        plt.plot(&#39;t&#39;, &#39;u_d&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytics&#39;)
+        plt.axhline(0, c=&#39;k&#39;, ls=&#39;:&#39;, label=&#39;settling velocity&#39;)
         plt.scatter(&#39;sm_t&#39;, &#39;sm_u_d&#39;, c=&#39;k&#39;, marker=&#39;x&#39;, data=numerics,
                                 label=&#39;Santamaria numerics&#39;)
         plt.scatter(&#39;fine_t&#39;, &#39;fine_u_d&#39;, edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;,
-                                data=numerics, label=r&#39;numerical $\Delta t =$ 1e-3&#39;)
+                                data=numerics, label=r&#39;Daitche numerics ($\Delta t =$ 1e-3)&#39;)
         plt.scatter(&#39;medium_t&#39;, &#39;medium_u_d&#39;, marker=&#39;s&#39;, edgecolors=&#39;k&#39;,
                                 facecolors=&#39;none&#39;, data=numerics,
-                                label=r&#39;numerical $\Delta t =$ 5e-3&#39;)
+                                label=r&#39;Daitche numerics ($\Delta t =$ 5e-3)&#39;)
         plt.scatter(&#39;coarse_t&#39;, &#39;coarse_u_d&#39;, marker=&#39;^&#39;, edgecolors=&#39;k&#39;,
                                 facecolors=&#39;none&#39;, data=numerics,
-                                label=r&#39;numerical $\Delta t =$ 1e-2&#39;)
+                                label=r&#39;Daitche numerics ($\Delta t =$ 1e-2)&#39;)
         plt.legend(fontsize=14)
 
         plt.subplot(122)
@@ -157,19 +159,19 @@ if __name__ == &#39;__main__&#39;:
         plt.xticks(fontsize=14)
         plt.yticks(fontsize=14)
 
-        plt.plot(&#39;t&#39;, &#39;w_d&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytical&#39;)
+        plt.plot(&#39;t&#39;, &#39;w_d&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytics&#39;)
         plt.axhline(analytics[&#39;settling_velocity&#39;].iloc[0], c=&#39;k&#39;, ls=&#39;:&#39;,
                                 label=&#39;settling velocity&#39;)
         plt.scatter(&#39;sm_t&#39;, &#39;sm_w_d&#39;, marker=&#39;x&#39;, c=&#39;k&#39;, data=numerics,
                                 label=&#39;Santamaria numerics&#39;)
         plt.scatter(&#39;fine_t&#39;, &#39;fine_w_d&#39;, edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;,
-                                data=numerics, label=r&#39;numerical $\Delta t =$ 1e-3&#39;)
+                                data=numerics, label=r&#39;Daitche numerics ($\Delta t =$ 1e-3)&#39;)
         plt.scatter(&#39;medium_t&#39;, &#39;medium_w_d&#39;, marker=&#39;s&#39;, edgecolors=&#39;k&#39;,
                                 facecolors=&#39;none&#39;, data=numerics,
-                                label=r&#39;numerical $\Delta t =$ 5e-3&#39;)
+                                label=r&#39;Daitche numerics ($\Delta t =$ 5e-3)&#39;)
         plt.scatter(&#39;coarse_t&#39;, &#39;coarse_w_d&#39;, marker=&#39;^&#39;, edgecolors=&#39;k&#39;,
                                 facecolors=&#39;none&#39;, data=numerics,
-                                label=r&#39;numerical $\Delta t =$ 1e-2&#39;)
+                                label=r&#39;Daitche numerics ($\Delta t =$ 1e-2)&#39;)
         plt.legend(fontsize=14)
         plt.show()</code></pre>
 </details>

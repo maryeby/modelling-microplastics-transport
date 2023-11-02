@@ -42,10 +42,7 @@ def main():
         # read data
         numerics = pd.read_csv(&#39;../data/water_wave/drift_velocity_varying_beta.csv&#39;)
         analytics = pd.read_csv(&#39;../data/water_wave/santamaria_analytics.csv&#39;)
-
-        # create lists of labels and markers
         betas = numerics[&#39;beta&#39;][:].dropna()
-        colors = [&#39;k&#39;, &#39;coral&#39;, &#39;mediumpurple&#39;, &#39;cornflowerblue&#39;]
 
         # create a separate figure for each value of beta
         for i in range(len(betas)):
@@ -55,40 +52,41 @@ def main():
                                          fontsize=18)
                 plt.subplot(121)
                 plt.xlabel(r&#39;$\omega t$&#39;, fontsize=16)
-                plt.ylabel(r&#39;$\frac{u_d}{U}$&#39;, fontsize=16)
+                plt.ylabel(r&#39;$\frac{u_d}{U\mathrm{Fr}}$&#39;, fontsize=16)
                 plt.xticks(fontsize=14)
                 plt.yticks(fontsize=14)
+                plt.minorticks_on()
 
                 # plot horizontal results
-                plt.plot(&#39;t&#39;, &#39;u_d_%g&#39; % betas[i], c=colors[0], ls=&#39;-.&#39;, data=analytics,
+                plt.plot(&#39;t&#39;, &#39;u_d_%g&#39; % betas[i], c=&#39;k&#39;, ls=&#39;-&#39;, data=analytics,
                                  label=&#39;analytics&#39;)
-                plt.plot(&#39;t_%g&#39; % betas[i], &#39;u_d_%g&#39; % betas[i],
-                                 c=colors[0], ls=&#39;--&#39;, marker=&#39;.&#39;, data=numerics,
-                                 label=&#39;numerics without history&#39;)
-#               plt.plot(&#39;t_history_%g&#39; % betas[i], &#39;u_d_history_%g&#39; % betas[i],
-#                                c=colors[0], marker=&#39;.&#39;, data=numerics,
-#                                label=&#39;numerics with history&#39;)
+                plt.scatter(&#39;t_%g&#39; % betas[i], &#39;u_d_%g&#39; % betas[i], marker=&#39;o&#39;,
+                                        edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;, data=numerics,
+                                        label=&#39;numerics without history&#39;)
+                plt.scatter(&#39;t_history_%g&#39; % betas[i], &#39;u_d_history_%g&#39; % betas[i],
+                                        c=&#39;k&#39;, marker=&#39;x&#39;, data=numerics,
+                                        label=&#39;numerics with history&#39;)
                 plt.legend(fontsize=14)
 
                 # initialize right subplot
                 plt.subplot(122)
                 plt.xlabel(r&#39;$\omega t$&#39;, fontsize=16)
-                plt.ylabel(r&#39;$\frac{w_d}{U}$&#39;, fontsize=16)
+                plt.ylabel(r&#39;$\frac{w_d}{U\mathrm{Fr}}$&#39;, fontsize=16)
                 plt.xticks(fontsize=14)
                 plt.yticks(fontsize=14)
+                plt.minorticks_on()
 
                 # plot vertical results
                 plt.axhline(analytics[&#39;settling_velocity_%g&#39; %  betas[i]].iloc[0],
-                                        c=colors[0], ls=&#39;:&#39;,
-                                        label=&#39;settling velocity&#39;)
-                plt.plot(&#39;t&#39;, &#39;w_d_%g&#39; % betas[i], c=colors[0], ls=&#39;-.&#39;, data=analytics,
+                                        c=&#39;k&#39;, ls=&#39;:&#39;, label=&#39;settling velocity&#39;)
+                plt.plot(&#39;t&#39;, &#39;w_d_%g&#39; % betas[i], c=&#39;k&#39;, ls=&#39;-&#39;, data=analytics,
                                  label=&#39;analytics&#39;)
-                plt.plot(&#39;t_%g&#39; % betas[i], &#39;w_d_%g&#39; % betas[i],
-                                 c=colors[0], marker=&#39;.&#39;, ls=&#39;--&#39;, data=numerics,
-                                 label=&#39;numerics without history&#39;)
-#               plt.plot(&#39;t_history_%g&#39; % betas[i], &#39;w_d_history_%g&#39; % betas[i],
-#                                c=colors[0], marker=&#39;.&#39;, data=numerics,
-#                                label=&#39;numerics with history&#39;)
+                plt.scatter(&#39;t_%g&#39; % betas[i], &#39;w_d_%g&#39; % betas[i], edgecolors=&#39;k&#39;,
+                                        facecolors=&#39;none&#39;, marker=&#39;o&#39;, data=numerics,
+                                        label=&#39;numerics without history&#39;)
+                plt.scatter(&#39;t_history_%g&#39; % betas[i], &#39;w_d_history_%g&#39; % betas[i],
+                                        c=&#39;k&#39;, marker=&#39;x&#39;, data=numerics,
+                                        label=&#39;numerics with history&#39;)
                 plt.legend(fontsize=14)
 
                 # initialize trajectory figure
@@ -98,12 +96,14 @@ def main():
                 plt.ylabel(&#39;z&#39;, fontsize=14)
                 plt.xticks(fontsize=14)
                 plt.yticks(fontsize=14)
+                plt.minorticks_on()
 
                 # plot particle trajectory with and without history
+                plt.axhline(0, c=&#39;k&#39;, ls=&#39;:&#39;, label=&#39;&#39;)
                 plt.plot(&#39;x_%g&#39; % betas[i], &#39;z_%g&#39; % betas[i], marker=&#39;.&#39;,
-                                 c=colors[0], ls=&#39;--&#39;, data=numerics, label=&#39;without history&#39;)
-#               plt.plot(&#39;x_history_%g&#39; % betas[i], &#39;z_history_%g&#39; % betas[i],
-#                                marker=&#39;.&#39;, c=colors[0], data=numerics, label=&#39;with history&#39;)
+                                 c=&#39;k&#39;, ls=&#39;--&#39;, data=numerics, label=&#39;without history&#39;)
+                plt.plot(&#39;x_history_%g&#39; % betas[i], &#39;z_history_%g&#39; % betas[i],
+                                 marker=&#39;.&#39;, c=&#39;k&#39;, data=numerics, label=&#39;with history&#39;)
                 plt.legend()
         plt.show()
 
@@ -136,10 +136,7 @@ velocity of inertial particles of varying densities in linear water waves.</p></
         # read data
         numerics = pd.read_csv(&#39;../data/water_wave/drift_velocity_varying_beta.csv&#39;)
         analytics = pd.read_csv(&#39;../data/water_wave/santamaria_analytics.csv&#39;)
-
-        # create lists of labels and markers
         betas = numerics[&#39;beta&#39;][:].dropna()
-        colors = [&#39;k&#39;, &#39;coral&#39;, &#39;mediumpurple&#39;, &#39;cornflowerblue&#39;]
 
         # create a separate figure for each value of beta
         for i in range(len(betas)):
@@ -149,40 +146,41 @@ velocity of inertial particles of varying densities in linear water waves.</p></
                                          fontsize=18)
                 plt.subplot(121)
                 plt.xlabel(r&#39;$\omega t$&#39;, fontsize=16)
-                plt.ylabel(r&#39;$\frac{u_d}{U}$&#39;, fontsize=16)
+                plt.ylabel(r&#39;$\frac{u_d}{U\mathrm{Fr}}$&#39;, fontsize=16)
                 plt.xticks(fontsize=14)
                 plt.yticks(fontsize=14)
+                plt.minorticks_on()
 
                 # plot horizontal results
-                plt.plot(&#39;t&#39;, &#39;u_d_%g&#39; % betas[i], c=colors[0], ls=&#39;-.&#39;, data=analytics,
+                plt.plot(&#39;t&#39;, &#39;u_d_%g&#39; % betas[i], c=&#39;k&#39;, ls=&#39;-&#39;, data=analytics,
                                  label=&#39;analytics&#39;)
-                plt.plot(&#39;t_%g&#39; % betas[i], &#39;u_d_%g&#39; % betas[i],
-                                 c=colors[0], ls=&#39;--&#39;, marker=&#39;.&#39;, data=numerics,
-                                 label=&#39;numerics without history&#39;)
-#               plt.plot(&#39;t_history_%g&#39; % betas[i], &#39;u_d_history_%g&#39; % betas[i],
-#                                c=colors[0], marker=&#39;.&#39;, data=numerics,
-#                                label=&#39;numerics with history&#39;)
+                plt.scatter(&#39;t_%g&#39; % betas[i], &#39;u_d_%g&#39; % betas[i], marker=&#39;o&#39;,
+                                        edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;, data=numerics,
+                                        label=&#39;numerics without history&#39;)
+                plt.scatter(&#39;t_history_%g&#39; % betas[i], &#39;u_d_history_%g&#39; % betas[i],
+                                        c=&#39;k&#39;, marker=&#39;x&#39;, data=numerics,
+                                        label=&#39;numerics with history&#39;)
                 plt.legend(fontsize=14)
 
                 # initialize right subplot
                 plt.subplot(122)
                 plt.xlabel(r&#39;$\omega t$&#39;, fontsize=16)
-                plt.ylabel(r&#39;$\frac{w_d}{U}$&#39;, fontsize=16)
+                plt.ylabel(r&#39;$\frac{w_d}{U\mathrm{Fr}}$&#39;, fontsize=16)
                 plt.xticks(fontsize=14)
                 plt.yticks(fontsize=14)
+                plt.minorticks_on()
 
                 # plot vertical results
                 plt.axhline(analytics[&#39;settling_velocity_%g&#39; %  betas[i]].iloc[0],
-                                        c=colors[0], ls=&#39;:&#39;,
-                                        label=&#39;settling velocity&#39;)
-                plt.plot(&#39;t&#39;, &#39;w_d_%g&#39; % betas[i], c=colors[0], ls=&#39;-.&#39;, data=analytics,
+                                        c=&#39;k&#39;, ls=&#39;:&#39;, label=&#39;settling velocity&#39;)
+                plt.plot(&#39;t&#39;, &#39;w_d_%g&#39; % betas[i], c=&#39;k&#39;, ls=&#39;-&#39;, data=analytics,
                                  label=&#39;analytics&#39;)
-                plt.plot(&#39;t_%g&#39; % betas[i], &#39;w_d_%g&#39; % betas[i],
-                                 c=colors[0], marker=&#39;.&#39;, ls=&#39;--&#39;, data=numerics,
-                                 label=&#39;numerics without history&#39;)
-#               plt.plot(&#39;t_history_%g&#39; % betas[i], &#39;w_d_history_%g&#39; % betas[i],
-#                                c=colors[0], marker=&#39;.&#39;, data=numerics,
-#                                label=&#39;numerics with history&#39;)
+                plt.scatter(&#39;t_%g&#39; % betas[i], &#39;w_d_%g&#39; % betas[i], edgecolors=&#39;k&#39;,
+                                        facecolors=&#39;none&#39;, marker=&#39;o&#39;, data=numerics,
+                                        label=&#39;numerics without history&#39;)
+                plt.scatter(&#39;t_history_%g&#39; % betas[i], &#39;w_d_history_%g&#39; % betas[i],
+                                        c=&#39;k&#39;, marker=&#39;x&#39;, data=numerics,
+                                        label=&#39;numerics with history&#39;)
                 plt.legend(fontsize=14)
 
                 # initialize trajectory figure
@@ -192,12 +190,14 @@ velocity of inertial particles of varying densities in linear water waves.</p></
                 plt.ylabel(&#39;z&#39;, fontsize=14)
                 plt.xticks(fontsize=14)
                 plt.yticks(fontsize=14)
+                plt.minorticks_on()
 
                 # plot particle trajectory with and without history
+                plt.axhline(0, c=&#39;k&#39;, ls=&#39;:&#39;, label=&#39;&#39;)
                 plt.plot(&#39;x_%g&#39; % betas[i], &#39;z_%g&#39; % betas[i], marker=&#39;.&#39;,
-                                 c=colors[0], ls=&#39;--&#39;, data=numerics, label=&#39;without history&#39;)
-#               plt.plot(&#39;x_history_%g&#39; % betas[i], &#39;z_history_%g&#39; % betas[i],
-#                                marker=&#39;.&#39;, c=colors[0], data=numerics, label=&#39;with history&#39;)
+                                 c=&#39;k&#39;, ls=&#39;--&#39;, data=numerics, label=&#39;without history&#39;)
+                plt.plot(&#39;x_history_%g&#39; % betas[i], &#39;z_history_%g&#39; % betas[i],
+                                 marker=&#39;.&#39;, c=&#39;k&#39;, data=numerics, label=&#39;with history&#39;)
                 plt.legend()
         plt.show()</code></pre>
 </details>

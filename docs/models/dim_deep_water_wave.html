@@ -40,11 +40,11 @@ class DimensionalDeepWaterWave(wave.Wave):
         is a linear water wave with infinite depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15):
+        def __init__(self, amplitude, wavelength, depth=10):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
-                depth : float, default=15
+                depth : float, default=10
                         The depth of the fluid *h*.
                 amplitude : float
                         The amplitude of the wave *A*.
@@ -69,13 +69,6 @@ class DimensionalDeepWaterWave(wave.Wave):
                         The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth, amplitude, wavelength)
-
-        def set_gravity(self):
-                r&#34;&#34;&#34;
-                Defines the gravity vector **g** as,
-                $$\mathbf{g} = \langle 0, -g \rangle.$$
-                &#34;&#34;&#34;
-                self.gravity = np.array([0, -constants.g])
 
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
@@ -219,14 +212,14 @@ class DimensionalDeepWaterWave(wave.Wave):
 <dl>
 <dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave"><code class="flex name class">
 <span>class <span class="ident">DimensionalDeepWaterWave</span></span>
-<span>(</span><span>amplitude, wavelength, depth=15)</span>
+<span>(</span><span>amplitude, wavelength, depth=10)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents the fluid flow described in Santamaria et al., (2013). The flow
 is a linear water wave with infinite depth.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
-<dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>15</code></dt>
+<dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>10</code></dt>
 <dd>The depth of the fluid <em>h</em>.</dd>
 <dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
 <dd>The amplitude of the wave <em>A</em>.</dd>
@@ -260,11 +253,11 @@ is a linear water wave with infinite depth.</p>
         is a linear water wave with infinite depth.
         &#34;&#34;&#34;
 
-        def __init__(self, amplitude, wavelength, depth=15):
+        def __init__(self, amplitude, wavelength, depth=10):
                 r&#34;&#34;&#34;
                 Attributes
                 ----------
-                depth : float, default=15
+                depth : float, default=10
                         The depth of the fluid *h*.
                 amplitude : float
                         The amplitude of the wave *A*.
@@ -289,13 +282,6 @@ is a linear water wave with infinite depth.</p>
                         The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth, amplitude, wavelength)
-
-        def set_gravity(self):
-                r&#34;&#34;&#34;
-                Defines the gravity vector **g** as,
-                $$\mathbf{g} = \langle 0, -g \rangle.$$
-                &#34;&#34;&#34;
-                self.gravity = np.array([0, -constants.g])
 
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
@@ -646,24 +632,6 @@ vertical position,
         self.angular_freq = np.sqrt(constants.g * self.wavenum)</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_gravity"><code class="name flex">
-<span>def <span class="ident">set_gravity</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Defines the gravity vector <strong>g</strong> as,
-<span><span class="MathJax_Preview">\mathbf{g} = \langle 0, -g \rangle.</span><script type="math/tex; mode=display">\mathbf{g} = \langle 0, -g \rangle.</script></span></p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def set_gravity(self):
-        r&#34;&#34;&#34;
-        Defines the gravity vector **g** as,
-        $$\mathbf{g} = \langle 0, -g \rangle.$$
-        &#34;&#34;&#34;
-        self.gravity = np.array([0, -constants.g])</code></pre>
-</details>
-</dd>
 <dt id="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.velocity"><code class="name flex">
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t)</span>
 </code></dt>
@@ -739,7 +707,6 @@ vertical position,
 <li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_x" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_x">partial_x</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_z" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.partial_z">partial_z</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_angular_freq" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_angular_freq">set_angular_freq</a></code></li>
-<li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_gravity" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.set_gravity">set_gravity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.velocity" href="#modelling-microplastics-transport.models.dim_deep_water_wave.DimensionalDeepWaterWave.velocity">velocity</a></code></li>
 </ul>
 </li>

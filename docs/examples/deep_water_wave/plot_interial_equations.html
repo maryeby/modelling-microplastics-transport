@@ -86,8 +86,8 @@ def main():
         plt.axis([1e-3, 5e-2, 1e-7, 10])
         h_scale = np.linspace(2e-3, 2e-2, 10)
 
-        plt.plot(h_scale, h_scale, c=&#39;grey&#39;, ls=&#39;--&#39;, label=r&#39;~$h$&#39;)
-        plt.plot(h_scale, (h_scale ** 2) * 2, c=&#39;grey&#39;, ls=&#39;-.&#39;, label=r&#39;~$h^2$&#39;)
+        plt.plot(h_scale, h_scale * 2, c=&#39;grey&#39;, ls=&#39;--&#39;, label=r&#39;~$h$&#39;)
+        plt.plot(h_scale, (h_scale ** 2) * 2.3, c=&#39;grey&#39;, ls=&#39;-.&#39;, label=r&#39;~$h^2$&#39;)
 #       plt.plot(h_scale, (h_scale ** 3), c=&#39;grey&#39;, ls=&#39;:&#39;, label=r&#39;~$h^3$&#39;)
         plt.plot(&#39;delta_t&#39;, &#39;global_error1&#39;, &#39;.--k&#39;, data=global_error,
                          label=&#39;first order&#39;)
@@ -187,8 +187,8 @@ Daitche (2013) method.</p></div>
         plt.axis([1e-3, 5e-2, 1e-7, 10])
         h_scale = np.linspace(2e-3, 2e-2, 10)
 
-        plt.plot(h_scale, h_scale, c=&#39;grey&#39;, ls=&#39;--&#39;, label=r&#39;~$h$&#39;)
-        plt.plot(h_scale, (h_scale ** 2) * 2, c=&#39;grey&#39;, ls=&#39;-.&#39;, label=r&#39;~$h^2$&#39;)
+        plt.plot(h_scale, h_scale * 2, c=&#39;grey&#39;, ls=&#39;--&#39;, label=r&#39;~$h$&#39;)
+        plt.plot(h_scale, (h_scale ** 2) * 2.3, c=&#39;grey&#39;, ls=&#39;-.&#39;, label=r&#39;~$h^2$&#39;)
 #       plt.plot(h_scale, (h_scale ** 3), c=&#39;grey&#39;, ls=&#39;:&#39;, label=r&#39;~$h^3$&#39;)
         plt.plot(&#39;delta_t&#39;, &#39;global_error1&#39;, &#39;.--k&#39;, data=global_error,
                          label=&#39;first order&#39;)

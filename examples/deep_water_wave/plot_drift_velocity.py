@@ -23,11 +23,12 @@ def main():
 
 	# plot results
 	plt.figure()
-	plt.title(r'Stokes Drift Velocity Comparison with Varying St', fontsize=18)
-	plt.xlabel(r'$u_d$', fontsize=16)
-	plt.ylabel(r'$\frac{z}{h}$', fontsize=16)
+	plt.title(r'Deep Water Stokes Drift Velocity with Varying St', fontsize=18)
+	plt.xlabel(r'$\frac{u_d}{U\mathrm{Fr}}$', fontsize=16)
+	plt.ylabel(r'$\frac{kz}{kh}$', fontsize=16)
 	plt.xticks(fontsize=14)
 	plt.yticks(fontsize=14)
+	plt.minorticks_on()
 
 	plt.plot('u_d', 'z/h', c='k', data=analytics, label='analytics')
 	for i in range(len(stokes_nums)):

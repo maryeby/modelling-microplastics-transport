@@ -201,7 +201,7 @@ class HallerTransportSystem(transport_system.TransportSystem):
                 The velocity of the particle is set to the initial velocity of the
                 fluid.
                 &#34;&#34;&#34;
-                # initial parameters
+                # initialize local parameters
                 t_final = num_periods * self.flow.period
                 t_span = (0, t_final)
                 t_eval = np.arange(0, t_final, delta_t)
@@ -425,7 +425,7 @@ described by Haller and Sapsis (2008).</p>
                 The velocity of the particle is set to the initial velocity of the
                 fluid.
                 &#34;&#34;&#34;
-                # initial parameters
+                # initialize local parameters
                 t_final = num_periods * self.flow.period
                 t_span = (0, t_final)
                 t_eval = np.arange(0, t_final, delta_t)
@@ -730,7 +730,7 @@ fluid.</p></div>
         The velocity of the particle is set to the initial velocity of the
         fluid.
         &#34;&#34;&#34;
-        # initial parameters
+        # initialize local parameters
         t_final = num_periods * self.flow.period
         t_span = (0, t_final)
         t_eval = np.arange(0, t_final, delta_t)

@@ -20,9 +20,6 @@ class RotatingFlow(flow.Flow):
 			integrate.
 		"""
 		super().__init__(depth)
-
-	def set_gravity(self):
-		r"""Defines the gravity vector **g** as, $$\mathbf{g} = \mathbf{0}.$$"""
 		self.gravity = np.array([0, 0]) # gravity not considered for this flow
 
 	def velocity(self, x, z, t=None):

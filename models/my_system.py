@@ -281,7 +281,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The times at which the model was evaluated.
 		"""
 		# initialize parameters for the solver
-		t_final = num_periods * self.flow.period + self.flow.period * 0.1
+		t_final = num_periods * self.flow.period
 		t_eval = np.arange(0, t_final, delta_t)
 		y = [x_0, z_0, xdot_0, zdot_0]
 

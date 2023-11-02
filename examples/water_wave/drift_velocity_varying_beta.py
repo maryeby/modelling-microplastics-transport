@@ -16,7 +16,7 @@ def main():
 	"""
 	# initialize the flow (wave)
 	my_dict = {}
-	depth = 50
+	depth = 10
 	amplitude = 0.02
 	wavelength = 1
 	my_dict['amplitude'] = amplitude
@@ -27,16 +27,16 @@ def main():
 	# initialize the parameters for the numerics
 	Fr = my_wave.froude_num
 	T = my_wave.angular_freq * Fr
-	num_periods = 20 * T
-	delta_t = 1e-2 * T
+	num_periods = 50 * T
+	delta_t = 5e-3 * T
 	x_0, z_0 = 0, 0
-	xdot_0, zdot_0 = my_wave.velocity(x_0, z_0, t=0)
-	betas = [0.1, 0.5, 0.9, 1]
-#	betas = [0.9]
+#	betas = [0.1, 0.5, 0.9, 1]
+	betas = [0.9, 1]
 	my_dict['beta'] = betas
 
 	for beta in betas:
 		R = 2 / 3 * beta
+		xdot_0, zdot_0 = my_wave.velocity(x_0, z_0, t=0)
 		my_particle = prt.Particle(stokes_num=0.157 * R * Fr)
 		my_system = ts.MyTransportSystem(my_particle, my_wave, R)
 
@@ -50,23 +50,23 @@ def main():
 		u_d, w_d, t_d = compute_drift_velocity(x, z, xdot, t)
 		my_dict['x_%g' % beta] = x
 		my_dict['z_%g' % beta] = z
-		my_dict['u_d_%g' % beta] = u_d
-		my_dict['w_d_%g' % beta] = w_d
+		my_dict['u_d_%g' % beta] = u_d / Fr
+		my_dict['w_d_%g' % beta] = w_d / Fr
 		my_dict['t_%g' % beta] = t_d / Fr
 
 		# run numerics with history
-#		x, z, xdot, _, t = my_system.run_numerics(include_history=True,
-#												  x_0=x_0, z_0=z_0,
-#												  xdot_0=xdot_0, zdot_0=zdot_0,
-#												  delta_t=delta_t,
-#												  num_periods=num_periods)
+		x, z, xdot, _, t = my_system.run_numerics(include_history=True,
+												  x_0=x_0, z_0=z_0,
+												  xdot_0=xdot_0, zdot_0=zdot_0,
+												  delta_t=delta_t,
+												  num_periods=num_periods)
 		# compute drift velocity & store results
-#		u_d, w_d, t_d = compute_drift_velocity(x, z, xdot, t)
-#		my_dict['x_history_%g' % beta] = x
-#		my_dict['z_history_%g' % beta] = z
-#		my_dict['u_d_history_%g' % beta] = u_d / Fr
-#		my_dict['w_d_history_%g' % beta] = w_d / Fr
-#		my_dict['t_history_%g' % beta] = t_d / Fr
+		u_d, w_d, t_d = compute_drift_velocity(x, z, xdot, t)
+		my_dict['x_history_%g' % beta] = x
+		my_dict['z_history_%g' % beta] = z
+		my_dict['u_d_history_%g' % beta] = u_d / Fr
+		my_dict['w_d_history_%g' % beta] = w_d / Fr
+		my_dict['t_history_%g' % beta] = t_d / Fr
 
 	# write results to data file
 	my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])

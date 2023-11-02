@@ -52,11 +52,12 @@ def main():
 
         # plot results
         plt.figure()
-        plt.title(r&#39;Stokes Drift Velocity Comparison with Varying St&#39;, fontsize=18)
-        plt.xlabel(r&#39;$u_d$&#39;, fontsize=16)
-        plt.ylabel(r&#39;$\frac{z}{h}$&#39;, fontsize=16)
+        plt.title(r&#39;Deep Water Stokes Drift Velocity with Varying St&#39;, fontsize=18)
+        plt.xlabel(r&#39;$\frac{u_d}{U\mathrm{Fr}}$&#39;, fontsize=16)
+        plt.ylabel(r&#39;$\frac{kz}{kh}$&#39;, fontsize=16)
         plt.xticks(fontsize=14)
         plt.yticks(fontsize=14)
+        plt.minorticks_on()
 
         plt.plot(&#39;u_d&#39;, &#39;z/h&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytics&#39;)
         for i in range(len(stokes_nums)):
@@ -105,11 +106,12 @@ varying Stokes numbers.</p></div>
 
         # plot results
         plt.figure()
-        plt.title(r&#39;Stokes Drift Velocity Comparison with Varying St&#39;, fontsize=18)
-        plt.xlabel(r&#39;$u_d$&#39;, fontsize=16)
-        plt.ylabel(r&#39;$\frac{z}{h}$&#39;, fontsize=16)
+        plt.title(r&#39;Deep Water Stokes Drift Velocity with Varying St&#39;, fontsize=18)
+        plt.xlabel(r&#39;$\frac{u_d}{U\mathrm{Fr}}$&#39;, fontsize=16)
+        plt.ylabel(r&#39;$\frac{kz}{kh}$&#39;, fontsize=16)
         plt.xticks(fontsize=14)
         plt.yticks(fontsize=14)
+        plt.minorticks_on()
 
         plt.plot(&#39;u_d&#39;, &#39;z/h&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytics&#39;)
         for i in range(len(stokes_nums)):
