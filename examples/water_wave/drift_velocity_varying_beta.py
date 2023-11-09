@@ -31,7 +31,7 @@ def main():
 	delta_t = 5e-3 * T
 	x_0, z_0 = 0, 0
 #	betas = [0.1, 0.5, 0.9, 1]
-	betas = [0.9, 1]
+	betas = [0.999, 0.5, 0.1]
 	my_dict['beta'] = betas
 
 	for beta in betas:

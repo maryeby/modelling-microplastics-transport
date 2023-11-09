@@ -192,7 +192,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 		u[2] = mini_u[-1]
 
 		# compute solutions for the remaining intervals
-		for n in tqdm(range(2, num_steps)):
+#		for n in tqdm(range(2, num_steps)):
+		for n in range(2, num_steps):
 			w = v - u
 			G = (3 / 2 * R - 1) \
 				   * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
@@ -309,8 +310,8 @@ def compute_alpha(size):
 	Array
 		The matrix containing the values of the coefficient alpha.
 	"""
-	print('Computing matrix of alpha coefficients...', end='', flush=True)
-	start = time()
+#	print('Computing matrix of alpha coefficients...', end='', flush=True)
+#	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape, dtype='float128')
 
@@ -335,8 +336,8 @@ def compute_alpha(size):
 					 + exp * np.sqrt(n[0, 1:]))
 	diagonal = np.insert(diagonal, 0, 0)
 	np.fill_diagonal(arr, diagonal.astype('float64'))
-	finish = time()
-	print('done.\t\t{:7.2f}s'.format(finish - start))
+#	finish = time()
+#	print('done.\t\t{:7.2f}s'.format(finish - start))
 	return np.triu(arr)
 
 def compute_beta(size, alpha):
@@ -357,8 +358,8 @@ def compute_beta(size, alpha):
 	Array
 		The matrix containing the values of the coefficient beta.
 	"""
-	print('Computing matrix of beta coefficients...', end='', flush=True)
-	start = time()
+#	print('Computing matrix of beta coefficients...', end='', flush=True)
+#	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape, dtype='float128')
 	arr[:, 0] = 0		# n = 0 (should never be called for beta)
@@ -428,8 +429,8 @@ def compute_beta(size, alpha):
 		vals = vals[np.triu(vals) != 0]
 		np.place(arr, mask, vals.astype('float64'))
 	finish = time()
-	print('done.\t\t{:7.2f}s'.format(finish - start))
-	return np.triu(arr)
+#	print('done.\t\t{:7.2f}s'.format(finish - start))
+#	return np.triu(arr)
 
 def compute_gamma(size, beta):
 	r"""
@@ -449,8 +450,8 @@ def compute_gamma(size, beta):
 	Array
 		The matrix containing the values of the coefficient gamma.
 	"""
-	print('Computing matrix of gamma coefficients...', end='', flush=True)
-	start = time()
+#	print('Computing matrix of gamma coefficients...', end='', flush=True)
+#	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[:, :2] = 0		# n = 0 and n = 1 (should never be called for gamma)
@@ -597,6 +598,6 @@ def compute_gamma(size, beta):
 				 - (j[4:-4, 8:] - two) ** exp1 - six * j[4:-4, 8:] ** exp1)
 	vals = vals[np.triu(vals) != 0]
 	np.place(arr, mask, vals.astype('float64'))
-	finish = time()
-	print('done.\t\t{:7.2f}s'.format(finish - start))
+#	finish = time()
+#	print('done.\t\t{:7.2f}s'.format(finish - start))
 	return np.triu(arr)

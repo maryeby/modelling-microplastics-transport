@@ -17,8 +17,9 @@ def main():
 						   + 'drift_velocity_varying_st.csv')
 	h = numerics['h'].iloc[0]
 	A = numerics['A'].iloc[0]
-	wavelength = numerics['lambda'].iloc[0]
-	z = np.linspace(numerics['z'].iloc[0], numerics['z'].iloc[-1], 100)
+	wavelength = numerics['wavelength'].iloc[0]
+	z_star = numerics['z_star'].drop_duplicates()
+	z = np.linspace(z_star[0], z_star.iloc[-1], 100)
 
 	# initialize the flow (wave) and related parameters
 	my_wave = fl.DimensionalDeepWaterWave(depth=h, amplitude=A,
