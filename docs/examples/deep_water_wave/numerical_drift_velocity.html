@@ -32,7 +32,9 @@ sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
 import numpy as np
 import pandas as pd
+import itertools
 import scipy.constants as constants
+from parallelbar import progress_starmap
 
 from transport_framework import particle as prt
 from models import deep_water_wave as fl
@@ -44,55 +46,82 @@ def main():
         particle in linear deep water waves for various Stokes numbers, and saves
         the results to the `data/deep_water_wave` directory.
         &#34;&#34;&#34;
-        # initialize parameters for the flow and particle
+        # initialize the Stokes numbers and wave parameters
         stokes_nums = [0.01, 0.1, 1, 10]
         depth = 10
         amplitude = 0.01
         wavelength = 2
         initial_depths = np.linspace(0, -depth, 10, endpoint=False)
 
-        # store parameters
-        my_dict = {}
-        my_dict[&#39;St&#39;] = stokes_nums
-        my_dict[&#39;h&#39;] = depth
-        my_dict[&#39;z&#39;] = initial_depths
-        my_dict[&#39;z/h&#39;] = initial_depths / depth
-        my_dict[&#39;A&#39;] = amplitude
-        my_dict[&#39;lambda&#39;] = wavelength
-
-        # initialize parameters for the transport system and numerics
+        # initialize the wave object and density ratio to use in the numerics
         my_wave = fl.DeepWaterWave(depth=depth, amplitude=amplitude,
                                                            wavelength=wavelength)
         R = 2 / 3 # density ratio for a neutrally buoyant particle
+
+        # run numerics in parallel for each Stokes number and initial depth
+        num_tasks = len(stokes_nums) * len(initial_depths)
+        stokes_nums, initial_depths = zip(*itertools.product(stokes_nums,
+                                                                                                                 initial_depths))
+        params = zip(stokes_nums, initial_depths, itertools.repeat(my_wave),
+                                 itertools.repeat(R))
+        results = progress_starmap(run_numerics, params, n_cpu=8,
+                                                                                   total=num_tasks)
+        # write results to data file
+        numerics = pd.DataFrame(results)
+        numerics.to_csv(&#39;../data/deep_water_wave/drift_velocity_varying_st.csv&#39;,
+                                        index=False)
+
+def run_numerics(stokes_num, z_0, wave, density_ratio):
+        &#34;&#34;&#34;
+        Runs a numerical simulation for the specified parameters and gets the
+        Stokes drift velocity.
+
+        Parameters
+        ----------
+        stokes_num : float
+                The Stokes number to use for the initialization of the particle.
+        z_0 : float
+                The initial position of the particle.
+        wave : Wave (obj)
+                The wave through which the particle is transported.
+        density_ratio : float
+                The ratio between the particle and fluid densities.
+        
+        Returns
+        -------
+        dict
+                Dictionary containing the components of the Stokes drift velocity and
+                other relevant parameters.
+        &#34;&#34;&#34;
+        # initialize local parameters for the numerical computations
         x_0 = 0
-        Fr = my_wave.froude_num
-        T = Fr * my_wave.angular_freq
+        xdot_0, zdot_0 = wave.velocity(x_0, z_0, t=0)
+        Fr = wave.froude_num
+        T = Fr * wave.angular_freq
         delta_t = 5e-3 * T
         num_periods = 20 * T
 
-        # run numerics and compute drift velocity for each Stokes number
-        for St in stokes_nums:
-                my_particle = prt.Particle(stokes_num=St)
-                my_system = ts.MyTransportSystem(my_particle, my_wave, R)
-                u_d_list = []
+        # initialize the particle and transport system
+        my_particle = prt.Particle(stokes_num)
+        my_system = ts.MyTransportSystem(my_particle, wave, density_ratio)
 
-                for z_0 in initial_depths:
-                        # run numerics
-                        xdot_0, zdot_0 = my_wave.velocity(x_0, z_0, t=0)
-                        x, z, xdot, zdot, t = my_system.run_numerics(include_history=False,
-                                                                                        x_0=x_0, z_0=z_0,
-                                                                                        xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                        delta_t=delta_t,
-                                                                                        num_periods=num_periods)
-                        u_d, _ = compute_drift_velocity(x, z, xdot, t)
-                        u_d_list.append(u_d / Fr)
-                my_dict[&#39;u_d_%g&#39; % St] = u_d_list
+        # run numerics
+        x, z, xdot, zdot, t = my_system.run_numerics(include_history=False,
+                                                                        x_0=x_0, z_0=z_0,
+                                                                        xdot_0=xdot_0, zdot_0=zdot_0,
+                                                                        delta_t=delta_t,
+                                                                        num_periods=num_periods)
+        u_d, w_d, z_star = compute_drift_velocity(x, z, xdot, t)
+        u_d /= Fr # scaling results
+        w_d /= Fr
 
-        # write results to data file
-        my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
-        numerics = pd.DataFrame(my_dict)
-        numerics.to_csv(&#39;../data/deep_water_wave/drift_velocity_varying_st.csv&#39;,
-                                        index=False)
+        # save and return results
+        results = {&#39;x_0&#39;: x_0, &#39;z_0&#39;: z_0, &#39;z_star&#39;: z_star, &#39;u_d&#39;: u_d, &#39;w_d&#39;: w_d,
+                           &#39;St&#39;: stokes_num, &#39;h&#39;: wave.depth, &#39;A&#39;: wave.amplitude,
+                           &#39;wavelength&#39;: wave.wavelength, &#39;k&#39;: wave.wavenum,
+                           &#39;omega&#39;: wave.angular_freq, &#39;Fr&#39;: wave.froude_num,
+                           &#39;delta_t&#39;: delta_t}
+        return results
 
 def compute_drift_velocity(x, z, xdot, t):
         r&#34;&#34;&#34;
@@ -118,6 +147,8 @@ def compute_drift_velocity(x, z, xdot, t):
                 The horizontal Stokes drift velocity.
         w_d : float
                 The vertical Stokes drift velocity.
+        z_star : float
+                The vertical position of the 9 o&#39;clock position of the first orbit.
         &#34;&#34;&#34;
         u_d, w_d = [], []
 
@@ -150,7 +181,8 @@ def compute_drift_velocity(x, z, xdot, t):
                                                 / (interpd_t[i] - interpd_t[i - 1]))
         u_d = np.mean(u_d_list)
         w_d = np.mean(w_d_list)
-        return u_d, w_d
+        z_star = interpd_z[0]
+        return u_d, w_d, z_star
 
 if __name__ == &#39;__main__&#39;:
         main()</code></pre>
@@ -188,6 +220,8 @@ using the distance travelled by the particle averaged over each wave period,
 <dd>The horizontal Stokes drift velocity.</dd>
 <dt><strong><code>w_d</code></strong> :&ensp;<code>float</code></dt>
 <dd>The vertical Stokes drift velocity.</dd>
+<dt><strong><code>z_star</code></strong> :&ensp;<code>float</code></dt>
+<dd>The vertical position of the 9 o'clock position of the first orbit.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -217,6 +251,8 @@ using the distance travelled by the particle averaged over each wave period,
                 The horizontal Stokes drift velocity.
         w_d : float
                 The vertical Stokes drift velocity.
+        z_star : float
+                The vertical position of the 9 o&#39;clock position of the first orbit.
         &#34;&#34;&#34;
         u_d, w_d = [], []
 
@@ -249,7 +285,8 @@ using the distance travelled by the particle averaged over each wave period,
                                                 / (interpd_t[i] - interpd_t[i - 1]))
         u_d = np.mean(u_d_list)
         w_d = np.mean(w_d_list)
-        return u_d, w_d</code></pre>
+        z_star = interpd_z[0]
+        return u_d, w_d, z_star</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.examples.deep_water_wave.numerical_drift_velocity.main"><code class="name flex">
@@ -269,55 +306,110 @@ the results to the <code>data/deep_water_wave</code> directory.</p></div>
         particle in linear deep water waves for various Stokes numbers, and saves
         the results to the `data/deep_water_wave` directory.
         &#34;&#34;&#34;
-        # initialize parameters for the flow and particle
+        # initialize the Stokes numbers and wave parameters
         stokes_nums = [0.01, 0.1, 1, 10]
         depth = 10
         amplitude = 0.01
         wavelength = 2
         initial_depths = np.linspace(0, -depth, 10, endpoint=False)
 
-        # store parameters
-        my_dict = {}
-        my_dict[&#39;St&#39;] = stokes_nums
-        my_dict[&#39;h&#39;] = depth
-        my_dict[&#39;z&#39;] = initial_depths
-        my_dict[&#39;z/h&#39;] = initial_depths / depth
-        my_dict[&#39;A&#39;] = amplitude
-        my_dict[&#39;lambda&#39;] = wavelength
-
-        # initialize parameters for the transport system and numerics
+        # initialize the wave object and density ratio to use in the numerics
         my_wave = fl.DeepWaterWave(depth=depth, amplitude=amplitude,
                                                            wavelength=wavelength)
         R = 2 / 3 # density ratio for a neutrally buoyant particle
+
+        # run numerics in parallel for each Stokes number and initial depth
+        num_tasks = len(stokes_nums) * len(initial_depths)
+        stokes_nums, initial_depths = zip(*itertools.product(stokes_nums,
+                                                                                                                 initial_depths))
+        params = zip(stokes_nums, initial_depths, itertools.repeat(my_wave),
+                                 itertools.repeat(R))
+        results = progress_starmap(run_numerics, params, n_cpu=8,
+                                                                                   total=num_tasks)
+        # write results to data file
+        numerics = pd.DataFrame(results)
+        numerics.to_csv(&#39;../data/deep_water_wave/drift_velocity_varying_st.csv&#39;,
+                                        index=False)</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.examples.deep_water_wave.numerical_drift_velocity.run_numerics"><code class="name flex">
+<span>def <span class="ident">run_numerics</span></span>(<span>stokes_num, z_0, wave, density_ratio)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Runs a numerical simulation for the specified parameters and gets the
+Stokes drift velocity.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The Stokes number to use for the initialization of the particle.</dd>
+<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code></dt>
+<dd>The initial position of the particle.</dd>
+<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
+<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>Dictionary containing the components of the Stokes drift velocity and
+other relevant parameters.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_numerics(stokes_num, z_0, wave, density_ratio):
+        &#34;&#34;&#34;
+        Runs a numerical simulation for the specified parameters and gets the
+        Stokes drift velocity.
+
+        Parameters
+        ----------
+        stokes_num : float
+                The Stokes number to use for the initialization of the particle.
+        z_0 : float
+                The initial position of the particle.
+        wave : Wave (obj)
+                The wave through which the particle is transported.
+        density_ratio : float
+                The ratio between the particle and fluid densities.
+        
+        Returns
+        -------
+        dict
+                Dictionary containing the components of the Stokes drift velocity and
+                other relevant parameters.
+        &#34;&#34;&#34;
+        # initialize local parameters for the numerical computations
         x_0 = 0
-        Fr = my_wave.froude_num
-        T = Fr * my_wave.angular_freq
+        xdot_0, zdot_0 = wave.velocity(x_0, z_0, t=0)
+        Fr = wave.froude_num
+        T = Fr * wave.angular_freq
         delta_t = 5e-3 * T
         num_periods = 20 * T
 
-        # run numerics and compute drift velocity for each Stokes number
-        for St in stokes_nums:
-                my_particle = prt.Particle(stokes_num=St)
-                my_system = ts.MyTransportSystem(my_particle, my_wave, R)
-                u_d_list = []
+        # initialize the particle and transport system
+        my_particle = prt.Particle(stokes_num)
+        my_system = ts.MyTransportSystem(my_particle, wave, density_ratio)
 
-                for z_0 in initial_depths:
-                        # run numerics
-                        xdot_0, zdot_0 = my_wave.velocity(x_0, z_0, t=0)
-                        x, z, xdot, zdot, t = my_system.run_numerics(include_history=False,
-                                                                                        x_0=x_0, z_0=z_0,
-                                                                                        xdot_0=xdot_0, zdot_0=zdot_0,
-                                                                                        delta_t=delta_t,
-                                                                                        num_periods=num_periods)
-                        u_d, _ = compute_drift_velocity(x, z, xdot, t)
-                        u_d_list.append(u_d / Fr)
-                my_dict[&#39;u_d_%g&#39; % St] = u_d_list
+        # run numerics
+        x, z, xdot, zdot, t = my_system.run_numerics(include_history=False,
+                                                                        x_0=x_0, z_0=z_0,
+                                                                        xdot_0=xdot_0, zdot_0=zdot_0,
+                                                                        delta_t=delta_t,
+                                                                        num_periods=num_periods)
+        u_d, w_d, z_star = compute_drift_velocity(x, z, xdot, t)
+        u_d /= Fr # scaling results
+        w_d /= Fr
 
-        # write results to data file
-        my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
-        numerics = pd.DataFrame(my_dict)
-        numerics.to_csv(&#39;../data/deep_water_wave/drift_velocity_varying_st.csv&#39;,
-                                        index=False)</code></pre>
+        # save and return results
+        results = {&#39;x_0&#39;: x_0, &#39;z_0&#39;: z_0, &#39;z_star&#39;: z_star, &#39;u_d&#39;: u_d, &#39;w_d&#39;: w_d,
+                           &#39;St&#39;: stokes_num, &#39;h&#39;: wave.depth, &#39;A&#39;: wave.amplitude,
+                           &#39;wavelength&#39;: wave.wavelength, &#39;k&#39;: wave.wavenum,
+                           &#39;omega&#39;: wave.angular_freq, &#39;Fr&#39;: wave.froude_num,
+                           &#39;delta_t&#39;: delta_t}
+        return results</code></pre>
 </details>
 </dd>
 </dl>
@@ -340,6 +432,7 @@ the results to the <code>data/deep_water_wave</code> directory.</p></div>
 <ul class="">
 <li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.numerical_drift_velocity.compute_drift_velocity" href="#modelling-microplastics-transport.examples.deep_water_wave.numerical_drift_velocity.compute_drift_velocity">compute_drift_velocity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.numerical_drift_velocity.main" href="#modelling-microplastics-transport.examples.deep_water_wave.numerical_drift_velocity.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.numerical_drift_velocity.run_numerics" href="#modelling-microplastics-transport.examples.deep_water_wave.numerical_drift_velocity.run_numerics">run_numerics</a></code></li>
 </ul>
 </li>
 </ul>

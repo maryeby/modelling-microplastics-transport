@@ -51,6 +51,11 @@ class HallerTransportSystem(transport_system.TransportSystem):
                         The flow through which the particle is transported.
                 density_ratio : float
                         The ratio between the particle and fluid densities.
+                reynolds_num : float
+                        The particle Reynolds number, computed as,
+                        $$Re_p = \frac{Ud}{\nu},$$
+                        where *U* and ν are attributes of the wave, and *d* is the diameter
+                        of the particle.
                 epsilon : float
                         A relationship between the Stokes number *St* and density ratio *R*,
                         $$\epsilon = \frac{St}{R}.$$
@@ -251,6 +256,11 @@ described by Haller and Sapsis (2008).</p>
 <dd>The flow through which the particle is transported.</dd>
 <dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
 <dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The particle Reynolds number, computed as,
+<span><span class="MathJax_Preview">Re_p = \frac{Ud}{\nu},</span><script type="math/tex; mode=display">Re_p = \frac{Ud}{\nu},</script></span>
+where <em>U</em> and ν are attributes of the wave, and <em>d</em> is the diameter
+of the particle.</dd>
 <dt><strong><code>epsilon</code></strong> :&ensp;<code>float</code></dt>
 <dd>A relationship between the Stokes number <em>St</em> and density ratio <em>R</em>,
 <span><span class="MathJax_Preview">\epsilon = \frac{St}{R}.</span><script type="math/tex; mode=display">\epsilon = \frac{St}{R}.</script></span></dd>
@@ -275,6 +285,11 @@ described by Haller and Sapsis (2008).</p>
                         The flow through which the particle is transported.
                 density_ratio : float
                         The ratio between the particle and fluid densities.
+                reynolds_num : float
+                        The particle Reynolds number, computed as,
+                        $$Re_p = \frac{Ud}{\nu},$$
+                        where *U* and ν are attributes of the wave, and *d* is the diameter
+                        of the particle.
                 epsilon : float
                         A relationship between the Stokes number *St* and density ratio *R*,
                         $$\epsilon = \frac{St}{R}.$$

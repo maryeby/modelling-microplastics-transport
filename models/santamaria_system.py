@@ -22,6 +22,11 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 			The flow through which the particle is transported.
 		density_ratio : float
 			The ratio between the particle and fluid densities.
+		reynolds_num : float
+			The particle Reynolds number, computed as,
+			$$Re_p = \frac{Ud}{\nu},$$
+			where *U* and ν are attributes of the wave, and *d* is the diameter
+			of the particle.
 		st_response_time : float
 			The Stokes response time τ, computed as
 			$$\tau = \frac{St}{\omega}.$$

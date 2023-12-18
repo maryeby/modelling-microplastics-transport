@@ -22,6 +22,11 @@ class HallerTransportSystem(transport_system.TransportSystem):
 			The flow through which the particle is transported.
 		density_ratio : float
 			The ratio between the particle and fluid densities.
+		reynolds_num : float
+			The particle Reynolds number, computed as,
+			$$Re_p = \frac{Ud}{\nu},$$
+			where *U* and ν are attributes of the wave, and *d* is the diameter
+			of the particle.
 		epsilon : float
 			A relationship between the Stokes number *St* and density ratio *R*,
 			$$\epsilon = \frac{St}{R}.$$

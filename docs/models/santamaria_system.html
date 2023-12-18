@@ -51,6 +51,11 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
                         The flow through which the particle is transported.
                 density_ratio : float
                         The ratio between the particle and fluid densities.
+                reynolds_num : float
+                        The particle Reynolds number, computed as,
+                        $$Re_p = \frac{Ud}{\nu},$$
+                        where *U* and ν are attributes of the wave, and *d* is the diameter
+                        of the particle.
                 st_response_time : float
                         The Stokes response time τ, computed as
                         $$\tau = \frac{St}{\omega}.$$
@@ -240,6 +245,11 @@ described by Santamaria et al. (2013).</p>
 <dd>The flow through which the particle is transported.</dd>
 <dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
 <dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The particle Reynolds number, computed as,
+<span><span class="MathJax_Preview">Re_p = \frac{Ud}{\nu},</span><script type="math/tex; mode=display">Re_p = \frac{Ud}{\nu},</script></span>
+where <em>U</em> and ν are attributes of the wave, and <em>d</em> is the diameter
+of the particle.</dd>
 <dt><strong><code>st_response_time</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Stokes response time τ, computed as
 <span><span class="MathJax_Preview">\tau = \frac{St}{\omega}.</span><script type="math/tex; mode=display">\tau = \frac{St}{\omega}.</script></span></dd>
@@ -264,6 +274,11 @@ described by Santamaria et al. (2013).</p>
                         The flow through which the particle is transported.
                 density_ratio : float
                         The ratio between the particle and fluid densities.
+                reynolds_num : float
+                        The particle Reynolds number, computed as,
+                        $$Re_p = \frac{Ud}{\nu},$$
+                        where *U* and ν are attributes of the wave, and *d* is the diameter
+                        of the particle.
                 st_response_time : float
                         The Stokes response time τ, computed as
                         $$\tau = \frac{St}{\omega}.$$

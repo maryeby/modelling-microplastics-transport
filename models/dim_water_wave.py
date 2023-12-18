@@ -20,6 +20,8 @@ class DimensionalWaterWave(wave.Wave):
 			The amplitude of the wave *A*.
 		wavelength : float
 			The wavelength *λ*.
+		kinematic_viscosity : float
+			The kinematic viscosity ν of seawater.
 		wavenum : float
 			The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
 		gravity : float
@@ -37,6 +39,9 @@ class DimensionalWaterWave(wave.Wave):
 			$$U = \omega A.$$
 		froude_num : float
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+		reynolds_num : float
+			The Reynolds number *Re* of the wave, computed as
+			$$Re = \frac{U}{kν}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
 

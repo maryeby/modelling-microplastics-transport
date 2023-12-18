@@ -18,7 +18,7 @@ def main():
 							+ 'analytical_drift_velocity.csv')
 
 	# create lists of labels and markers for scatter plots (numerical results)
-	stokes_nums = numerics['St'][:].dropna()
+	stokes_nums = numerics['St'][:].drop_duplicates()
 	markers = ['o', '^', 's', 'd']
 
 	# plot results
@@ -31,9 +31,14 @@ def main():
 	plt.minorticks_on()
 
 	plt.plot('u_d', 'z/h', c='k', data=analytics, label='analytics')
-	for i in range(len(stokes_nums)):
-		plt.scatter('u_d_%g' % stokes_nums[i], 'z/h', c='k', marker=markers[i],
-					data=numerics, label='numerics (St = %g)' % stokes_nums[i])
+	m = 0
+	for St in stokes_nums:
+		u_d = numerics['u_d'].where(numerics['St'] == St).dropna()
+		z = numerics['z_0'].where(numerics['St'] == St).dropna()
+		h = numerics['h'].where(numerics['St'] == St).dropna()
+		plt.scatter(u_d, z/h, c='k', marker=markers[m],
+					label='numerics (St = %g)' % St)
+		m += 1
 	plt.legend(fontsize=14)
 	plt.show()
 

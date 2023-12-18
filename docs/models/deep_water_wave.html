@@ -53,6 +53,8 @@ class DeepWaterWave(wave.Wave):
                         The wavelength *λ*.
                 wavenum : float
                         The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+                kinematic_viscosity : float
+                        The kinematic viscosity ν of seawater.
                 gravity : float
                         The gravity **g** acting on the fluid, non-dimensionalized as,
                         $$g&#39; = g \frac{L&#39;}{U^{\prime 2}}.$$
@@ -69,6 +71,9 @@ class DeepWaterWave(wave.Wave):
                         $$U = \omega A.$$
                 froude_num : float
                         The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+                reynolds_num : float
+                        The Reynolds number *Re* of the wave, computed as
+                        $$Re = \frac{U}{kν}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth, amplitude, wavelength)
                 self.gravity /= constants.g * self.froude_num ** 2
@@ -220,6 +225,8 @@ depth.</p>
 <dd>The wavelength <em>λ</em>.</dd>
 <dt><strong><code>wavenum</code></strong> :&ensp;<code>float</code></dt>
 <dd>The wavenumber <em>k</em>, computed as <span><span class="MathJax_Preview">k = \frac{2 \pi}{\lambda}.</span><script type="math/tex; mode=display">k = \frac{2 \pi}{\lambda}.</script></span></dd>
+<dt><strong><code>kinematic_viscosity</code></strong> :&ensp;<code>float</code></dt>
+<dd>The kinematic viscosity ν of seawater.</dd>
 <dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
 <dd>The gravity <strong>g</strong> acting on the fluid, non-dimensionalized as,
 <span><span class="MathJax_Preview">g' = g \frac{L'}{U^{\prime 2}}.</span><script type="math/tex; mode=display">g' = g \frac{L'}{U^{\prime 2}}.</script></span></dd>
@@ -236,6 +243,9 @@ depth.</p>
 <span><span class="MathJax_Preview">U = \omega A.</span><script type="math/tex; mode=display">U = \omega A.</script></span></dd>
 <dt><strong><code>froude_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Froude number <em>Fr</em>, computed as <span><span class="MathJax_Preview">Fr = \frac{U}{c}.</span><script type="math/tex; mode=display">Fr = \frac{U}{c}.</script></span></dd>
+<dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The Reynolds number <em>Re</em> of the wave, computed as
+<span><span class="MathJax_Preview">Re = \frac{U}{kν}.</span><script type="math/tex; mode=display">Re = \frac{U}{kν}.</script></span></dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -260,6 +270,8 @@ depth.</p>
                         The wavelength *λ*.
                 wavenum : float
                         The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+                kinematic_viscosity : float
+                        The kinematic viscosity ν of seawater.
                 gravity : float
                         The gravity **g** acting on the fluid, non-dimensionalized as,
                         $$g&#39; = g \frac{L&#39;}{U^{\prime 2}}.$$
@@ -276,6 +288,9 @@ depth.</p>
                         $$U = \omega A.$$
                 froude_num : float
                         The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+                reynolds_num : float
+                        The Reynolds number *Re* of the wave, computed as
+                        $$Re = \frac{U}{kν}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth, amplitude, wavelength)
                 self.gravity /= constants.g * self.froude_num ** 2

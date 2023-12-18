@@ -28,6 +28,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from abc import ABC, abstractmethod
+import numpy as np
 
 class TransportSystem:
         &#34;&#34;&#34;
@@ -35,7 +36,7 @@ class TransportSystem:
         &#34;&#34;&#34;
 
         def __init__(self, particle, flow, density_ratio):
-                &#34;&#34;&#34;
+                r&#34;&#34;&#34;
                 Attributes
                 ----------
                 particle : Particle (obj)
@@ -44,10 +45,20 @@ class TransportSystem:
                         The flow through which the particle is transported.
                 density_ratio : float
                         The ratio between the particle and fluid densities.
+                reynolds_num : float
+                        The particle Reynolds number, computed as,
+                        $$Re_p = \frac{Ud}{\nu},$$
+                        where *U* and ν are attributes of the wave, and *d* is the diameter
+                        of the particle.
                 &#34;&#34;&#34;
                 self.particle = particle
                 self.flow = flow
                 self.density_ratio = density_ratio
+                self.reynolds_num = (2 * self.flow.max_velocity
+                                                           * np.sqrt(9 * self.particle.stokes_num 
+                                                           / (2 * self.flow.wavenum ** 2
+                                                           * self.flow.reynolds_num))) \
+                                                           / self.flow.kinematic_viscosity
 
         @abstractmethod
         def maxey_riley(self, t, y):
@@ -126,6 +137,11 @@ class TransportSystem:
 <dd>The flow through which the particle is transported.</dd>
 <dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
 <dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The particle Reynolds number, computed as,
+<span><span class="MathJax_Preview">Re_p = \frac{Ud}{\nu},</span><script type="math/tex; mode=display">Re_p = \frac{Ud}{\nu},</script></span>
+where <em>U</em> and ν are attributes of the wave, and <em>d</em> is the diameter
+of the particle.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -137,7 +153,7 @@ class TransportSystem:
         &#34;&#34;&#34;
 
         def __init__(self, particle, flow, density_ratio):
-                &#34;&#34;&#34;
+                r&#34;&#34;&#34;
                 Attributes
                 ----------
                 particle : Particle (obj)
@@ -146,10 +162,20 @@ class TransportSystem:
                         The flow through which the particle is transported.
                 density_ratio : float
                         The ratio between the particle and fluid densities.
+                reynolds_num : float
+                        The particle Reynolds number, computed as,
+                        $$Re_p = \frac{Ud}{\nu},$$
+                        where *U* and ν are attributes of the wave, and *d* is the diameter
+                        of the particle.
                 &#34;&#34;&#34;
                 self.particle = particle
                 self.flow = flow
                 self.density_ratio = density_ratio
+                self.reynolds_num = (2 * self.flow.max_velocity
+                                                           * np.sqrt(9 * self.particle.stokes_num 
+                                                           / (2 * self.flow.wavenum ** 2
+                                                           * self.flow.reynolds_num))) \
+                                                           / self.flow.kinematic_viscosity
 
         @abstractmethod
         def maxey_riley(self, t, y):

@@ -47,7 +47,7 @@ def main():
                                                         + &#39;analytical_drift_velocity.csv&#39;)
 
         # create lists of labels and markers for scatter plots (numerical results)
-        stokes_nums = numerics[&#39;St&#39;][:].dropna()
+        stokes_nums = numerics[&#39;St&#39;][:].drop_duplicates()
         markers = [&#39;o&#39;, &#39;^&#39;, &#39;s&#39;, &#39;d&#39;]
 
         # plot results
@@ -60,9 +60,14 @@ def main():
         plt.minorticks_on()
 
         plt.plot(&#39;u_d&#39;, &#39;z/h&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytics&#39;)
-        for i in range(len(stokes_nums)):
-                plt.scatter(&#39;u_d_%g&#39; % stokes_nums[i], &#39;z/h&#39;, c=&#39;k&#39;, marker=markers[i],
-                                        data=numerics, label=&#39;numerics (St = %g)&#39; % stokes_nums[i])
+        m = 0
+        for St in stokes_nums:
+                u_d = numerics[&#39;u_d&#39;].where(numerics[&#39;St&#39;] == St).dropna()
+                z = numerics[&#39;z_0&#39;].where(numerics[&#39;St&#39;] == St).dropna()
+                h = numerics[&#39;h&#39;].where(numerics[&#39;St&#39;] == St).dropna()
+                plt.scatter(u_d, z/h, c=&#39;k&#39;, marker=markers[m],
+                                        label=&#39;numerics (St = %g)&#39; % St)
+                m += 1
         plt.legend(fontsize=14)
         plt.show()
 
@@ -101,7 +106,7 @@ varying Stokes numbers.</p></div>
                                                         + &#39;analytical_drift_velocity.csv&#39;)
 
         # create lists of labels and markers for scatter plots (numerical results)
-        stokes_nums = numerics[&#39;St&#39;][:].dropna()
+        stokes_nums = numerics[&#39;St&#39;][:].drop_duplicates()
         markers = [&#39;o&#39;, &#39;^&#39;, &#39;s&#39;, &#39;d&#39;]
 
         # plot results
@@ -114,9 +119,14 @@ varying Stokes numbers.</p></div>
         plt.minorticks_on()
 
         plt.plot(&#39;u_d&#39;, &#39;z/h&#39;, c=&#39;k&#39;, data=analytics, label=&#39;analytics&#39;)
-        for i in range(len(stokes_nums)):
-                plt.scatter(&#39;u_d_%g&#39; % stokes_nums[i], &#39;z/h&#39;, c=&#39;k&#39;, marker=markers[i],
-                                        data=numerics, label=&#39;numerics (St = %g)&#39; % stokes_nums[i])
+        m = 0
+        for St in stokes_nums:
+                u_d = numerics[&#39;u_d&#39;].where(numerics[&#39;St&#39;] == St).dropna()
+                z = numerics[&#39;z_0&#39;].where(numerics[&#39;St&#39;] == St).dropna()
+                h = numerics[&#39;h&#39;].where(numerics[&#39;St&#39;] == St).dropna()
+                plt.scatter(u_d, z/h, c=&#39;k&#39;, marker=markers[m],
+                                        label=&#39;numerics (St = %g)&#39; % St)
+                m += 1
         plt.legend(fontsize=14)
         plt.show()</code></pre>
 </details>

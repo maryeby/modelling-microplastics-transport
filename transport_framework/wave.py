@@ -18,6 +18,8 @@ class Wave(flow.Flow):
 			The amplitude of the wave *A*.
 		wavelength : float
 			The wavelength *λ*.
+		kinematic_viscosity : float
+			The kinematic viscosity ν of seawater.
 		wavenum : float
 			The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
 		gravity : float
@@ -34,10 +36,14 @@ class Wave(flow.Flow):
 			$$U = \omega A.$$
 		froude_num : float
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+		reynolds_num : float
+			The Reynolds number *Re* of the wave, computed as
+			$$Re = \frac{U}{kν}.$$
 		"""
 		super().__init__(depth)
 		self.amplitude = amplitude
 		self.wavelength = wavelength
+		self.kinematic_viscosity = 1e-6
 
 		# computed attributes
 		self.wavenum = 2 * np.pi / self.wavelength
@@ -46,7 +52,9 @@ class Wave(flow.Flow):
 		self.period = 2 * np.pi / self.angular_freq
 		self.max_velocity = self.angular_freq * self.amplitude
 		self.froude_num = self.max_velocity / self.phase_velocity
-		
+		self.reynolds_num = self.max_velocity / (self.wavenum
+											  * self.kinematic_viscosity)
+	
 	@abstractmethod
 	def set_angular_freq(self):
 		"""Defines the angular frequency *ω*."""

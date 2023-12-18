@@ -4,6 +4,7 @@ sys.path.append('/home/s2182576/Documents/academia/thesis/'
 import numpy as np
 from time import time
 from tqdm import tqdm
+
 from models import deep_water_wave
 from transport_framework import particle, transport_system
 
@@ -22,10 +23,15 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The flow through which the particle is transported.
 		density_ratio : float
 			The ratio between the particle and fluid densities.
+		reynolds_num : float
+			The particle Reynolds number, computed as,
+			$$Re_p = \frac{Ud}{\nu},$$
+			where *U* and ν are attributes of the wave, and *d* is the diameter
+			of the particle.
 		"""
 		super().__init__(particle, flow, density_ratio)
 
-	def maxey_riley(self, include_history, t, y, order):
+	def maxey_riley(self, include_history, t, y, order, hide_progress):
 		r"""
 		Implements the integration scheme for the full Maxey-Riley equation, as
 		outlined in Daitche (2013) Section 3, with a slight modification to
@@ -41,6 +47,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 			A list containing the initial particle position and velocity.
 		order : int
 			The order of the integration scheme.
+		hide_progress : bool
+			Whether to hide the `tqdm` progress bar.
 
 		Returns
 		-------
@@ -76,6 +84,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 
 		# only compute alpha, beta, gamma, xi if we're including history effects
 		if include_history:
+			hide_progress = False
 			xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
 			mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
 
@@ -97,7 +106,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 				gamma = compute_gamma(t.size, beta[:, 2])
 
 		# compute solutions for the first two intervals using finer time steps
-		for n_prime in range(mini_steps.size - 1):
+		if not hide_progress:
+			print('Computing the first two intervals using mini steps...')
+		for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
 			mini_w = mini_v - mini_u
 			G = (3 / 2 * R - 1) \
 				   * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
@@ -192,8 +203,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 		u[2] = mini_u[-1]
 
 		# compute solutions for the remaining intervals
-#		for n in tqdm(range(2, num_steps)):
-		for n in range(2, num_steps):
+		if not hide_progress:
+			print('Computing the remaining intervals...')
+		for n in tqdm(range(2, num_steps), disable=hide_progress):
 			w = v - u
 			G = (3 / 2 * R - 1) \
 				   * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
@@ -245,7 +257,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
 	def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
-					 num_periods, delta_t, order=3):
+					 num_periods, delta_t, hide_progress, order=3):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -265,6 +277,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The number of wave periods to integrate over.
 		delta_t : float
 			The size of the time steps used for integration.
+		hide_progress : bool
+			Whether to hide the `tqdm` progress bar.
 		order : int, default=3
 			The order of the integration scheme.
 
@@ -287,7 +301,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 		y = [x_0, z_0, xdot_0, zdot_0]
 
 		# run computations
-		return self.maxey_riley(include_history, t_eval, y, order)
+		return self.maxey_riley(include_history, t_eval, y, order,
+								hide_progress)
 
 def compute_alpha(size):
 	r"""
@@ -310,8 +325,8 @@ def compute_alpha(size):
 	Array
 		The matrix containing the values of the coefficient alpha.
 	"""
-#	print('Computing matrix of alpha coefficients...', end='', flush=True)
-#	start = time()
+	print('Computing matrix of alpha coefficients...', end='', flush=True)
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape, dtype='float128')
 
@@ -336,8 +351,7 @@ def compute_alpha(size):
 					 + exp * np.sqrt(n[0, 1:]))
 	diagonal = np.insert(diagonal, 0, 0)
 	np.fill_diagonal(arr, diagonal.astype('float64'))
-#	finish = time()
-#	print('done.\t\t{:7.2f}s'.format(finish - start))
+	print('done.\t\t{:7.2f}s'.format(time() - start))
 	return np.triu(arr)
 
 def compute_beta(size, alpha):
@@ -358,8 +372,8 @@ def compute_beta(size, alpha):
 	Array
 		The matrix containing the values of the coefficient beta.
 	"""
-#	print('Computing matrix of beta coefficients...', end='', flush=True)
-#	start = time()
+	print('Computing matrix of beta coefficients...', end='', flush=True)
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape, dtype='float128')
 	arr[:, 0] = 0		# n = 0 (should never be called for beta)
@@ -428,9 +442,8 @@ def compute_beta(size, alpha):
 					  + (j[3:-2, 5:] - one) ** exp1)
 		vals = vals[np.triu(vals) != 0]
 		np.place(arr, mask, vals.astype('float64'))
-	finish = time()
-#	print('done.\t\t{:7.2f}s'.format(finish - start))
-#	return np.triu(arr)
+	print('done.\t\t{:7.2f}s'.format(time() - start))
+	return np.triu(arr)
 
 def compute_gamma(size, beta):
 	r"""
@@ -450,8 +463,8 @@ def compute_gamma(size, beta):
 	Array
 		The matrix containing the values of the coefficient gamma.
 	"""
-#	print('Computing matrix of gamma coefficients...', end='', flush=True)
-#	start = time()
+	print('Computing matrix of gamma coefficients...', end='', flush=True)
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[:, :2] = 0		# n = 0 and n = 1 (should never be called for gamma)
@@ -598,6 +611,72 @@ def compute_gamma(size, beta):
 				 - (j[4:-4, 8:] - two) ** exp1 - six * j[4:-4, 8:] ** exp1)
 	vals = vals[np.triu(vals) != 0]
 	np.place(arr, mask, vals.astype('float64'))
-#	finish = time()
-#	print('done.\t\t{:7.2f}s'.format(finish - start))
+	print('done.\t\t{:7.2f}s'.format(time() - start))
 	return np.triu(arr)
+
+def compute_drift_velocity(x, z, xdot, t):
+	r"""
+	Computes the Stokes drift velocity
+	$$\mathbf{u}_d = \langle u_d, w_d \rangle$$
+	using the distance travelled by the particle averaged over each wave period,
+	$$\mathbf{u}_d = \frac{\mathbf{x}_{n + 1} - \mathbf{x}_n}{\text{period}}.$$
+
+	Parameters
+	----------
+	x : array
+		The horizontal positions used to evaluate the drift velocity.
+	z : array
+		The vertical positions used to evaluate the drift velocity.
+	xdot : array
+		The horizontal velocities used to evaluate the drift velocity.
+	t : array
+		The times when the drift velocity should be evaluated.
+
+	Returns
+	-------
+	x_crossings : array
+		The horizontal position of the particle at the end of each period.
+	z_crossings : array
+		The vertical position of the particle at the end of each period.
+	u_d : array
+		The horizontal Stokes drift velocities.
+	w_d : array
+		The vertical Stokes drift velocities.
+	t : array
+		The times at which the Stokes drift velocity was computed.
+	"""
+	# find the estimated endpoints of the periods
+	estimated_endpoints = []
+	for i in range(1, len(xdot)):
+		if xdot[i - 1] < 0 and 0 <= xdot[i]:
+			estimated_endpoints.append(i)
+
+	# find the exact endpoints of the periods using interpolation
+	interpd_x, interpd_z, interpd_t = [], [], []
+	for i in range(len(estimated_endpoints)):
+		current = estimated_endpoints[i]
+		previous = current - 1
+
+		new_t = np.interp(0, [xdot[previous], xdot[current]], [t[previous],
+															   t[current]])
+		interpd_t.append(new_t)
+		interpd_x.append(np.interp(new_t, [t[previous], t[current]],
+								   [x[previous], x[current]]))
+		interpd_z.append(np.interp(new_t, [t[previous], t[current]],
+								   [z[previous], z[current]]))
+
+	# compute drift velocity
+	u_d, w_d = [], []
+	for i in range(1, len(interpd_t)):
+		u_d.append((interpd_x[i] - interpd_x[i - 1])
+				 / (interpd_t[i] - interpd_t[i - 1]))
+		w_d.append((interpd_z[i] - interpd_z[i - 1])
+				 / (interpd_t[i] - interpd_t[i - 1]))
+
+	# return results
+	x_crossings = np.array(interpd_x)
+	z_crossings = np.array(interpd_z)
+	u_d = np.array(u_d)
+	w_d = np.array(w_d)
+	t = np.array(interpd_t[1:])
+	return x_crossings, z_crossings, u_d, w_d, t

@@ -24,6 +24,8 @@ class DeepWaterWave(wave.Wave):
 			The wavelength *λ*.
 		wavenum : float
 			The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+		kinematic_viscosity : float
+			The kinematic viscosity ν of seawater.
 		gravity : float
 			The gravity **g** acting on the fluid, non-dimensionalized as,
 			$$g' = g \frac{L'}{U^{\prime 2}}.$$
@@ -40,6 +42,9 @@ class DeepWaterWave(wave.Wave):
 			$$U = \omega A.$$
 		froude_num : float
 			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+		reynolds_num : float
+			The Reynolds number *Re* of the wave, computed as
+			$$Re = \frac{U}{kν}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
 		self.gravity /= constants.g * self.froude_num ** 2
