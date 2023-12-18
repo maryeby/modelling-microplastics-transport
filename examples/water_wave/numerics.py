@@ -23,9 +23,9 @@ def main():
 	"""
 	# initialize parameters
 	stokes_num = 0.01
-	beta = 1
+	beta = 0.01
 	depth, amplitude, wavelength = 10, 0.02, 1
-	num_periods, delta_t = 5, 5e-4
+	num_periods, delta_t = 5, 5e-3
 	my_wave = fl.WaterWave(depth, amplitude, wavelength)
 
 	# run the simulations with the appropriate function
@@ -207,7 +207,7 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
 		Dictionary containing the numerical solutions.
 	"""
 	# initialize parameters
-	x_0, z_0 = 0, -3.625
+	x_0, z_0 = 0, 0
 	xdot_0, zdot_0 = wave.velocity(x_0, z_0, t=0)
 	R = 2 / 3 * beta
 
@@ -286,10 +286,11 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
 
 def write_data(results):
 	"""Writes the provided `results` dictionary to a csv file."""
-	filename = 'numerics.csv'
+	filename = 'newmerics.csv'
 	df = pd.DataFrame(results)
 	numerics = df.explode(list(df.columns.values), ignore_index=True)
-	numerics.to_csv(DATA_PATH + filename, mode='a', header=False, index=False)
+#	numerics.to_csv(DATA_PATH + filename, mode='a', header=False, index=False)
+	numerics.to_csv(DATA_PATH + filename, index=False)
 	print(f'Data added to {filename}.')
 
 if __name__ == '__main__':

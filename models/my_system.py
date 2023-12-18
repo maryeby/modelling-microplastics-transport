@@ -30,6 +30,11 @@ class MyTransportSystem(transport_system.TransportSystem):
 			of the particle.
 		"""
 		super().__init__(particle, flow, density_ratio)
+#		self.reynolds_num = (2 * self.flow.max_velocity
+#							   * np.sqrt(9 * self.particle.stokes_num 
+#							   / (2 * self.flow.wavenum ** 2
+#							   * self.flow.reynolds_num))) \
+#							   / self.flow.kinematic_viscosity
 
 	def maxey_riley(self, include_history, t, y, order, hide_progress):
 		r"""
@@ -82,6 +87,11 @@ class MyTransportSystem(transport_system.TransportSystem):
 		mini_v[0] = v[0]
 		mini_u[0] = u[0]
 
+		# immediately return if z_0 is below the depth of the water (z_0 < -h)
+		if x[0, 1] <= -self.flow.depth:
+			print('Error: Initial vertical position is below the seabed.')
+			return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0]
+
 		# only compute alpha, beta, gamma, xi if we're including history effects
 		if include_history:
 			hide_progress = False
@@ -109,6 +119,13 @@ class MyTransportSystem(transport_system.TransportSystem):
 		if not hide_progress:
 			print('Computing the first two intervals using mini steps...')
 		for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
+			# return immediately if the particle reaches the seabed (z < -h)
+			if x[n_prime, 1] <= -self.flow.depth:
+				print('Simulation ended prematurely: particle reached the',
+					  f'seabed.\nz_f = {x[n_prime, 1]:.4g}\nt_f = {t[n_prime]}')
+				return x[:n_prime, 0], x[:n_prime, 1], v[:n_prime, 0], \
+					   v[:n_prime, 1], t[:n_prime]
+
 			mini_w = mini_v - mini_u
 			G = (3 / 2 * R - 1) \
 				   * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
@@ -206,6 +223,12 @@ class MyTransportSystem(transport_system.TransportSystem):
 		if not hide_progress:
 			print('Computing the remaining intervals...')
 		for n in tqdm(range(2, num_steps), disable=hide_progress):
+			# return immediately if the particle reaches the seabed (z < -h)
+			if x[n, 1] <= -self.flow.depth:
+				print('Simulation ended prematurely: particle reached the',
+					  f'seabed.\nz_f = {x[n, 1]:.4g}\nt_f = {t[n]}')
+				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n]
+
 			w = v - u
 			G = (3 / 2 * R - 1) \
 				   * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,

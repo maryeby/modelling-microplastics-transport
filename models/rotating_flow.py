@@ -7,7 +7,7 @@ from transport_framework import flow
 class RotatingFlow(flow.Flow):
 	"""Represents a fluid flow for rigid body rotation."""
 
-	def __init__(self, depth=15):
+	def __init__(self, depth=50):
 		r"""
 		Attributes
 		----------

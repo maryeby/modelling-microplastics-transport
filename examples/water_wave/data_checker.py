@@ -29,7 +29,7 @@ def main():
 		history = True
 
 	# read data
-	filename = 'numerics.csv'
+	filename = 'newmerics.csv'
 	numerics = pd.read_csv(DATA_PATH + filename)
 
 	# retrieve relevant numerical results

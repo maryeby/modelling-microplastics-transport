@@ -32,6 +32,11 @@ class HallerTransportSystem(transport_system.TransportSystem):
 			$$\epsilon = \frac{St}{R}.$$
 		"""
 		super().__init__(particle, flow, density_ratio)
+		self.reynolds_num = (2 * self.flow.max_velocity
+							   * np.sqrt(9 * self.particle.stokes_num 
+							   / (2 * self.flow.wavenum ** 2
+							   * self.flow.reynolds_num))) \
+							   / self.flow.kinematic_viscosity
 		self.epsilon = self.particle.stokes_num / self.density_ratio
 
 	def maxey_riley(self, t, y):

@@ -16,20 +16,10 @@ class TransportSystem:
 			The flow through which the particle is transported.
 		density_ratio : float
 			The ratio between the particle and fluid densities.
-		reynolds_num : float
-			The particle Reynolds number, computed as,
-			$$Re_p = \frac{Ud}{\nu},$$
-			where *U* and ν are attributes of the wave, and *d* is the diameter
-			of the particle.
 		"""
 		self.particle = particle
 		self.flow = flow
 		self.density_ratio = density_ratio
-		self.reynolds_num = (2 * self.flow.max_velocity
-							   * np.sqrt(9 * self.particle.stokes_num 
-							   / (2 * self.flow.wavenum ** 2
-							   * self.flow.reynolds_num))) \
-							   / self.flow.kinematic_viscosity
 
 	@abstractmethod
 	def maxey_riley(self, t, y):
