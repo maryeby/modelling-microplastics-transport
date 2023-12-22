@@ -6,6 +6,7 @@ warnings.filterwarnings('ignore')
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import itertools
 from parallelbar import progress_starmap
 
@@ -23,9 +24,9 @@ def main():
 	"""
 	# initialize parameters
 	stokes_num = 0.01
-	beta = 0.01
+	beta = 0.9
 	depth, amplitude, wavelength = 10, 0.02, 1
-	num_periods, delta_t = 5, 5e-3
+	num_periods, delta_t = 10, 5e-3
 	my_wave = fl.WaterWave(depth, amplitude, wavelength)
 
 	# run the simulations with the appropriate function
@@ -54,15 +55,45 @@ def single_simulation(stokes_num, wave, beta, num_periods, delta_t):
 	delta_t : float
 		The size of the time steps used for integration.
 	"""
+	# ask the user whether to write the results or plot results without writing
+	answer = input('(W)rite the results to the data file or (P)lot the results'
+				   'without writing? ')
+	write_results = True if answer.upper() == 'W' else False
+
+	# run simulation without history
 	results = run_numerics(stokes_num, wave, beta, False, num_periods, delta_t,
 						   hide_progress=False)
+
 	# only write results if they contain no NaNs (skip failed simulations)
-	if results['x'] is not None:
+	if write_results and results['x'] is not None:
 		write_data(results)
 		history_results = run_numerics(stokes_num, wave, beta, True,
 									   num_periods, delta_t)
 		if history_results['x'] is not None:
 			write_data(history_results)
+
+	# only plot results if they contain no NaNs (skip failed simulations)
+	elif not write_results and results['x'] is not None:
+		# initialize plot
+		plt.figure()
+		plt.title(r'Particle Trajectory', fontsize=18)
+		plt.xlabel('x', fontsize=14)
+		plt.ylabel('z', fontsize=14)
+		plt.xticks(fontsize=14)
+		plt.yticks(fontsize=14)
+		plt.minorticks_on()
+
+		# plot results without history
+		plt.plot('x', 'z', c='k', data=results, label='without history')
+		history_results = run_numerics(stokes_num, wave, beta, True,
+									   num_periods, delta_t)
+		# plot results with history
+		if history_results['x'] is not None:
+			print('Plotting...')
+			plt.plot('x', 'z', c='k', ls='--', data=history_results,
+					 label='with history')
+			plt.legend()
+			plt.show()
 
 def multi_stokes_nums(stokes_nums, wave, beta, num_periods, delta_t):
 	"""
@@ -286,11 +317,10 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
 
 def write_data(results):
 	"""Writes the provided `results` dictionary to a csv file."""
-	filename = 'newmerics.csv'
+	filename = 'numerics.csv'
 	df = pd.DataFrame(results)
 	numerics = df.explode(list(df.columns.values), ignore_index=True)
-#	numerics.to_csv(DATA_PATH + filename, mode='a', header=False, index=False)
-	numerics.to_csv(DATA_PATH + filename, index=False)
+	numerics.to_csv(DATA_PATH + filename, mode='a', header=False, index=False)
 	print(f'Data added to {filename}.')
 
 if __name__ == '__main__':

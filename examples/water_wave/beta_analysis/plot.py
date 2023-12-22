@@ -24,13 +24,15 @@ def main():
 	plt.yticks(fontsize=14)
 	plt.minorticks_on()
 
-	betas = analysis['beta'].drop_duplicates()
+	betas = analysis['beta'].drop_duplicates().tolist()
 	history = [True, False]
-	markers = ['s', 'o', '^', 'X']
-	m = 0
+	text_position_x = [0.6, 0.3, 0.4]
+	text_position_y = [-0.3, -1.8, -0.65]
+	properties = dict(boxstyle='circle', facecolor='w', edgecolor='k')
+
 	for i in itertools.product(betas, history):
 		beta, history = i
-		ls, curve_label, scatter_label = '-', '', ''
+		ls, label = '-', ''
 
 		# create conditions to help filter through data
 		exact = (analysis['beta'] == beta) & (analysis['history'] == history) \
@@ -47,19 +49,20 @@ def main():
 
 		# determine labels and markers depending on what data is being plotted
 		if history:
-			m += 1
 			ls = '--'
-			scatter_label = r'$\beta = $ %g' % beta
-			curve_label = 'with history' if beta == betas.iloc[-1] else ''
-		elif beta == betas.iloc[-1]:
-			curve_label = 'without history'
+			label = 'with history' if beta == betas[-1] else ''
+		elif beta == betas[-1]:
+			label = 'without history'
 
 		# plot data
-		plt.scatter(u_d, z, marker=markers[m], edgecolors='k',
-					facecolors='none', label=scatter_label)
+		i = betas.index(beta)
+		plt.scatter(u_d, z, marker='.', edgecolors='k', facecolors='none',
+					label='')
+		plt.text(text_position_x[i], text_position_y[i], f'{beta:g}',
+				 fontsize=14, bbox=properties)
 		if beta != 1:
 			plt.plot(estimated_u_d, estimated_z, c='k', ls=ls,
-					 label=curve_label)
+					 label=label)
 	plt.plot('analytical_u_d', 'analytical_z', c='hotpink', data=analysis,
 			 label='analytical')
 	plt.legend(fontsize=14)

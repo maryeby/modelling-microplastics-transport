@@ -30,11 +30,11 @@ class MyTransportSystem(transport_system.TransportSystem):
 			of the particle.
 		"""
 		super().__init__(particle, flow, density_ratio)
-#		self.reynolds_num = (2 * self.flow.max_velocity
-#							   * np.sqrt(9 * self.particle.stokes_num 
-#							   / (2 * self.flow.wavenum ** 2
-#							   * self.flow.reynolds_num))) \
-#							   / self.flow.kinematic_viscosity
+		self.reynolds_num = (2 * self.flow.max_velocity
+							   * np.sqrt(9 * self.particle.stokes_num 
+							   / (2 * self.flow.wavenum ** 2
+							   * self.flow.reynolds_num))) \
+							   / self.flow.kinematic_viscosity
 
 	def maxey_riley(self, include_history, t, y, order, hide_progress):
 		r"""
@@ -122,7 +122,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 			# return immediately if the particle reaches the seabed (z < -h)
 			if x[n_prime, 1] <= -self.flow.depth:
 				print('Simulation ended prematurely: particle reached the',
-					  f'seabed.\nz_f = {x[n_prime, 1]:.4g}\nt_f = {t[n_prime]}')
+					  'seabed.')
 				return x[:n_prime, 0], x[:n_prime, 1], v[:n_prime, 0], \
 					   v[:n_prime, 1], t[:n_prime]
 
@@ -226,7 +226,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 			# return immediately if the particle reaches the seabed (z < -h)
 			if x[n, 1] <= -self.flow.depth:
 				print('Simulation ended prematurely: particle reached the',
-					  f'seabed.\nz_f = {x[n, 1]:.4g}\nt_f = {t[n]}')
+					  'seabed.')
 				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n]
 
 			w = v - u
