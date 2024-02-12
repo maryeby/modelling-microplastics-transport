@@ -8,7 +8,7 @@ def main():
 	"""
 	This program reproduces Figure 1 from Santamaria et al. (2013).
 	"""
-	my_data = pd.read_csv('../data/deep_water_wave/'
+	my_data = pd.read_csv('../../data/deep_water_wave/'
 						  + 'santamaria_fig1_recreation.csv')
 	# plot results
 	plt.figure()

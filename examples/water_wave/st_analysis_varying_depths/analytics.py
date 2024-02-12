@@ -4,7 +4,7 @@ sys.path.append('/home/s2182576/Documents/academia/thesis/'
 import pandas as pd
 import numpy as np
 import scipy.constants as constants
-from models import dim_water_wave as fl
+from models import water_wave as fl
 
 DATA_PATH = '../../data/water_wave/'
 
@@ -33,7 +33,7 @@ def compute_drift_velocity(label, my_dict, numerics):
 	r"""
 	Computes the horizontal Stokes drift velocity using the following
 	equation from Van den Bremer and Breivik (2017),
-	$$u_d = c(Ak)^2 \frac{\cosh{(2k(z + h))}}{2\sinh^2(kh)}.$$
+	$$u'_d = c'(A'k')^2 \frac{\cosh{(2k'(z' + h'))}}{2\sinh^2(k'h')}.$$
 
 	Parameters
 	----------
@@ -58,18 +58,18 @@ def compute_drift_velocity(label, my_dict, numerics):
 
 	# initialize parameters for computations
 	k = my_wave.wavenum
-	Fr = my_wave.froude_num
-	U = my_wave.max_velocity
+	c = my_wave.phase_velocity
 	z = np.linspace(numerics[label + '_z'].iloc[0],
 					numerics[label + '_z'].iloc[-1], 100)
 
 	# dimensionalize z and h, compute drift velocity
 	z /= k
 	h /= k
-	u_d = U * Fr * np.cosh(2 * k * (z + h)) / (2 * np.sinh(k * h) ** 2)
+	u_d = c * (A * k) ** 2 * np.cosh(2 * k * (z + h)) \
+			/ (2 * np.sinh(k * h) ** 2)
 
 	# store normalized results
-	my_dict[label + '_u_d'] = u_d / (U * Fr)
+	my_dict[label + '_u_d'] = u_d / (c * (A * k) ** 2)
 	my_dict[label + '_z/h'] = k * z / (k * h)
 
 if __name__ == '__main__':

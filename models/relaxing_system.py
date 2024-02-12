@@ -75,8 +75,9 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 			- \textbf{v}}{\epsilon}
 			+ \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
 			+ (1 - \frac{3R}{2}) \textbf{g},$$
-		with $$R = \frac{2\rho_f}{\rho_f + 2\rho_p}, \quad Re = \frac{UL}{\nu},
-			\quad St = \frac{2}{9} \Bigg(\frac{a}{L}\Bigg)^2 Re.$$
+		with $$R = \frac{2\rho'_f}{\rho'_f + 2\rho'_p},
+			\quad Re = \frac{U'L'}{\nu'},
+			\quad St = \frac{2}{9} \Bigg(\frac{a'}{L'}\Bigg)^2 Re.$$
 		
 		Parameters
 		----------

@@ -46,34 +46,35 @@ class DeepWaterWave(wave.Wave):
                 Attributes
                 ----------
                 depth : float, default=10
-                        The depth of the fluid *h*.
+                        The depth of the fluid *h&#39;*.
                 amplitude : float
-                        The amplitude of the wave *A*.
+                        The amplitude of the wave *A&#39;*.
                 wavelength : float
-                        The wavelength *λ*.
+                        The wavelength *λ&#39;*.
                 wavenum : float
-                        The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+                        The wavenumber *k&#39;*, computed as $$k&#39; = \frac{2 \pi}{\lambda&#39;}.$$
                 kinematic_viscosity : float
-                        The kinematic viscosity ν of seawater.
+                        The kinematic viscosity ν&#39; of seawater.
                 gravity : float
                         The gravity **g** acting on the fluid, non-dimensionalized as,
-                        $$g&#39; = g \frac{L&#39;}{U^{\prime 2}}.$$
+                        $$g&#39; = \frac{g}{k&#39;U^{\prime 2}}.$$
                 angular_freq : float
-                        The angular frequency *ω*, computed using the dispersion relation,
-                        $$\omega = \sqrt{gk}.$$
+                        The angular frequency *ω&#39;*, computed using the dispersion relation,
+                        $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
                 phase_velocity : float
-                        The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
+                        The phase velocity *c&#39;*, computed as $$c&#39; = \frac{\omega&#39;}{k&#39;}.$$
                 period : float
                         The period of the wave, computed as
-                        $$\text{period} = \frac{2\pi}{\omega}.$$
+                        $$\text{period}&#39; = \frac{2\pi}{\omega&#39;}.$$
                 max_velocity : float
-                        The maximum velocity *U* at the surface z = 0, computed as
-                        $$U = \omega A.$$
+                        The maximum velocity *U&#39;* at the surface *z&#39;* = 0, computed as
+                        $$U&#39; = \omega&#39; A&#39;.$$
                 froude_num : float
-                        The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+                        The Froude number *Fr*, computed as
+                        $$Fr = \sqrt{\frac{k&#39;U&#39;^2}{g&#39;}}.$$
                 reynolds_num : float
                         The Reynolds number *Re* of the wave, computed as
-                        $$Re = \frac{U}{kν}.$$
+                        $$Re = \frac{U&#39;}{k&#39;ν&#39;}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth, amplitude, wavelength)
                 self.gravity /= constants.g * self.froude_num ** 2
@@ -81,7 +82,7 @@ class DeepWaterWave(wave.Wave):
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
                 Defines the angular frequency omega with the dispersion relation,
-                $$\omega = \sqrt{gk}.$$
+                $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
                 &#34;&#34;&#34;
                 self.angular_freq = np.sqrt(constants.g * self.wavenum)
 
@@ -218,34 +219,35 @@ depth.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
 <dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>10</code></dt>
-<dd>The depth of the fluid <em>h</em>.</dd>
+<dd>The depth of the fluid <em>h'</em>.</dd>
 <dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
-<dd>The amplitude of the wave <em>A</em>.</dd>
+<dd>The amplitude of the wave <em>A'</em>.</dd>
 <dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
-<dd>The wavelength <em>λ</em>.</dd>
+<dd>The wavelength <em>λ'</em>.</dd>
 <dt><strong><code>wavenum</code></strong> :&ensp;<code>float</code></dt>
-<dd>The wavenumber <em>k</em>, computed as <span><span class="MathJax_Preview">k = \frac{2 \pi}{\lambda}.</span><script type="math/tex; mode=display">k = \frac{2 \pi}{\lambda}.</script></span></dd>
+<dd>The wavenumber <em>k'</em>, computed as <span><span class="MathJax_Preview">k' = \frac{2 \pi}{\lambda'}.</span><script type="math/tex; mode=display">k' = \frac{2 \pi}{\lambda'}.</script></span></dd>
 <dt><strong><code>kinematic_viscosity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The kinematic viscosity ν of seawater.</dd>
+<dd>The kinematic viscosity ν' of seawater.</dd>
 <dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
 <dd>The gravity <strong>g</strong> acting on the fluid, non-dimensionalized as,
-<span><span class="MathJax_Preview">g' = g \frac{L'}{U^{\prime 2}}.</span><script type="math/tex; mode=display">g' = g \frac{L'}{U^{\prime 2}}.</script></span></dd>
+<span><span class="MathJax_Preview">g' = \frac{g}{k'U^{\prime 2}}.</span><script type="math/tex; mode=display">g' = \frac{g}{k'U^{\prime 2}}.</script></span></dd>
 <dt><strong><code>angular_freq</code></strong> :&ensp;<code>float</code></dt>
-<dd>The angular frequency <em>ω</em>, computed using the dispersion relation,
-<span><span class="MathJax_Preview">\omega = \sqrt{gk}.</span><script type="math/tex; mode=display">\omega = \sqrt{gk}.</script></span></dd>
+<dd>The angular frequency <em>ω'</em>, computed using the dispersion relation,
+<span><span class="MathJax_Preview">\omega' = \sqrt{g'k'}.</span><script type="math/tex; mode=display">\omega' = \sqrt{g'k'}.</script></span></dd>
 <dt><strong><code>phase_velocity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The phase velocity <em>c</em>, computed as <span><span class="MathJax_Preview">c = \frac{\omega}{k}.</span><script type="math/tex; mode=display">c = \frac{\omega}{k}.</script></span></dd>
+<dd>The phase velocity <em>c'</em>, computed as <span><span class="MathJax_Preview">c' = \frac{\omega'}{k'}.</span><script type="math/tex; mode=display">c' = \frac{\omega'}{k'}.</script></span></dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
 <dd>The period of the wave, computed as
-<span><span class="MathJax_Preview">\text{period} = \frac{2\pi}{\omega}.</span><script type="math/tex; mode=display">\text{period} = \frac{2\pi}{\omega}.</script></span></dd>
+<span><span class="MathJax_Preview">\text{period}' = \frac{2\pi}{\omega'}.</span><script type="math/tex; mode=display">\text{period}' = \frac{2\pi}{\omega'}.</script></span></dd>
 <dt><strong><code>max_velocity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The maximum velocity <em>U</em> at the surface z = 0, computed as
-<span><span class="MathJax_Preview">U = \omega A.</span><script type="math/tex; mode=display">U = \omega A.</script></span></dd>
+<dd>The maximum velocity <em>U'</em> at the surface <em>z'</em> = 0, computed as
+<span><span class="MathJax_Preview">U' = \omega' A'.</span><script type="math/tex; mode=display">U' = \omega' A'.</script></span></dd>
 <dt><strong><code>froude_num</code></strong> :&ensp;<code>float</code></dt>
-<dd>The Froude number <em>Fr</em>, computed as <span><span class="MathJax_Preview">Fr = \frac{U}{c}.</span><script type="math/tex; mode=display">Fr = \frac{U}{c}.</script></span></dd>
+<dd>The Froude number <em>Fr</em>, computed as
+<span><span class="MathJax_Preview">Fr = \sqrt{\frac{k'U'^2}{g'}}.</span><script type="math/tex; mode=display">Fr = \sqrt{\frac{k'U'^2}{g'}}.</script></span></dd>
 <dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Reynolds number <em>Re</em> of the wave, computed as
-<span><span class="MathJax_Preview">Re = \frac{U}{kν}.</span><script type="math/tex; mode=display">Re = \frac{U}{kν}.</script></span></dd>
+<span><span class="MathJax_Preview">Re = \frac{U'}{k'ν'}.</span><script type="math/tex; mode=display">Re = \frac{U'}{k'ν'}.</script></span></dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -263,34 +265,35 @@ depth.</p>
                 Attributes
                 ----------
                 depth : float, default=10
-                        The depth of the fluid *h*.
+                        The depth of the fluid *h&#39;*.
                 amplitude : float
-                        The amplitude of the wave *A*.
+                        The amplitude of the wave *A&#39;*.
                 wavelength : float
-                        The wavelength *λ*.
+                        The wavelength *λ&#39;*.
                 wavenum : float
-                        The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+                        The wavenumber *k&#39;*, computed as $$k&#39; = \frac{2 \pi}{\lambda&#39;}.$$
                 kinematic_viscosity : float
-                        The kinematic viscosity ν of seawater.
+                        The kinematic viscosity ν&#39; of seawater.
                 gravity : float
                         The gravity **g** acting on the fluid, non-dimensionalized as,
-                        $$g&#39; = g \frac{L&#39;}{U^{\prime 2}}.$$
+                        $$g&#39; = \frac{g}{k&#39;U^{\prime 2}}.$$
                 angular_freq : float
-                        The angular frequency *ω*, computed using the dispersion relation,
-                        $$\omega = \sqrt{gk}.$$
+                        The angular frequency *ω&#39;*, computed using the dispersion relation,
+                        $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
                 phase_velocity : float
-                        The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
+                        The phase velocity *c&#39;*, computed as $$c&#39; = \frac{\omega&#39;}{k&#39;}.$$
                 period : float
                         The period of the wave, computed as
-                        $$\text{period} = \frac{2\pi}{\omega}.$$
+                        $$\text{period}&#39; = \frac{2\pi}{\omega&#39;}.$$
                 max_velocity : float
-                        The maximum velocity *U* at the surface z = 0, computed as
-                        $$U = \omega A.$$
+                        The maximum velocity *U&#39;* at the surface *z&#39;* = 0, computed as
+                        $$U&#39; = \omega&#39; A&#39;.$$
                 froude_num : float
-                        The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+                        The Froude number *Fr*, computed as
+                        $$Fr = \sqrt{\frac{k&#39;U&#39;^2}{g&#39;}}.$$
                 reynolds_num : float
                         The Reynolds number *Re* of the wave, computed as
-                        $$Re = \frac{U}{kν}.$$
+                        $$Re = \frac{U&#39;}{k&#39;ν&#39;}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth, amplitude, wavelength)
                 self.gravity /= constants.g * self.froude_num ** 2
@@ -298,7 +301,7 @@ depth.</p>
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
                 Defines the angular frequency omega with the dispersion relation,
-                $$\omega = \sqrt{gk}.$$
+                $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
                 &#34;&#34;&#34;
                 self.angular_freq = np.sqrt(constants.g * self.wavenum)
 
@@ -613,7 +616,7 @@ vertical position,
 </code></dt>
 <dd>
 <div class="desc"><p>Defines the angular frequency omega with the dispersion relation,
-<span><span class="MathJax_Preview">\omega = \sqrt{gk}.</span><script type="math/tex; mode=display">\omega = \sqrt{gk}.</script></span></p></div>
+<span><span class="MathJax_Preview">\omega' = \sqrt{g'k'}.</span><script type="math/tex; mode=display">\omega' = \sqrt{g'k'}.</script></span></p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -621,7 +624,7 @@ vertical position,
 <pre><code class="python">def set_angular_freq(self):
         r&#34;&#34;&#34;
         Defines the angular frequency omega with the dispersion relation,
-        $$\omega = \sqrt{gk}.$$
+        $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
         &#34;&#34;&#34;
         self.angular_freq = np.sqrt(constants.g * self.wavenum)</code></pre>
 </details>

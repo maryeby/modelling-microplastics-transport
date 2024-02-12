@@ -35,6 +35,7 @@ warnings.filterwarnings(&#39;ignore&#39;)
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import itertools
 from parallelbar import progress_starmap
 
@@ -52,9 +53,9 @@ def main():
         &#34;&#34;&#34;
         # initialize parameters
         stokes_num = 0.01
-        beta = 1
+        beta = 0.8
         depth, amplitude, wavelength = 10, 0.02, 1
-        num_periods, delta_t = 5, 5e-4
+        num_periods, delta_t = 50, 5e-3
         my_wave = fl.WaterWave(depth, amplitude, wavelength)
 
         # run the simulations with the appropriate function
@@ -83,15 +84,45 @@ def single_simulation(stokes_num, wave, beta, num_periods, delta_t):
         delta_t : float
                 The size of the time steps used for integration.
         &#34;&#34;&#34;
+        # ask the user whether to write the results or plot results without writing
+        answer = input(&#39;(W)rite the results to the data file or (P)lot the results&#39;
+                                   &#39; without writing? &#39;)
+        write_results = True if answer.upper() == &#39;W&#39; else False
+
+        # run simulation without history
         results = run_numerics(stokes_num, wave, beta, False, num_periods, delta_t,
                                                    hide_progress=False)
+
         # only write results if they contain no NaNs (skip failed simulations)
-        if results[&#39;x&#39;] is not None:
+        if write_results and results[&#39;x&#39;] is not None:
                 write_data(results)
                 history_results = run_numerics(stokes_num, wave, beta, True,
                                                                            num_periods, delta_t)
                 if history_results[&#39;x&#39;] is not None:
                         write_data(history_results)
+
+        # only plot results if they contain no NaNs (skip failed simulations)
+        elif not write_results and results[&#39;x&#39;] is not None:
+                # initialize plot
+                plt.figure()
+                plt.title(r&#39;Particle Trajectory&#39;, fontsize=18)
+                plt.xlabel(&#39;x&#39;, fontsize=14)
+                plt.ylabel(&#39;z&#39;, fontsize=14)
+                plt.xticks(fontsize=14)
+                plt.yticks(fontsize=14)
+                plt.minorticks_on()
+
+                # plot results without history
+                plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, data=results, label=&#39;without history&#39;)
+                history_results = run_numerics(stokes_num, wave, beta, True,
+                                                                           num_periods, delta_t)
+                # plot results with history
+                if history_results[&#39;x&#39;] is not None:
+                        print(&#39;Plotting...&#39;)
+                        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, ls=&#39;--&#39;, data=history_results,
+                                         label=&#39;with history&#39;)
+                        plt.legend()
+                        plt.show()
 
 def multi_stokes_nums(stokes_nums, wave, beta, num_periods, delta_t):
         &#34;&#34;&#34;
@@ -236,7 +267,7 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
                 Dictionary containing the numerical solutions.
         &#34;&#34;&#34;
         # initialize parameters
-        x_0, z_0 = 0, -3.625
+        x_0, z_0 = 0, 0
         xdot_0, zdot_0 = wave.velocity(x_0, z_0, t=0)
         R = 2 / 3 * beta
 
@@ -263,36 +294,38 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
         # organize results in a dictionary
         results = {&#39;x&#39;: x, &#39;z&#39;: z, &#39;xdot&#39;: xdot, &#39;zdot&#39;: zdot, &#39;t&#39;: t, &#39;z_0&#39;: z_0,
                            &#39;St&#39;: stokes_num, &#39;beta&#39;: beta, &#39;history&#39;: include_history,
-                           &#39;h&#39;: h, &#39;A&#39;: A, &#39;wavelength&#39;: wavelength, &#39;k&#39;: k,
-                           &#39;omega&#39;: omega, &#39;Fr&#39;: Fr, &#39;U&#39;: U, &#39;general_Re_p&#39;: general_Re_p,
-                           &#39;Re_p&#39;: Re_p, &#39;num_periods&#39;: num_periods, &#39;delta_t&#39;: delta_t}
+                           &#39;h\&#39;&#39;: h, &#39;A\&#39;&#39;: A, &#39;wavelength\&#39;&#39;: wavelength, &#39;k\&#39;&#39;: k,
+                           &#39;omega\&#39;&#39;: omega, &#39;Fr&#39;: Fr, &#39;U\&#39;&#39;: U,
+                           &#39;general_Re_p&#39;: general_Re_p, &#39;Re_p&#39;: Re_p,
+                           &#39;num_periods\&#39;&#39;: num_periods, &#39;delta_t\&#39;&#39;: delta_t}
 
         # check if solutions contain any infinite values
         if np.isinf([x, z, xdot, zdot]).any():
                 # print the failed simulation and the values of its parameters
                 beta_char, lambda_char, pi_char, omega_char, deltat_char = &#39;\u03B2&#39;, \
                                                                         &#39;\u03BB&#39;, &#39;\u03C0&#39;, &#39;\u03C9&#39;, &#39;\u0394&#39;+&#39;t&#39;
+                prime = &#39;\&#39;&#39;
                 print(&#39;\nSimulation failed&#39;)
                 print(f&#39;{&#34;z_0&#34;:10}{z_0:^10.4g}&#39;)
                 print(f&#39;{&#34;St&#34;:10}{stokes_num:^10.4g}&#39;)
                 print(f&#39;{beta_char:10}{beta:^10.4g}&#39;)
                 print(f&#39;{&#34;history&#34;:10}{include_history!s:^10}&#39;)
-                print(f&#39;{&#34;h&#34;:10}{h:^10}&#39;)
-                print(f&#39;{&#34;A&#34;:10}{A:^10.4g}&#39;)
-                print(f&#39;{lambda_char:10}{wavelength:^10}&#39;)
+                print(f&#39;{&#34;h&#34;, prime:10}{h:^10}&#39;)
+                print(f&#39;{&#34;A&#34;, prime:10}{A:^10.4g}&#39;)
+                print(f&#39;{lambda_char, prime:10}{wavelength:^10}&#39;)
 
                 # print k as a multiple of pi if possible
                 if k % np.pi == 0:
                         k = f&#39;{int(k // np.pi):d}{pi_char}&#39;
-                        print(f&#39;{&#34;k&#34;:10}{k:^10}&#39;)
+                        print(f&#39;{&#34;k&#34;, prime:10}{k:^10}&#39;)
                 else:
-                        print(f&#39;{&#34;k&#34;:10}{k:^10.4f}&#39;)
+                        print(f&#39;{&#34;k&#34;, prime:10}{k:^10.4f}&#39;)
 
-                print(f&#39;{omega_char:10}{omega.item():^10.4f}&#39;)
+                print(f&#39;{omega_char, prime:10}{omega.item():^10.4f}&#39;)
                 print(f&#39;{&#34;Fr&#34;:10}{Fr.item():^10.4f}&#39;)
-                print(f&#39;{&#34;U&#34;:10}{U.item():^10.4f}&#39;)
-                print(f&#39;{&#34;periods&#34;:10}{num_periods:^10}&#39;)
-                print(f&#39;{deltat_char:10}{delta_t:^10.4g}&#39;)
+                print(f&#39;{&#34;U&#34;, prime:10}{U.item():^10.4f}&#39;)
+                print(f&#39;{&#34;periods&#34;, prime:10}{num_periods:^10}&#39;)
+                print(f&#39;{deltat_char, prime:10}{delta_t:^10.4g}&#39;)
                 print(f&#39;{&#34;Re_p&#34;:10}{general_Re_p:^10.4g}\n&#39;)
                 # set the results of the failed simulation to None
                 results = {key: None for key, value in results.items()}
@@ -351,9 +384,9 @@ particles in linear water waves and saves the results to the
         &#34;&#34;&#34;
         # initialize parameters
         stokes_num = 0.01
-        beta = 1
+        beta = 0.8
         depth, amplitude, wavelength = 10, 0.02, 1
-        num_periods, delta_t = 5, 5e-4
+        num_periods, delta_t = 50, 5e-3
         my_wave = fl.WaterWave(depth, amplitude, wavelength)
 
         # run the simulations with the appropriate function
@@ -588,7 +621,7 @@ results to a data file.</p>
                 Dictionary containing the numerical solutions.
         &#34;&#34;&#34;
         # initialize parameters
-        x_0, z_0 = 0, -3.625
+        x_0, z_0 = 0, 0
         xdot_0, zdot_0 = wave.velocity(x_0, z_0, t=0)
         R = 2 / 3 * beta
 
@@ -615,36 +648,38 @@ results to a data file.</p>
         # organize results in a dictionary
         results = {&#39;x&#39;: x, &#39;z&#39;: z, &#39;xdot&#39;: xdot, &#39;zdot&#39;: zdot, &#39;t&#39;: t, &#39;z_0&#39;: z_0,
                            &#39;St&#39;: stokes_num, &#39;beta&#39;: beta, &#39;history&#39;: include_history,
-                           &#39;h&#39;: h, &#39;A&#39;: A, &#39;wavelength&#39;: wavelength, &#39;k&#39;: k,
-                           &#39;omega&#39;: omega, &#39;Fr&#39;: Fr, &#39;U&#39;: U, &#39;general_Re_p&#39;: general_Re_p,
-                           &#39;Re_p&#39;: Re_p, &#39;num_periods&#39;: num_periods, &#39;delta_t&#39;: delta_t}
+                           &#39;h\&#39;&#39;: h, &#39;A\&#39;&#39;: A, &#39;wavelength\&#39;&#39;: wavelength, &#39;k\&#39;&#39;: k,
+                           &#39;omega\&#39;&#39;: omega, &#39;Fr&#39;: Fr, &#39;U\&#39;&#39;: U,
+                           &#39;general_Re_p&#39;: general_Re_p, &#39;Re_p&#39;: Re_p,
+                           &#39;num_periods\&#39;&#39;: num_periods, &#39;delta_t\&#39;&#39;: delta_t}
 
         # check if solutions contain any infinite values
         if np.isinf([x, z, xdot, zdot]).any():
                 # print the failed simulation and the values of its parameters
                 beta_char, lambda_char, pi_char, omega_char, deltat_char = &#39;\u03B2&#39;, \
                                                                         &#39;\u03BB&#39;, &#39;\u03C0&#39;, &#39;\u03C9&#39;, &#39;\u0394&#39;+&#39;t&#39;
+                prime = &#39;\&#39;&#39;
                 print(&#39;\nSimulation failed&#39;)
                 print(f&#39;{&#34;z_0&#34;:10}{z_0:^10.4g}&#39;)
                 print(f&#39;{&#34;St&#34;:10}{stokes_num:^10.4g}&#39;)
                 print(f&#39;{beta_char:10}{beta:^10.4g}&#39;)
                 print(f&#39;{&#34;history&#34;:10}{include_history!s:^10}&#39;)
-                print(f&#39;{&#34;h&#34;:10}{h:^10}&#39;)
-                print(f&#39;{&#34;A&#34;:10}{A:^10.4g}&#39;)
-                print(f&#39;{lambda_char:10}{wavelength:^10}&#39;)
+                print(f&#39;{&#34;h&#34;, prime:10}{h:^10}&#39;)
+                print(f&#39;{&#34;A&#34;, prime:10}{A:^10.4g}&#39;)
+                print(f&#39;{lambda_char, prime:10}{wavelength:^10}&#39;)
 
                 # print k as a multiple of pi if possible
                 if k % np.pi == 0:
                         k = f&#39;{int(k // np.pi):d}{pi_char}&#39;
-                        print(f&#39;{&#34;k&#34;:10}{k:^10}&#39;)
+                        print(f&#39;{&#34;k&#34;, prime:10}{k:^10}&#39;)
                 else:
-                        print(f&#39;{&#34;k&#34;:10}{k:^10.4f}&#39;)
+                        print(f&#39;{&#34;k&#34;, prime:10}{k:^10.4f}&#39;)
 
-                print(f&#39;{omega_char:10}{omega.item():^10.4f}&#39;)
+                print(f&#39;{omega_char, prime:10}{omega.item():^10.4f}&#39;)
                 print(f&#39;{&#34;Fr&#34;:10}{Fr.item():^10.4f}&#39;)
-                print(f&#39;{&#34;U&#34;:10}{U.item():^10.4f}&#39;)
-                print(f&#39;{&#34;periods&#34;:10}{num_periods:^10}&#39;)
-                print(f&#39;{deltat_char:10}{delta_t:^10.4g}&#39;)
+                print(f&#39;{&#34;U&#34;, prime:10}{U.item():^10.4f}&#39;)
+                print(f&#39;{&#34;periods&#34;, prime:10}{num_periods:^10}&#39;)
+                print(f&#39;{deltat_char, prime:10}{delta_t:^10.4g}&#39;)
                 print(f&#39;{&#34;Re_p&#34;:10}{general_Re_p:^10.4g}\n&#39;)
                 # set the results of the failed simulation to None
                 results = {key: None for key, value in results.items()}
@@ -707,15 +742,45 @@ simulation with history effects.</p>
         delta_t : float
                 The size of the time steps used for integration.
         &#34;&#34;&#34;
+        # ask the user whether to write the results or plot results without writing
+        answer = input(&#39;(W)rite the results to the data file or (P)lot the results&#39;
+                                   &#39; without writing? &#39;)
+        write_results = True if answer.upper() == &#39;W&#39; else False
+
+        # run simulation without history
         results = run_numerics(stokes_num, wave, beta, False, num_periods, delta_t,
                                                    hide_progress=False)
+
         # only write results if they contain no NaNs (skip failed simulations)
-        if results[&#39;x&#39;] is not None:
+        if write_results and results[&#39;x&#39;] is not None:
                 write_data(results)
                 history_results = run_numerics(stokes_num, wave, beta, True,
                                                                            num_periods, delta_t)
                 if history_results[&#39;x&#39;] is not None:
-                        write_data(history_results)</code></pre>
+                        write_data(history_results)
+
+        # only plot results if they contain no NaNs (skip failed simulations)
+        elif not write_results and results[&#39;x&#39;] is not None:
+                # initialize plot
+                plt.figure()
+                plt.title(r&#39;Particle Trajectory&#39;, fontsize=18)
+                plt.xlabel(&#39;x&#39;, fontsize=14)
+                plt.ylabel(&#39;z&#39;, fontsize=14)
+                plt.xticks(fontsize=14)
+                plt.yticks(fontsize=14)
+                plt.minorticks_on()
+
+                # plot results without history
+                plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, data=results, label=&#39;without history&#39;)
+                history_results = run_numerics(stokes_num, wave, beta, True,
+                                                                           num_periods, delta_t)
+                # plot results with history
+                if history_results[&#39;x&#39;] is not None:
+                        print(&#39;Plotting...&#39;)
+                        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, ls=&#39;--&#39;, data=history_results,
+                                         label=&#39;with history&#39;)
+                        plt.legend()
+                        plt.show()</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.examples.water_wave.numerics.write_data"><code class="name flex">

@@ -103,20 +103,20 @@ def main():
 
         # create conditions to help filter through numerical data
         St, beta = 0.01, 0.9
-        h, A, wavelength = 50, 0.02, 1 # wave parameters
+        h, A, wavelength = 10, 0.02, 1 # wave parameters
         delta_t = 5e-3
         history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                          &amp; (numerics[&#39;history&#39;] == True) \
-                                                                         &amp; (numerics[&#39;h&#39;] == h) \
-                                                                         &amp; (numerics[&#39;A&#39;] == A) \
-                                                                         &amp; (numerics[&#39;wavelength&#39;] == wavelength) \
-                                                                         &amp; (numerics[&#39;delta_t&#39;] == delta_t)
+                                                                         &amp; (numerics[&#39;h\&#39;&#39;] == h) \
+                                                                         &amp; (numerics[&#39;A\&#39;&#39;] == A) \
+                                                                         &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength)\
+                                                                         &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
         no_history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == False) \
-                                                                        &amp; (numerics[&#39;h&#39;] == h) \
-                                                                        &amp; (numerics[&#39;A&#39;] == A) \
-                                                                        &amp; (numerics[&#39;wavelength&#39;] == wavelength) \
-                                                                        &amp; (numerics[&#39;delta_t&#39;] == delta_t)
+                                                                        &amp; (numerics[&#39;h\&#39;&#39;] == h) \
+                                                                        &amp; (numerics[&#39;A\&#39;&#39;] == A) \
+                                                                        &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
+                                                                        &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
 
         # retrieve relevant numerical results
         x = numerics[&#39;x&#39;].where(no_history).dropna()
@@ -225,20 +225,20 @@ velocity of a negatively buoyant inertial particle in a linear water wave.</p></
 
         # create conditions to help filter through numerical data
         St, beta = 0.01, 0.9
-        h, A, wavelength = 50, 0.02, 1 # wave parameters
+        h, A, wavelength = 10, 0.02, 1 # wave parameters
         delta_t = 5e-3
         history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                          &amp; (numerics[&#39;history&#39;] == True) \
-                                                                         &amp; (numerics[&#39;h&#39;] == h) \
-                                                                         &amp; (numerics[&#39;A&#39;] == A) \
-                                                                         &amp; (numerics[&#39;wavelength&#39;] == wavelength) \
-                                                                         &amp; (numerics[&#39;delta_t&#39;] == delta_t)
+                                                                         &amp; (numerics[&#39;h\&#39;&#39;] == h) \
+                                                                         &amp; (numerics[&#39;A\&#39;&#39;] == A) \
+                                                                         &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength)\
+                                                                         &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
         no_history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == False) \
-                                                                        &amp; (numerics[&#39;h&#39;] == h) \
-                                                                        &amp; (numerics[&#39;A&#39;] == A) \
-                                                                        &amp; (numerics[&#39;wavelength&#39;] == wavelength) \
-                                                                        &amp; (numerics[&#39;delta_t&#39;] == delta_t)
+                                                                        &amp; (numerics[&#39;h\&#39;&#39;] == h) \
+                                                                        &amp; (numerics[&#39;A\&#39;&#39;] == A) \
+                                                                        &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
+                                                                        &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
 
         # retrieve relevant numerical results
         x = numerics[&#39;x&#39;].where(no_history).dropna()

@@ -54,7 +54,7 @@ def main():
 	plt.xscale('log')
 	plt.yscale('log')
 	plt.minorticks_on()
-	plt.axis([1e-3, 5e-2, 1e-7, 10])
+#	plt.axis([1e-3, 5e-2, 1e-7, 10])
 	h_scale = np.linspace(2e-3, 2e-2, 10)
 
 	plt.plot(h_scale, h_scale * 2, c='grey', ls='--', label=r'~$h$')

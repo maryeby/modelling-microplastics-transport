@@ -33,7 +33,7 @@ sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
 import pandas as pd
 import numpy as np
 import scipy.constants as constants
-from models import dim_water_wave as fl
+from models import water_wave as fl
 
 DATA_PATH = &#39;../../data/water_wave/&#39;
 
@@ -62,7 +62,7 @@ def compute_drift_velocity(label, my_dict, numerics):
         r&#34;&#34;&#34;
         Computes the horizontal Stokes drift velocity using the following
         equation from Van den Bremer and Breivik (2017),
-        $$u_d = c(Ak)^2 \frac{\cosh{(2k(z + h))}}{2\sinh^2(kh)}.$$
+        $$u&#39;_d = c&#39;(A&#39;k&#39;)^2 \frac{\cosh{(2k&#39;(z&#39; + h&#39;))}}{2\sinh^2(k&#39;h&#39;)}.$$
 
         Parameters
         ----------
@@ -87,18 +87,18 @@ def compute_drift_velocity(label, my_dict, numerics):
 
         # initialize parameters for computations
         k = my_wave.wavenum
-        Fr = my_wave.froude_num
-        U = my_wave.max_velocity
+        c = my_wave.phase_velocity
         z = np.linspace(numerics[label + &#39;_z&#39;].iloc[0],
                                         numerics[label + &#39;_z&#39;].iloc[-1], 100)
 
         # dimensionalize z and h, compute drift velocity
         z /= k
         h /= k
-        u_d = U * Fr * np.cosh(2 * k * (z + h)) / (2 * np.sinh(k * h) ** 2)
+        u_d = c * (A * k) ** 2 * np.cosh(2 * k * (z + h)) \
+                        / (2 * np.sinh(k * h) ** 2)
 
         # store normalized results
-        my_dict[label + &#39;_u_d&#39;] = u_d / (U * Fr)
+        my_dict[label + &#39;_u_d&#39;] = u_d / (c * (A * k) ** 2)
         my_dict[label + &#39;_z/h&#39;] = k * z / (k * h)
 
 if __name__ == &#39;__main__&#39;:
@@ -118,7 +118,7 @@ if __name__ == &#39;__main__&#39;:
 <dd>
 <div class="desc"><p>Computes the horizontal Stokes drift velocity using the following
 equation from Van den Bremer and Breivik (2017),
-<span><span class="MathJax_Preview">u_d = c(Ak)^2 \frac{\cosh{(2k(z + h))}}{2\sinh^2(kh)}.</span><script type="math/tex; mode=display">u_d = c(Ak)^2 \frac{\cosh{(2k(z + h))}}{2\sinh^2(kh)}.</script></span></p>
+<span><span class="MathJax_Preview">u'_d = c'(A'k')^2 \frac{\cosh{(2k'(z' + h'))}}{2\sinh^2(k'h')}.</span><script type="math/tex; mode=display">u'_d = c'(A'k')^2 \frac{\cosh{(2k'(z' + h'))}}{2\sinh^2(k'h')}.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>label</code></strong> :&ensp;<code>str</code></dt>
@@ -141,7 +141,7 @@ equation from Van den Bremer and Breivik (2017),
         r&#34;&#34;&#34;
         Computes the horizontal Stokes drift velocity using the following
         equation from Van den Bremer and Breivik (2017),
-        $$u_d = c(Ak)^2 \frac{\cosh{(2k(z + h))}}{2\sinh^2(kh)}.$$
+        $$u&#39;_d = c&#39;(A&#39;k&#39;)^2 \frac{\cosh{(2k&#39;(z&#39; + h&#39;))}}{2\sinh^2(k&#39;h&#39;)}.$$
 
         Parameters
         ----------
@@ -166,18 +166,18 @@ equation from Van den Bremer and Breivik (2017),
 
         # initialize parameters for computations
         k = my_wave.wavenum
-        Fr = my_wave.froude_num
-        U = my_wave.max_velocity
+        c = my_wave.phase_velocity
         z = np.linspace(numerics[label + &#39;_z&#39;].iloc[0],
                                         numerics[label + &#39;_z&#39;].iloc[-1], 100)
 
         # dimensionalize z and h, compute drift velocity
         z /= k
         h /= k
-        u_d = U * Fr * np.cosh(2 * k * (z + h)) / (2 * np.sinh(k * h) ** 2)
+        u_d = c * (A * k) ** 2 * np.cosh(2 * k * (z + h)) \
+                        / (2 * np.sinh(k * h) ** 2)
 
         # store normalized results
-        my_dict[label + &#39;_u_d&#39;] = u_d / (U * Fr)
+        my_dict[label + &#39;_u_d&#39;] = u_d / (c * (A * k) ** 2)
         my_dict[label + &#39;_z/h&#39;] = k * z / (k * h)</code></pre>
 </details>
 </dd>

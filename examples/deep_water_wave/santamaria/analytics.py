@@ -42,7 +42,7 @@ def main():
 			   'settling_velocity': settling_velocity / U}
 	my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
 	analytics = pd.DataFrame(my_dict)
-	analytics.to_csv('../data/deep_water_wave/santamaria_analytics.csv',
+	analytics.to_csv('../../data/deep_water_wave/santamaria_analytics.csv',
 					 index=False)
 
 if __name__ == '__main__':

@@ -21,12 +21,12 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle and fluid densities.
+			The ratio *R* between the particle and fluid densities.
 		reynolds_num : float
 			The particle Reynolds number, computed as,
-			$$Re_p = \frac{Ud}{\nu},$$
-			where *U* and ν are attributes of the wave, and *d* is the diameter
-			of the particle.
+			$$Re_p = \frac{U'd'}{\nu'},$$
+			where *U'* and ν' are attributes of the wave, and *d'* is the
+			diameter of the particle.
 		epsilon : float
 			A relationship between the Stokes number *St* and density ratio *R*,
 			$$\epsilon = \frac{St}{R}.$$
@@ -48,13 +48,13 @@ class HallerTransportSystem(transport_system.TransportSystem):
 			- \mathbf{v}}{\epsilon}
 			+ \frac{3R}{2} \frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
 			+ \Bigg(1 - \frac{3R}{2}\Bigg) \mathbf{g}$$ with
-		$$R = \frac{2 \rho_f}{\rho_f + 2 \rho_p},
+		$$R = \frac{2 \rho'_f}{\rho'_f + 2 \rho'_p},
 			\qquad \epsilon = \frac{St}{R},
-			\qquad St = \frac 29 \Bigg(\frac{a}{L}\Bigg)^2 Re,
-			\qquad Re = \frac{UL}{\nu},$$
-		where *a* is the particle radius, *ν* is the kinematic viscosity, *U*
-		and *L* are the characteristic velocity and length scales respectively,
-		and *ρ* is the density of the particle or the fluid.
+			\qquad St = \frac 29 \Bigg(\frac{a'}{L'}\Bigg)^2 Re,
+			\qquad Re = \frac{U'L'}{\nu'},$$
+		where *a'* is the particle radius, *ν'* is the kinematic viscosity, *U'*
+		and *L'* are the characteristic velocity and length scales respectively,
+		and *ρ'* is the density of the particle or the fluid.
 		
 		Parameters
 		----------
@@ -92,13 +92,13 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		+ \Bigg(\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t} - \mathbf{g}\Bigg)
 		\cdot \nabla \mathbf{u}\Bigg]
 		+ \mathcal{O}(\epsilon^3)$$ with
-		$$R = \frac{2 \rho_f}{\rho_f + 2 \rho_p},
+		$$R = \frac{2 \rho'_f}{\rho'_f + 2 \rho'_p},
 			\qquad \epsilon = \frac{St}{R},
-			\qquad St = \frac 29 \Bigg(\frac{a}{L}\Bigg)^2 Re,
-			\qquad Re = \frac{UL}{\nu},$$
-		where *a* is the particle radius, *ν* is the kinematic viscosity, *U*
-		and *L* are the characteristic velocity and length scales respectively,
-		and *ρ* is the density of the particle or the fluid.
+			\qquad St = \frac 29 \Bigg(\frac{a'}{L'}\Bigg)^2 Re,
+			\qquad Re = \frac{U'L'}{\nu'},$$
+		where *a* is the particle radius, *ν'* is the kinematic viscosity, *U'*
+		and *L'* are the characteristic velocity and length scales respectively,
+		and *ρ'* is the density of the particle or the fluid.
 
 		Parameters
 		----------
@@ -185,7 +185,8 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		# initialize local parameters
 		t_final = num_periods * self.flow.period
 		t_span = (0, t_final)
-		t_eval = np.arange(0, t_final, delta_t)
+		t_eval = np.arange(0, t_final, delta_t) \
+					/ (self.flow.wavenum * self.flow.max_velocity)
 		xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
 
 		# run computations

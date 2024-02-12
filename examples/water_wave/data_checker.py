@@ -29,17 +29,17 @@ def main():
 		history = True
 
 	# read data
-	filename = 'newmerics.csv'
+	filename = 'numerics.csv'
 	numerics = pd.read_csv(DATA_PATH + filename)
 
 	# retrieve relevant numerical results
 	cond = (numerics['z_0'] == z_0) & (numerics['St'] == St) \
 									& (numerics['beta'] == beta) \
 									& (numerics['history'] == history) \
-									& (numerics['h'] == h) \
-									& (numerics['A'] == A) \
-									& (numerics['wavelength'] == wavelength) \
-									& (numerics['delta_t'] == delta_t)
+									& (numerics['h\''] == h) \
+									& (numerics['A\''] == A) \
+									& (numerics['wavelength\''] == wavelength) \
+									& (numerics['delta_t\''] == delta_t)
 	x = numerics['x'].where(cond).dropna().tolist()
 	z = numerics['z'].where(cond).dropna().tolist()
 	t = numerics['t'].where(cond).dropna().tolist()

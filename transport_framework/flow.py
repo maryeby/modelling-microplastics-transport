@@ -10,9 +10,9 @@ class Flow(ABC):
 		Attributes
 		----------
 		depth : float
-			The depth of the fluid *h*.
+			The depth of the fluid *h'*.
 		gravity : array
-			The gravity **g** acting on the fluid.
+			The gravity **g'** acting on the fluid.
 		period : float
 			A parameter used in the computation of the integration timespan.
 		"""

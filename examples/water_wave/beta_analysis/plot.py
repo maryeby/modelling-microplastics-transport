@@ -17,17 +17,20 @@ def main():
 	# initialize drift velocity figure & left subplot
 	plt.figure(1)
 	plt.title(r'Stokes drift velocity vs depth', fontsize=18)
-	plt.xlabel(r'$\frac{u_d}{U\mathrm{Fr}}$', fontsize=16)
+	plt.xlabel(r'$\frac{u_d}{UkA}$', fontsize=16)
 	plt.ylabel('kz', fontsize=16)
-	plt.axis([0, 1, -4, 0])
+	plt.axis([0, 1, -4, 0.1])
 	plt.xticks(fontsize=14)
 	plt.yticks(fontsize=14)
 	plt.minorticks_on()
 
+	# initialize lists of beta values and history
 	betas = analysis['beta'].drop_duplicates().tolist()
 	history = [True, False]
+
+	# position bubble labels
 	text_position_x = [0.6, 0.3, 0.4]
-	text_position_y = [-0.3, -1.8, -0.65]
+	text_position_y = [-0.3, -1.8, -0.78]
 	properties = dict(boxstyle='circle', facecolor='w', edgecolor='k')
 
 	for i in itertools.product(betas, history):

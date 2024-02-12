@@ -49,7 +49,7 @@ def main():
 
 	# initialize variables for the numerical simulations
 	my_dict = {}
-	num_periods = 50
+	num_periods = 200
 	delta_t = 5e-3
 	heavy_x_0, heavy_z_0, light_x_0, light_z_0 = 0, 0, 0.13, -0.4
 	xdot_0_light, zdot_0_light = my_light_system.flow.velocity(k * light_x_0,
@@ -60,15 +60,13 @@ def main():
 															   t=0)
 	# generate results for the heavy and light particles
 	x, z, _, _, _ = sm_heavy_system.run_numerics(sm_heavy_system.maxey_riley,
-												 x_0=heavy_x_0, z_0=heavy_z_0,
-												 delta_t=delta_t,
-												 num_periods=num_periods)
+												 heavy_x_0, heavy_z_0,
+												 num_periods / T, delta_t / T)
 	my_dict['sm_heavy_x'] = k * x
 	my_dict['sm_heavy_z'] = k * z
 	x, z, _, _, _ = sm_light_system.run_numerics(sm_light_system.maxey_riley,
-												 x_0=light_x_0, z_0=light_z_0,
-												 delta_t=delta_t,
-												 num_periods=num_periods)
+												 light_x_0, light_z_0,
+												 num_periods / T, delta_t / T)
 	my_dict['sm_light_x'] = k * x
 	my_dict['sm_light_z'] = k * z
 	x, z, _, _, _ = my_heavy_system.run_numerics(include_history=False,
@@ -77,7 +75,8 @@ def main():
 												 xdot_0=xdot_0_heavy,
 												 zdot_0=zdot_0_heavy,
 												 delta_t=delta_t * T,
-												 num_periods=num_periods * T)
+												 num_periods=num_periods * T,
+												 hide_progress=True)
 	my_dict['my_heavy_x'] = x
 	my_dict['my_heavy_z'] = z
 	x, z, _, _, _ = my_light_system.run_numerics(include_history=False,
@@ -86,14 +85,15 @@ def main():
 												 xdot_0=xdot_0_light,
 												 zdot_0=zdot_0_light,
 												 delta_t=delta_t * T,
-                                                 num_periods=num_periods * T)
+                                                 num_periods=num_periods * T,
+												 hide_progress=True)
 	my_dict['my_light_x'] = x
 	my_dict['my_light_z'] = z
 
 	# write results to data file
 	my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
 	numerics = pd.DataFrame(my_dict)
-	numerics.to_csv('../data/deep_water_wave/santamaria_fig1_recreation.csv',
+	numerics.to_csv('../../data/deep_water_wave/santamaria_fig1_recreation.csv',
 					index=False)
 if __name__ == '__main__':
 	main()

@@ -65,10 +65,10 @@ def main():
         cond = (numerics[&#39;z_0&#39;] == z_0) &amp; (numerics[&#39;St&#39;] == St) \
                                                                         &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == history) \
-                                                                        &amp; (numerics[&#39;h&#39;] == h) \
-                                                                        &amp; (numerics[&#39;A&#39;] == A) \
-                                                                        &amp; (numerics[&#39;wavelength&#39;] == wavelength) \
-                                                                        &amp; (numerics[&#39;delta_t&#39;] == delta_t)
+                                                                        &amp; (numerics[&#39;h\&#39;&#39;] == h) \
+                                                                        &amp; (numerics[&#39;A\&#39;&#39;] == A) \
+                                                                        &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
+                                                                        &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
         x = numerics[&#39;x&#39;].where(cond).dropna().tolist()
         z = numerics[&#39;z&#39;].where(cond).dropna().tolist()
         t = numerics[&#39;t&#39;].where(cond).dropna().tolist()
@@ -152,10 +152,10 @@ a linear water wave.</p></div>
         cond = (numerics[&#39;z_0&#39;] == z_0) &amp; (numerics[&#39;St&#39;] == St) \
                                                                         &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == history) \
-                                                                        &amp; (numerics[&#39;h&#39;] == h) \
-                                                                        &amp; (numerics[&#39;A&#39;] == A) \
-                                                                        &amp; (numerics[&#39;wavelength&#39;] == wavelength) \
-                                                                        &amp; (numerics[&#39;delta_t&#39;] == delta_t)
+                                                                        &amp; (numerics[&#39;h\&#39;&#39;] == h) \
+                                                                        &amp; (numerics[&#39;A\&#39;&#39;] == A) \
+                                                                        &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
+                                                                        &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
         x = numerics[&#39;x&#39;].where(cond).dropna().tolist()
         z = numerics[&#39;z&#39;].where(cond).dropna().tolist()
         t = numerics[&#39;t&#39;].where(cond).dropna().tolist()

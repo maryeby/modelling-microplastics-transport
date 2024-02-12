@@ -24,9 +24,9 @@ def main():
 	"""
 	# initialize parameters
 	stokes_num = 0.01
-	beta = 0.9
+	beta = 0.8
 	depth, amplitude, wavelength = 10, 0.02, 1
-	num_periods, delta_t = 10, 5e-3
+	num_periods, delta_t = 50, 5e-3
 	my_wave = fl.WaterWave(depth, amplitude, wavelength)
 
 	# run the simulations with the appropriate function
@@ -57,7 +57,7 @@ def single_simulation(stokes_num, wave, beta, num_periods, delta_t):
 	"""
 	# ask the user whether to write the results or plot results without writing
 	answer = input('(W)rite the results to the data file or (P)lot the results'
-				   'without writing? ')
+				   ' without writing? ')
 	write_results = True if answer.upper() == 'W' else False
 
 	# run simulation without history
@@ -265,36 +265,38 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
 	# organize results in a dictionary
 	results = {'x': x, 'z': z, 'xdot': xdot, 'zdot': zdot, 't': t, 'z_0': z_0,
 			   'St': stokes_num, 'beta': beta, 'history': include_history,
-			   'h': h, 'A': A, 'wavelength': wavelength, 'k': k,
-			   'omega': omega, 'Fr': Fr, 'U': U, 'general_Re_p': general_Re_p,
-			   'Re_p': Re_p, 'num_periods': num_periods, 'delta_t': delta_t}
+			   'h\'': h, 'A\'': A, 'wavelength\'': wavelength, 'k\'': k,
+			   'omega\'': omega, 'Fr': Fr, 'U\'': U,
+			   'general_Re_p': general_Re_p, 'Re_p': Re_p,
+			   'num_periods\'': num_periods, 'delta_t\'': delta_t}
 
 	# check if solutions contain any infinite values
 	if np.isinf([x, z, xdot, zdot]).any():
 		# print the failed simulation and the values of its parameters
 		beta_char, lambda_char, pi_char, omega_char, deltat_char = '\u03B2', \
 									'\u03BB', '\u03C0', '\u03C9', '\u0394'+'t'
+		prime = '\''
 		print('\nSimulation failed')
 		print(f'{"z_0":10}{z_0:^10.4g}')
 		print(f'{"St":10}{stokes_num:^10.4g}')
 		print(f'{beta_char:10}{beta:^10.4g}')
 		print(f'{"history":10}{include_history!s:^10}')
-		print(f'{"h":10}{h:^10}')
-		print(f'{"A":10}{A:^10.4g}')
-		print(f'{lambda_char:10}{wavelength:^10}')
+		print(f'{"h", prime:10}{h:^10}')
+		print(f'{"A", prime:10}{A:^10.4g}')
+		print(f'{lambda_char, prime:10}{wavelength:^10}')
 
 		# print k as a multiple of pi if possible
 		if k % np.pi == 0:
 			k = f'{int(k // np.pi):d}{pi_char}'
-			print(f'{"k":10}{k:^10}')
+			print(f'{"k", prime:10}{k:^10}')
 		else:
-			print(f'{"k":10}{k:^10.4f}')
+			print(f'{"k", prime:10}{k:^10.4f}')
 
-		print(f'{omega_char:10}{omega.item():^10.4f}')
+		print(f'{omega_char, prime:10}{omega.item():^10.4f}')
 		print(f'{"Fr":10}{Fr.item():^10.4f}')
-		print(f'{"U":10}{U.item():^10.4f}')
-		print(f'{"periods":10}{num_periods:^10}')
-		print(f'{deltat_char:10}{delta_t:^10.4g}')
+		print(f'{"U", prime:10}{U.item():^10.4f}')
+		print(f'{"periods", prime:10}{num_periods:^10}')
+		print(f'{deltat_char, prime:10}{delta_t:^10.4g}')
 		print(f'{"Re_p":10}{general_Re_p:^10.4g}\n')
 		# set the results of the failed simulation to None
 		results = {key: None for key, value in results.items()}

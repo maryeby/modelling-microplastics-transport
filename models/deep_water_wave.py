@@ -17,34 +17,35 @@ class DeepWaterWave(wave.Wave):
 		Attributes
 		----------
 		depth : float, default=10
-			The depth of the fluid *h*.
+			The depth of the fluid *h'*.
 		amplitude : float
-			The amplitude of the wave *A*.
+			The amplitude of the wave *A'*.
 		wavelength : float
-			The wavelength *λ*.
+			The wavelength *λ'*.
 		wavenum : float
-			The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+			The wavenumber *k'*, computed as $$k' = \frac{2 \pi}{\lambda'}.$$
 		kinematic_viscosity : float
-			The kinematic viscosity ν of seawater.
+			The kinematic viscosity ν' of seawater.
 		gravity : float
 			The gravity **g** acting on the fluid, non-dimensionalized as,
-			$$g' = g \frac{L'}{U^{\prime 2}}.$$
+			$$g' = \frac{g}{k'U^{\prime 2}}.$$
 		angular_freq : float
-			The angular frequency *ω*, computed using the dispersion relation,
-			$$\omega = \sqrt{gk}.$$
+			The angular frequency *ω'*, computed using the dispersion relation,
+			$$\omega' = \sqrt{g'k'}.$$
 		phase_velocity : float
-			The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
+			The phase velocity *c'*, computed as $$c' = \frac{\omega'}{k'}.$$
 		period : float
 			The period of the wave, computed as
-			$$\text{period} = \frac{2\pi}{\omega}.$$
+			$$\text{period}' = \frac{2\pi}{\omega'}.$$
 		max_velocity : float
-			The maximum velocity *U* at the surface z = 0, computed as
-			$$U = \omega A.$$
+			The maximum velocity *U'* at the surface *z'* = 0, computed as
+			$$U' = \omega' A'.$$
 		froude_num : float
-			The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+			The Froude number *Fr*, computed as
+			$$Fr = \sqrt{\frac{k'U'^2}{g'}}.$$
 		reynolds_num : float
 			The Reynolds number *Re* of the wave, computed as
-			$$Re = \frac{U}{kν}.$$
+			$$Re = \frac{U'}{k'ν'}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
 		self.gravity /= constants.g * self.froude_num ** 2
@@ -52,7 +53,7 @@ class DeepWaterWave(wave.Wave):
 	def set_angular_freq(self):
 		r"""
 		Defines the angular frequency omega with the dispersion relation,
-		$$\omega = \sqrt{gk}.$$
+		$$\omega' = \sqrt{g'k'}.$$
 		"""
 		self.angular_freq = np.sqrt(constants.g * self.wavenum)
 

@@ -33,17 +33,18 @@ def main():
 
 	# plot analytical solutions
 	plt.plot('deep_u_d', 'deep_z/h', c='k', data=analytics,
-			 label='deep analytics')
+			 label='deep')
 	plt.plot('intermediate_u_d', 'intermediate_z/h', '-.k', data=analytics,
-			 label='intermediate analytics')
+			 label='intermediate')
 	plt.plot('shallow_u_d', 'shallow_z/h', ':k', data=analytics,
-			 label='shallow analytics')
+			 label='shallow')
 
 	# plot numerical solutions for each Stokes number
 	for i in range(len(labels)):
 		for j in range(len(stokes_nums)):
 			if i == 0:
-				no_history_label = 'St = %g without history' % stokes_nums[j]
+#				no_history_label = 'St = %g without history' % stokes_nums[j]
+				no_history_label = 'St = %g' % stokes_nums[j]
 				history_label = 'St = %g with history' % stokes_nums[j]
 			else:
 				no_history_label, history_label = '', ''
@@ -55,7 +56,8 @@ def main():
 			plt.scatter('%s_u_d_history_%g' % (labels[i], stokes_nums[j]),
 						'%s_z/h' % labels[i], marker=markers[j],
 						edgecolors='k', facecolors='none', data=numerics,
-						label=history_label)
+						label='')
+#						label=history_label)
 	plt.legend(fontsize=14)
 	plt.show()
 

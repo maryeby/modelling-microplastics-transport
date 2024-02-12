@@ -2,6 +2,7 @@ import sys
 sys.path.append('/home/s2182576/Documents/academia/thesis/'
 				+ 'modelling-microplastics-transport')
 import pandas as pd
+import numpy as np
 from scipy import constants
 
 from models import my_system as ts
@@ -15,33 +16,34 @@ def main():
 	"""
 	# initialize variables
 	St, beta_SM = 0.01, 0.9
-	h, A, wavelength = 50, 0.02, 1 # wave parameters
+	h, A, wavelength = 10, 0.02, 1 # wave parameters
 	delta_t = 5e-3
 	R = 2 / 3 * beta_SM
 
 	# read numerical data
 	in_file = 'numerics.csv'
-	out_file = 'santamaria_fig2_recreation.csv'
+	out_file = 'dibenedetto_analysis.csv'
 	numerics = pd.read_csv(DATA_PATH + in_file)
 
 	# create conditions to help filter through numerical data
 	history = (numerics['St'] == St) & (numerics['beta'] == beta_SM) \
 									 & (numerics['history'] == True) \
-									 & (numerics['h'] == h) \
-									 & (numerics['A'] == A) \
-									 & (numerics['wavelength'] == wavelength) \
-									 & (numerics['delta_t'] == delta_t)
+									 & (numerics['h\''] == h) \
+									 & (numerics['A\''] == A) \
+									 & (numerics['wavelength\''] == wavelength)\
+									 & (numerics['delta_t\''] == delta_t)
 	no_history = (numerics['St'] == St) & (numerics['beta'] == beta_SM) \
 									& (numerics['history'] == False) \
-									& (numerics['h'] == h) \
-									& (numerics['A'] == A) \
-									& (numerics['wavelength'] == wavelength) \
-									& (numerics['delta_t'] == delta_t)
+									& (numerics['h\''] == h) \
+									& (numerics['A\''] == A) \
+									& (numerics['wavelength\''] == wavelength) \
+									& (numerics['delta_t\''] == delta_t)
 
 	# retrieve relevant numerical results
-	U = numerics['U'].where(no_history).dropna().iloc[0]
-	k = numerics['k'].where(no_history).dropna().iloc[0]
-	h = numerics['h'].where(no_history).dropna().iloc[0]
+	U = numerics['U\''].where(no_history).dropna().iloc[0]
+	k = numerics['k\''].where(no_history).dropna().iloc[0]
+	h = numerics['h\''].where(no_history).dropna().iloc[0]
+	omega = numerics['omega\''].where(no_history).dropna().iloc[0]
 	Fr = numerics['Fr'].where(no_history).dropna().iloc[0]
 
 	x = numerics['x'].where(no_history).dropna().to_numpy()
@@ -62,42 +64,55 @@ def main():
 												   x_history, z_history,
 												   xdot_history, t_history)
 	# compute analytical solutions for the drift velocity
-	z_star = z_crossings[0]
-	z_star_history = z_crossings_history[0]
 	beta = R * (3 * R + 2) / (2 + R * (3 * R - 1))
 	St_lin = omega * St * (beta_SM + ((2 - R) / (2 * R)))
 
 	relative_magnitude = np.sqrt((1 - St_lin ** 2 * (1 - beta)) ** 2 \
 									+ (St_lin * (1 - beta)) ** 2)
 	settling_velocity = St_lin * (1 - beta) / np.tanh(k * h)
-	u_SD = k * A / np.tanh(k * h) * np.cosh(2 * (z_star + k * h)) \
+
+	u_SD = k * A / np.tanh(k * h) * np.cosh(2 * (z_crossings + k * h)) \
 				 / (2 * (np.cosh(k * h)) ** 2)
-	du_SD = k * A / np.tanh(k * h) * np.sinh(2 * (z_star + k * h)) \
+	du_SD = k * A / np.tanh(k * h) * np.sinh(2 * (z_crossings + k * h)) \
 				  / (np.cosh(k * h)) ** 2
+	u_SD_history = k * A / np.tanh(k * h) \
+					 * np.cosh(2 * (z_crossings_history + k * h)) \
+					 / (2 * (np.cosh(k * h)) ** 2)
+	du_SD_history = k * A / np.tanh(k * h) \
+					  * np.sinh(2 * (z_crossings_history + k * h)) \
+					  / (np.cosh(k * h)) ** 2
 
 	v_x_drift = relative_magnitude / (1 + settling_velocity ** 2) * u_SD
 	v_y_drift = -settling_velocity * (1 + relative_magnitude ** 2
 				/ (1 + settling_velocity ** 2) * u_SD
 				+ 1 / 2 * np.tanh(k * h) * du_SD) 
+	v_x_drift_history = relative_magnitude / (1 + settling_velocity ** 2) \
+										   * u_SD_history
+	v_y_drift_history = -settling_velocity * (1 + relative_magnitude ** 2
+				/ (1 + settling_velocity ** 2) * u_SD_history
+				+ 1 / 2 * np.tanh(k * h) * du_SD_history) 
 
 	# scale results
-	t_d /= Fr
-	u_d /= Fr
-	w_d *= U ** 2 * k * R / (constants.g * St)
+#	t_d /= Fr
+#	u_d /= Fr
+#	w_d *= U ** 2 * k * R / (constants.g * St)
 	
-	t_d_history /= Fr
-	u_d_history /= Fr
-	w_d_history *= U ** 2 * k * R / (constants.g * St)
+#	t_d_history /= Fr
+#	u_d_history /= Fr
+#	w_d_history *= U ** 2 * k * R / (constants.g * St)
 
 	# write results to data file
 	history = [True] * len(x_crossings)
 	no_history = [False] * len(x_crossings)
-	results = {'x_crossings': x_crossings, 'z_crossings': z_crossings,
-			   'u_d': u_d, 'w_d': w_d, 't': t_d, 'history': no_history}
-	results_history = {'x_crossings': x_crossings_history,
-					   'z_crossings': z_crossings_history,
+	results = {'x_crossings': x_crossings[1:], 'z_crossings': z_crossings[1:],
+			   'u_d': u_d, 'w_d': w_d, 't': t_d,
+			   'v_x_drift': v_x_drift[1:], 'v_y_drift': v_y_drift[1:],
+			   'history': no_history}
+	results_history = {'x_crossings': x_crossings_history[1:],
+			'z_crossings': z_crossings_history[1:],
 					   'u_d': u_d_history, 'w_d': w_d_history, 't': t_d_history,
-					   'history': history}
+					   'v_x_drift': v_x_drift_history[1:],
+					   'v_y_drift': v_y_drift_history[1:], 'history': history}
 	results = dict([(key, pd.Series(value)) for key, value in results.items()])
 	results_history = dict([(key, pd.Series(value)) for key, value
 							in results_history.items()])

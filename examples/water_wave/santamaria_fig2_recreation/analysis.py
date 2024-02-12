@@ -15,7 +15,7 @@ def main():
 	"""
 	# initialize variables
 	St, beta = 0.01, 0.9
-	h, A, wavelength = 50, 0.02, 1 # wave parameters
+	h, A, wavelength = 10, 0.02, 1 # wave parameters
 	delta_t = 5e-3
 	R = 2 / 3 * beta
 
@@ -27,20 +27,20 @@ def main():
 	# create conditions to help filter through numerical data
 	history = (numerics['St'] == St) & (numerics['beta'] == beta) \
 									 & (numerics['history'] == True) \
-									 & (numerics['h'] == h) \
-									 & (numerics['A'] == A) \
-									 & (numerics['wavelength'] == wavelength) \
-									 & (numerics['delta_t'] == delta_t)
+									 & (numerics['h\''] == h) \
+									 & (numerics['A\''] == A) \
+									 & (numerics['wavelength\''] == wavelength)\
+									 & (numerics['delta_t\''] == delta_t)
 	no_history = (numerics['St'] == St) & (numerics['beta'] == beta) \
 									& (numerics['history'] == False) \
-									& (numerics['h'] == h) \
-									& (numerics['A'] == A) \
-									& (numerics['wavelength'] == wavelength) \
-									& (numerics['delta_t'] == delta_t)
+									& (numerics['h\''] == h) \
+									& (numerics['A\''] == A) \
+									& (numerics['wavelength\''] == wavelength) \
+									& (numerics['delta_t\''] == delta_t)
 
 	# retrieve relevant numerical results
-	U = numerics['U'].where(no_history).dropna().iloc[0]
-	k = numerics['k'].where(no_history).dropna().iloc[0]
+	U = numerics['U\''].where(no_history).dropna().iloc[0]
+	k = numerics['k\''].where(no_history).dropna().iloc[0]
 	Fr = numerics['Fr'].where(no_history).dropna().iloc[0]
 
 	x = numerics['x'].where(no_history).dropna().to_numpy()

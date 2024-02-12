@@ -9,9 +9,10 @@ def main():
 	This program reproduces Figure 2 from Santamaria et al. (2013).
 	"""
 	# read data files
-	numerics = pd.read_csv('../data/deep_water_wave/'
+	numerics = pd.read_csv('../../data/deep_water_wave/'
 						   + 'santamaria_fig2_recreation.csv')
-	analytics = pd.read_csv('../data/deep_water_wave/santamaria_analytics.csv')
+	analytics = pd.read_csv('../../data/deep_water_wave/'
+							+ 'santamaria_analytics.csv')
 
 	# plot results
 	plt.figure(1)

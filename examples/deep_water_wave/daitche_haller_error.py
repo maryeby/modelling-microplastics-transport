@@ -20,7 +20,8 @@ def main():
 	`data/deep_water_wave` directory.
 	"""
 	# initialize delta_t values and dictionaries to store numerical solutions
-	timesteps = np.linspace(1e-3, 5e-2, 10)
+#	timesteps = np.linspace(1e-3, 5e-2, 10)
+	timesteps = np.linspace(1e-3, 1e-1, 10)
 	labels = list(chain.from_iterable(('x_%.2e' % delta_t, 'z_%.2e' % delta_t)
 				  for delta_t in timesteps))
 	dict1 = dict.fromkeys(labels)
@@ -32,7 +33,7 @@ def main():
 	computation_times = []
 
 	# initialize variables for numerical simulations
-	num_periods = 20
+	num_periods = 50
 	R = 2 / 3 * 0.98
 	my_flow = fl.DeepWaterWave(amplitude=0.026, wavelength=0.5)
 	my_particle = prt.Particle(stokes_num=my_flow.froude_num * R * 0.5)
@@ -51,16 +52,19 @@ def main():
 												 x_0=x_0, z_0=z_0,
 												 xdot_0=xdot_0, zdot_0=zdot_0,
 												 delta_t=delta_t,
-												 num_periods=num_periods)
+												 num_periods=num_periods,
+												 hide_progress=False)
 		x2, z2, _, _, _ = my_system.run_numerics(include_history=False, order=2,
 												 x_0=x_0, z_0=z_0,
 												 xdot_0=xdot_0, zdot_0=zdot_0,
 												 delta_t=delta_t,
-												 num_periods=num_periods)
+												 num_periods=num_periods,
+												 hide_progress=False)
 		x3, z3, _, _, _ = my_system.run_numerics(include_history=False, x_0=x_0,
 												 z_0=z_0, xdot_0=xdot_0,
 												 zdot_0=zdot_0, delta_t=delta_t,
-												 num_periods=num_periods)
+												 num_periods=num_periods,
+												 hide_progress=False)
 		xh, zh, _, _, _ = haller_system.run_numerics(haller_system.maxey_riley,
 													 x_0=x_0, z_0=z_0,
 													 delta_t=delta_t,

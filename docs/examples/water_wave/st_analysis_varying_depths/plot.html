@@ -62,17 +62,18 @@ def main():
 
         # plot analytical solutions
         plt.plot(&#39;deep_u_d&#39;, &#39;deep_z/h&#39;, c=&#39;k&#39;, data=analytics,
-                         label=&#39;deep analytics&#39;)
+                         label=&#39;deep&#39;)
         plt.plot(&#39;intermediate_u_d&#39;, &#39;intermediate_z/h&#39;, &#39;-.k&#39;, data=analytics,
-                         label=&#39;intermediate analytics&#39;)
+                         label=&#39;intermediate&#39;)
         plt.plot(&#39;shallow_u_d&#39;, &#39;shallow_z/h&#39;, &#39;:k&#39;, data=analytics,
-                         label=&#39;shallow analytics&#39;)
+                         label=&#39;shallow&#39;)
 
         # plot numerical solutions for each Stokes number
         for i in range(len(labels)):
                 for j in range(len(stokes_nums)):
                         if i == 0:
-                                no_history_label = &#39;St = %g without history&#39; % stokes_nums[j]
+#                               no_history_label = &#39;St = %g without history&#39; % stokes_nums[j]
+                                no_history_label = &#39;St = %g&#39; % stokes_nums[j]
                                 history_label = &#39;St = %g with history&#39; % stokes_nums[j]
                         else:
                                 no_history_label, history_label = &#39;&#39;, &#39;&#39;
@@ -84,7 +85,8 @@ def main():
                         plt.scatter(&#39;%s_u_d_history_%g&#39; % (labels[i], stokes_nums[j]),
                                                 &#39;%s_z/h&#39; % labels[i], marker=markers[j],
                                                 edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;, data=numerics,
-                                                label=history_label)
+                                                label=&#39;&#39;)
+#                                               label=history_label)
         plt.legend(fontsize=14)
         plt.show()
 
@@ -136,17 +138,18 @@ varying Stokes numbers and water depths.</p></div>
 
         # plot analytical solutions
         plt.plot(&#39;deep_u_d&#39;, &#39;deep_z/h&#39;, c=&#39;k&#39;, data=analytics,
-                         label=&#39;deep analytics&#39;)
+                         label=&#39;deep&#39;)
         plt.plot(&#39;intermediate_u_d&#39;, &#39;intermediate_z/h&#39;, &#39;-.k&#39;, data=analytics,
-                         label=&#39;intermediate analytics&#39;)
+                         label=&#39;intermediate&#39;)
         plt.plot(&#39;shallow_u_d&#39;, &#39;shallow_z/h&#39;, &#39;:k&#39;, data=analytics,
-                         label=&#39;shallow analytics&#39;)
+                         label=&#39;shallow&#39;)
 
         # plot numerical solutions for each Stokes number
         for i in range(len(labels)):
                 for j in range(len(stokes_nums)):
                         if i == 0:
-                                no_history_label = &#39;St = %g without history&#39; % stokes_nums[j]
+#                               no_history_label = &#39;St = %g without history&#39; % stokes_nums[j]
+                                no_history_label = &#39;St = %g&#39; % stokes_nums[j]
                                 history_label = &#39;St = %g with history&#39; % stokes_nums[j]
                         else:
                                 no_history_label, history_label = &#39;&#39;, &#39;&#39;
@@ -158,7 +161,8 @@ varying Stokes numbers and water depths.</p></div>
                         plt.scatter(&#39;%s_u_d_history_%g&#39; % (labels[i], stokes_nums[j]),
                                                 &#39;%s_z/h&#39; % labels[i], marker=markers[j],
                                                 edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;, data=numerics,
-                                                label=history_label)
+                                                label=&#39;&#39;)
+#                                               label=history_label)
         plt.legend(fontsize=14)
         plt.show()</code></pre>
 </details>

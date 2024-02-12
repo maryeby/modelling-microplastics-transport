@@ -22,12 +22,12 @@ class MyTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle and fluid densities.
+			The ratio *R* between the particle and fluid densities.
 		reynolds_num : float
 			The particle Reynolds number, computed as,
-			$$Re_p = \frac{Ud}{\nu},$$
-			where *U* and ν are attributes of the wave, and *d* is the diameter
-			of the particle.
+			$$Re_p = \frac{U'd'}{\nu'},$$
+			where *U'* and ν' are attributes of the wave, and *d'* is the
+			diameter of the particle.
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.reynolds_num = (2 * self.flow.max_velocity
@@ -320,7 +320,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 		"""
 		# initialize parameters for the solver
 		t_final = num_periods * self.flow.period
-		t_eval = np.arange(0, t_final, delta_t)
+		t_eval = np.arange(0, t_final, delta_t) \
+					/ (self.flow.wavenum * self.flow.max_velocity)
 		y = [x_0, z_0, xdot_0, zdot_0]
 
 		# run computations

@@ -51,14 +51,19 @@ class MyTransportSystem(transport_system.TransportSystem):
                 flow : Flow (obj)
                         The flow through which the particle is transported.
                 density_ratio : float
-                        The ratio between the particle and fluid densities.
+                        The ratio *R* between the particle and fluid densities.
                 reynolds_num : float
                         The particle Reynolds number, computed as,
-                        $$Re_p = \frac{Ud}{\nu},$$
-                        where *U* and ν are attributes of the wave, and *d* is the diameter
-                        of the particle.
+                        $$Re_p = \frac{U&#39;d&#39;}{\nu&#39;},$$
+                        where *U&#39;* and ν&#39; are attributes of the wave, and *d&#39;* is the
+                        diameter of the particle.
                 &#34;&#34;&#34;
                 super().__init__(particle, flow, density_ratio)
+                self.reynolds_num = (2 * self.flow.max_velocity
+                                                           * np.sqrt(9 * self.particle.stokes_num 
+                                                           / (2 * self.flow.wavenum ** 2
+                                                           * self.flow.reynolds_num))) \
+                                                           / self.flow.kinematic_viscosity
 
         def maxey_riley(self, include_history, t, y, order, hide_progress):
                 r&#34;&#34;&#34;
@@ -111,6 +116,11 @@ class MyTransportSystem(transport_system.TransportSystem):
                 mini_v[0] = v[0]
                 mini_u[0] = u[0]
 
+                # immediately return if z_0 is below the depth of the water (z_0 &lt; -h)
+                if x[0, 1] &lt;= -self.flow.depth:
+                        print(&#39;Error: Initial vertical position is below the seabed.&#39;)
+                        return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0]
+
                 # only compute alpha, beta, gamma, xi if we&#39;re including history effects
                 if include_history:
                         hide_progress = False
@@ -138,6 +148,13 @@ class MyTransportSystem(transport_system.TransportSystem):
                 if not hide_progress:
                         print(&#39;Computing the first two intervals using mini steps...&#39;)
                 for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
+                        # return immediately if the particle reaches the seabed (z &lt; -h)
+                        if x[n_prime, 1] &lt;= -self.flow.depth:
+                                print(&#39;Simulation ended prematurely: particle reached the&#39;,
+                                          &#39;seabed.&#39;)
+                                return x[:n_prime, 0], x[:n_prime, 1], v[:n_prime, 0], \
+                                           v[:n_prime, 1], t[:n_prime]
+
                         mini_w = mini_v - mini_u
                         G = (3 / 2 * R - 1) \
                                    * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
@@ -235,6 +252,12 @@ class MyTransportSystem(transport_system.TransportSystem):
                 if not hide_progress:
                         print(&#39;Computing the remaining intervals...&#39;)
                 for n in tqdm(range(2, num_steps), disable=hide_progress):
+                        # return immediately if the particle reaches the seabed (z &lt; -h)
+                        if x[n, 1] &lt;= -self.flow.depth:
+                                print(&#39;Simulation ended prematurely: particle reached the&#39;,
+                                          &#39;seabed.&#39;)
+                                return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n]
+
                         w = v - u
                         G = (3 / 2 * R - 1) \
                                    * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
@@ -326,7 +349,8 @@ class MyTransportSystem(transport_system.TransportSystem):
                 &#34;&#34;&#34;
                 # initialize parameters for the solver
                 t_final = num_periods * self.flow.period
-                t_eval = np.arange(0, t_final, delta_t)
+                t_eval = np.arange(0, t_final, delta_t) \
+                                        / (self.flow.wavenum * self.flow.max_velocity)
                 y = [x_0, z_0, xdot_0, zdot_0]
 
                 # run computations
@@ -1229,12 +1253,12 @@ may be obtained by indexing the array as <code>arr[j, n]</code>.</p>
 <dt><strong><code>flow</code></strong> :&ensp;<code>Flow (obj)</code></dt>
 <dd>The flow through which the particle is transported.</dd>
 <dt><strong><code>density_ratio</code></strong> :&ensp;<code>float</code></dt>
-<dd>The ratio between the particle and fluid densities.</dd>
+<dd>The ratio <em>R</em> between the particle and fluid densities.</dd>
 <dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The particle Reynolds number, computed as,
-<span><span class="MathJax_Preview">Re_p = \frac{Ud}{\nu},</span><script type="math/tex; mode=display">Re_p = \frac{Ud}{\nu},</script></span>
-where <em>U</em> and ν are attributes of the wave, and <em>d</em> is the diameter
-of the particle.</dd>
+<span><span class="MathJax_Preview">Re_p = \frac{U'd'}{\nu'},</span><script type="math/tex; mode=display">Re_p = \frac{U'd'}{\nu'},</script></span>
+where <em>U'</em> and ν' are attributes of the wave, and <em>d'</em> is the
+diameter of the particle.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -1254,14 +1278,19 @@ of the particle.</dd>
                 flow : Flow (obj)
                         The flow through which the particle is transported.
                 density_ratio : float
-                        The ratio between the particle and fluid densities.
+                        The ratio *R* between the particle and fluid densities.
                 reynolds_num : float
                         The particle Reynolds number, computed as,
-                        $$Re_p = \frac{Ud}{\nu},$$
-                        where *U* and ν are attributes of the wave, and *d* is the diameter
-                        of the particle.
+                        $$Re_p = \frac{U&#39;d&#39;}{\nu&#39;},$$
+                        where *U&#39;* and ν&#39; are attributes of the wave, and *d&#39;* is the
+                        diameter of the particle.
                 &#34;&#34;&#34;
                 super().__init__(particle, flow, density_ratio)
+                self.reynolds_num = (2 * self.flow.max_velocity
+                                                           * np.sqrt(9 * self.particle.stokes_num 
+                                                           / (2 * self.flow.wavenum ** 2
+                                                           * self.flow.reynolds_num))) \
+                                                           / self.flow.kinematic_viscosity
 
         def maxey_riley(self, include_history, t, y, order, hide_progress):
                 r&#34;&#34;&#34;
@@ -1314,6 +1343,11 @@ of the particle.</dd>
                 mini_v[0] = v[0]
                 mini_u[0] = u[0]
 
+                # immediately return if z_0 is below the depth of the water (z_0 &lt; -h)
+                if x[0, 1] &lt;= -self.flow.depth:
+                        print(&#39;Error: Initial vertical position is below the seabed.&#39;)
+                        return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0]
+
                 # only compute alpha, beta, gamma, xi if we&#39;re including history effects
                 if include_history:
                         hide_progress = False
@@ -1341,6 +1375,13 @@ of the particle.</dd>
                 if not hide_progress:
                         print(&#39;Computing the first two intervals using mini steps...&#39;)
                 for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
+                        # return immediately if the particle reaches the seabed (z &lt; -h)
+                        if x[n_prime, 1] &lt;= -self.flow.depth:
+                                print(&#39;Simulation ended prematurely: particle reached the&#39;,
+                                          &#39;seabed.&#39;)
+                                return x[:n_prime, 0], x[:n_prime, 1], v[:n_prime, 0], \
+                                           v[:n_prime, 1], t[:n_prime]
+
                         mini_w = mini_v - mini_u
                         G = (3 / 2 * R - 1) \
                                    * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
@@ -1438,6 +1479,12 @@ of the particle.</dd>
                 if not hide_progress:
                         print(&#39;Computing the remaining intervals...&#39;)
                 for n in tqdm(range(2, num_steps), disable=hide_progress):
+                        # return immediately if the particle reaches the seabed (z &lt; -h)
+                        if x[n, 1] &lt;= -self.flow.depth:
+                                print(&#39;Simulation ended prematurely: particle reached the&#39;,
+                                          &#39;seabed.&#39;)
+                                return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n]
+
                         w = v - u
                         G = (3 / 2 * R - 1) \
                                    * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
@@ -1529,7 +1576,8 @@ of the particle.</dd>
                 &#34;&#34;&#34;
                 # initialize parameters for the solver
                 t_final = num_periods * self.flow.period
-                t_eval = np.arange(0, t_final, delta_t)
+                t_eval = np.arange(0, t_final, delta_t) \
+                                        / (self.flow.wavenum * self.flow.max_velocity)
                 y = [x_0, z_0, xdot_0, zdot_0]
 
                 # run computations
@@ -1623,6 +1671,11 @@ times where the Maxey-Riley equation was evaluated.</dd>
         mini_v[0] = v[0]
         mini_u[0] = u[0]
 
+        # immediately return if z_0 is below the depth of the water (z_0 &lt; -h)
+        if x[0, 1] &lt;= -self.flow.depth:
+                print(&#39;Error: Initial vertical position is below the seabed.&#39;)
+                return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0]
+
         # only compute alpha, beta, gamma, xi if we&#39;re including history effects
         if include_history:
                 hide_progress = False
@@ -1650,6 +1703,13 @@ times where the Maxey-Riley equation was evaluated.</dd>
         if not hide_progress:
                 print(&#39;Computing the first two intervals using mini steps...&#39;)
         for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
+                # return immediately if the particle reaches the seabed (z &lt; -h)
+                if x[n_prime, 1] &lt;= -self.flow.depth:
+                        print(&#39;Simulation ended prematurely: particle reached the&#39;,
+                                  &#39;seabed.&#39;)
+                        return x[:n_prime, 0], x[:n_prime, 1], v[:n_prime, 0], \
+                                   v[:n_prime, 1], t[:n_prime]
+
                 mini_w = mini_v - mini_u
                 G = (3 / 2 * R - 1) \
                            * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
@@ -1747,6 +1807,12 @@ times where the Maxey-Riley equation was evaluated.</dd>
         if not hide_progress:
                 print(&#39;Computing the remaining intervals...&#39;)
         for n in tqdm(range(2, num_steps), disable=hide_progress):
+                # return immediately if the particle reaches the seabed (z &lt; -h)
+                if x[n, 1] &lt;= -self.flow.depth:
+                        print(&#39;Simulation ended prematurely: particle reached the&#39;,
+                                  &#39;seabed.&#39;)
+                        return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n]
+
                 w = v - u
                 G = (3 / 2 * R - 1) \
                            * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
@@ -1882,7 +1948,8 @@ times where the Maxey-Riley equation was evaluated.</dd>
         &#34;&#34;&#34;
         # initialize parameters for the solver
         t_final = num_periods * self.flow.period
-        t_eval = np.arange(0, t_final, delta_t)
+        t_eval = np.arange(0, t_final, delta_t) \
+                                / (self.flow.wavenum * self.flow.max_velocity)
         y = [x_0, z_0, xdot_0, zdot_0]
 
         # run computations

@@ -74,20 +74,20 @@ def main():
 
 	# create conditions to help filter through numerical data
 	St, beta = 0.01, 0.9
-	h, A, wavelength = 50, 0.02, 1 # wave parameters
+	h, A, wavelength = 10, 0.02, 1 # wave parameters
 	delta_t = 5e-3
 	history = (numerics['St'] == St) & (numerics['beta'] == beta) \
 									 & (numerics['history'] == True) \
-									 & (numerics['h'] == h) \
-									 & (numerics['A'] == A) \
-									 & (numerics['wavelength'] == wavelength) \
-									 & (numerics['delta_t'] == delta_t)
+									 & (numerics['h\''] == h) \
+									 & (numerics['A\''] == A) \
+									 & (numerics['wavelength\''] == wavelength)\
+									 & (numerics['delta_t\''] == delta_t)
 	no_history = (numerics['St'] == St) & (numerics['beta'] == beta) \
 									& (numerics['history'] == False) \
-									& (numerics['h'] == h) \
-									& (numerics['A'] == A) \
-									& (numerics['wavelength'] == wavelength) \
-									& (numerics['delta_t'] == delta_t)
+									& (numerics['h\''] == h) \
+									& (numerics['A\''] == A) \
+									& (numerics['wavelength\''] == wavelength) \
+									& (numerics['delta_t\''] == delta_t)
 
 	# retrieve relevant numerical results
 	x = numerics['x'].where(no_history).dropna()

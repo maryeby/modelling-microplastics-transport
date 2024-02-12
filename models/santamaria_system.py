@@ -24,12 +24,12 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 			The ratio between the particle and fluid densities.
 		reynolds_num : float
 			The particle Reynolds number, computed as,
-			$$Re_p = \frac{Ud}{\nu},$$
-			where *U* and ν are attributes of the wave, and *d* is the diameter
-			of the particle.
+			$$Re_p = \frac{U'd'}{\nu'},$$
+			where *U'* and ν' are attributes of the wave, and *d'* is the
+			diameter of the particle.
 		st_response_time : float
-			The Stokes response time τ, computed as
-			$$\tau = \frac{St}{\omega}.$$
+			The Stokes response time τ', computed as
+			$$\tau' = \frac{St}{\omega'}.$$
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.reynolds_num = (2 * self.flow.max_velocity
@@ -44,14 +44,14 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		r"""
 		Evaluates the Maxey-Riley equation without history effects,
 		corresponding to equations (3) and (4) in Santamaria et al. (2013),
-		$$\frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{v},$$
-		$$\frac{\mathrm{d}\mathbf{v}}{\mathrm{d}t}
-			= \frac{\mathbf{u} - \mathbf{v}}{\tau} + (1 - \beta) \mathbf{g}
-			+ \beta \frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}$$ with
-		$$\tau = \frac{a^2}{3 \beta \nu},
-			\qquad \beta = \frac{3 \rho_f}{\rho_f + 2 \rho_p},$$
-		where *a* is the particle radius, *ν* is the kinematic viscosity, and
-		*ρ* is the density of the particle or the fluid.
+		$$\frac{\mathrm{d}\mathbf{x'}}{\mathrm{d}t'} = \mathbf{v'},$$
+		$$\frac{\mathrm{d}\mathbf{v'}}{\mathrm{d}t'}
+			= \frac{\mathbf{u'} - \mathbf{v'}}{\tau'} + (1 - \beta) \mathbf{g'}
+			+ \beta \frac{\mathrm{D}\mathbf{u'}}{\mathrm{D}t'}$$ with
+		$$\tau' = \frac{a'^2}{3 \beta \nu'},
+			\qquad \beta = \frac{3 \rho'_f}{\rho'_f + 2 \rho'_p},$$
+		where *a'* is the particle radius, *ν'* is the kinematic viscosity, and
+		*ρ'* is the density of the particle or the fluid.
 		
 		Parameters
 		----------
@@ -81,14 +81,14 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		r"""
 		Evalutes the inertial equation, corresponding to equation (5) in
 		Santamaria et al. (2013),
-		$$\mathbf{v} = \mathbf{u} + \tau (1 - \beta) \Bigg(\mathbf{g}
-		- \frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}\Bigg)
-		+ \tau^2 (1 - \beta) \frac{\mathrm{D}^2\mathbf{u}}{\mathrm{D}t^2}
-		+ \mathcal{O}(\tau^3)$$ with
-		$$\tau = \frac{a^2}{3 \beta \nu},
-			\qquad \beta = \frac{3 \rho_f}{\rho_f + 2 \rho_p},$$
-		where *a* is the particle radius, *ν* is the kinematic viscosity, and
-		*ρ* is the density of the particle or the fluid.
+		$$\mathbf{v'} = \mathbf{u'} + \tau' (1 - \beta) \Bigg(\mathbf{g}'
+		- \frac{\mathrm{D}\mathbf{u}'}{\mathrm{D}t'}\Bigg)
+		+ \tau'^2 (1 - \beta) \frac{\mathrm{D}^2\mathbf{u}'}{\mathrm{D}t'^2}
+		+ \mathcal{O}(\tau'^3)$$ with
+		$$\tau' = \frac{a'^2}{3 \beta \nu'},
+			\qquad \beta = \frac{3 \rho'_f}{\rho'_f + 2 \rho'_p},$$
+		where *a'* is the particle radius, *ν'* is the kinematic viscosity, and
+		*ρ'* is the density of the particle or the fluid.
 
 		Parameters
 		----------

@@ -103,7 +103,8 @@ def compute_drift_velocity(label, depth, my_dict, particle, include_history):
 
 	# initialize parameters for the numerics
 	x_0 = 0
-	T =  my_wave.froude_num * my_wave.angular_freq
+	k = my_wave.wavenum
+	T = k * my_wave.max_velocity
 	delta_t = 1e-2 * T
 	print(f'delta_t = {delta_t}')
 	num_periods = 20 * T
@@ -149,9 +150,8 @@ def compute_drift_velocity(label, depth, my_dict, particle, include_history):
 		w_d.append(avg_w_d)
 
 	# normalize and return results
-	Fr = my_wave.froude_num
-	u_d = np.array(u_d) / Fr
-	w_d = np.array(w_d) / Fr
+	u_d = np.array(u_d) / (k * A)
+	w_d = np.array(w_d) / (k * A)
 	return u_d, w_d
 
 if __name__ == '__main__':

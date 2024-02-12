@@ -22,7 +22,7 @@ def main():
 	depth = 10
 	amplitude = 0.01
 	wavelength = 2
-	initial_depths = np.linspace(0, -depth, 10, endpoint=False)
+	initial_depths = np.linspace(0, -depth, 4, endpoint=False)
 
 	# initialize the wave object and density ratio to use in the numerics
 	my_wave = fl.DeepWaterWave(depth=depth, amplitude=amplitude,
@@ -35,7 +35,7 @@ def main():
 														 initial_depths))
 	params = zip(stokes_nums, initial_depths, itertools.repeat(my_wave),
 				 itertools.repeat(R))
-	results = progress_starmap(run_numerics, params, n_cpu=8,
+	results = progress_starmap(run_numerics, params, n_cpu=4,
 										   total=num_tasks)
 	# write results to data file
 	numerics = pd.DataFrame(results)
@@ -81,7 +81,8 @@ def run_numerics(stokes_num, z_0, wave, density_ratio):
 									x_0=x_0, z_0=z_0,
 									xdot_0=xdot_0, zdot_0=zdot_0,
 									delta_t=delta_t,
-									num_periods=num_periods)
+									num_periods=num_periods,
+									hide_progress=True)
 	u_d, w_d, z_star = compute_drift_velocity(x, z, xdot, t)
 	u_d /= Fr # scaling results
 	w_d /= Fr

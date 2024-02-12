@@ -45,48 +45,49 @@ class DimensionalDeepWaterWave(wave.Wave):
                 Attributes
                 ----------
                 depth : float, default=10
-                        The depth of the fluid *h*.
+                        The depth of the fluid *h&#39;*.
                 amplitude : float
-                        The amplitude of the wave *A*.
+                        The amplitude of the wave *A&#39;*.
                 wavelength : float
-                        The wavelength *λ*.
+                        The wavelength *λ&#39;*.
                 kinematic_viscosity : float
-                        The kinematic viscosity ν of seawater.
+                        The kinematic viscosity ν&#39; of seawater.
                 wavenum : float
-                        The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+                        The wavenumber *k&#39;*, computed as $$k&#39; = \frac{2 \pi}{\lambda&#39;}.$$
                 gravity : float
-                        The gravity **g** acting on the fluid.
+                        The gravity **g&#39;** acting on the fluid.
                 angular_freq : float
-                        The angular frequency *ω*, computed using the dispersion relation,
-                        $$\omega = \sqrt{gk}.$$
+                        The angular frequency *ω&#39;*, computed using the dispersion relation,
+                        $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
                 phase_velocity : float
-                        The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
+                        The phase velocity *c&#39;*, computed as $$c&#39; = \frac{\omega&#39;}{k&#39;}.$$
                 period : float
                         The period of the wave, computed as
-                        $$\text{period} = \frac{2\pi}{\omega}.$$
+                        $$\text{period}&#39; = \frac{2\pi}{\omega&#39;}.$$
                 max_velocity : float
-                        The maximum velocity *U* at the surface z = 0, computed as
-                        $$U = \omega A.$$
+                        The maximum velocity *U&#39;* at the surface *z&#39;* = 0, computed as
+                        $$U&#39; = \omega&#39; A&#39;.$$
                 froude_num : float
-                        The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+                        The Froude number *Fr*, computed as
+                        $$Fr = \sqrt{\frac{k&#39;U&#39;^2}{g&#39;}}.$$
                 reynolds_num : float
                         The Reynolds number *Re* of the wave, computed as
-                        $$Re = \frac{U}{kν}.$$
+                        $$Re = \frac{U&#39;}{k&#39;ν&#39;}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth, amplitude, wavelength)
 
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
                 Defines the angular frequency omega with the dispersion relation,
-                $$\omega = \sqrt{gk}.$$
+                $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
                 &#34;&#34;&#34;
                 self.angular_freq = np.sqrt(constants.g * self.wavenum)
 
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
-                $$u(x, z, t) = Ue^{kz} \cos(kx - \omega t),$$
-                $$w(x, z, t) = Ue^{kz} \sin(kx - \omega t).$$
+                Computes the fluid velocity, $$\textbf{u}&#39; = \langle u&#39;, w&#39; \rangle,$$
+                $$u&#39;(x&#39;, z&#39;, t&#39;) = U&#39;e^{k&#39;z&#39;} \cos(k&#39;x&#39; - \omega&#39; t&#39;),$$
+                $$w&#39;(x&#39;, z&#39;, t&#39;) = U&#39;e^{k&#39;z&#39;} \sin(k&#39;x&#39; - \omega&#39; t&#39;).$$
 
                 Parameters
                 ----------
@@ -99,7 +100,7 @@ class DimensionalDeepWaterWave(wave.Wave):
 
                 Returns
                 -------
-                Array containing the velocity field vector components *u* and *w*.
+                Array containing the velocity field vector components *u&#39;* and *w&#39;*.
                 &#34;&#34;&#34;
                 U = self.max_velocity
                 k = self.wavenum
@@ -111,8 +112,8 @@ class DimensionalDeepWaterWave(wave.Wave):
         def partial_t(self, x, z, t): 
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to time,
-                $$\frac{\partial \mathbf{u}}{\partial t} =
-                \langle \omega w, \; -\omega u \rangle.$$
+                $$\frac{\partial \mathbf{u&#39;}}{\partial t&#39;} =
+                \langle \omega&#39; w&#39;, \; -\omega&#39; u&#39; \rangle.$$
 
                 Parameters
                 ----------
@@ -135,7 +136,8 @@ class DimensionalDeepWaterWave(wave.Wave):
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to the
                 horizontal position,
-                $$\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.$$
+                $$\frac{\partial \mathbf{u}&#39;}{\partial x&#39;}
+                        = \langle -k&#39;w&#39;, \; k&#39;u&#39; \rangle.$$
 
                 Parameters
                 ----------
@@ -158,7 +160,8 @@ class DimensionalDeepWaterWave(wave.Wave):
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to the
                 vertical position,
-                $$\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.$$
+                $$\frac{\partial \mathbf{u}&#39;}{\partial z&#39;}
+                        = \langle k&#39;u&#39;, \; k&#39;w&#39; \rangle.$$
 
                 Parameters
                 ----------
@@ -178,9 +181,9 @@ class DimensionalDeepWaterWave(wave.Wave):
         def material_derivative2(self, x, z, t):
                 r&#34;&#34;&#34;
                 Computes the second order material derivative, where
-                $$\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-                \langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-                w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.$$
+                $$\frac{\mathrm{D}^2\textbf{u}&#39;}{\mathrm{D}t&#39;^2} =
+                \langle U&#39;^2 e^{2k&#39;z&#39;} \omega&#39; k&#39; - \omega&#39;^2 u&#39;, \quad
+                w&#39;(2 e^{2k&#39;z&#39;} U&#39;^2 k&#39;^2 - \omega&#39;^2) \rangle.$$
 
                 Parameters
                 ----------
@@ -225,33 +228,34 @@ is a linear water wave with infinite depth.</p>
 <h2 id="attributes">Attributes</h2>
 <dl>
 <dt><strong><code>depth</code></strong> :&ensp;<code>float</code>, default=<code>10</code></dt>
-<dd>The depth of the fluid <em>h</em>.</dd>
+<dd>The depth of the fluid <em>h'</em>.</dd>
 <dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
-<dd>The amplitude of the wave <em>A</em>.</dd>
+<dd>The amplitude of the wave <em>A'</em>.</dd>
 <dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
-<dd>The wavelength <em>λ</em>.</dd>
+<dd>The wavelength <em>λ'</em>.</dd>
 <dt><strong><code>kinematic_viscosity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The kinematic viscosity ν of seawater.</dd>
+<dd>The kinematic viscosity ν' of seawater.</dd>
 <dt><strong><code>wavenum</code></strong> :&ensp;<code>float</code></dt>
-<dd>The wavenumber <em>k</em>, computed as <span><span class="MathJax_Preview">k = \frac{2 \pi}{\lambda}.</span><script type="math/tex; mode=display">k = \frac{2 \pi}{\lambda}.</script></span></dd>
+<dd>The wavenumber <em>k'</em>, computed as <span><span class="MathJax_Preview">k' = \frac{2 \pi}{\lambda'}.</span><script type="math/tex; mode=display">k' = \frac{2 \pi}{\lambda'}.</script></span></dd>
 <dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The gravity <strong>g</strong> acting on the fluid.</dd>
+<dd>The gravity <strong>g'</strong> acting on the fluid.</dd>
 <dt><strong><code>angular_freq</code></strong> :&ensp;<code>float</code></dt>
-<dd>The angular frequency <em>ω</em>, computed using the dispersion relation,
-<span><span class="MathJax_Preview">\omega = \sqrt{gk}.</span><script type="math/tex; mode=display">\omega = \sqrt{gk}.</script></span></dd>
+<dd>The angular frequency <em>ω'</em>, computed using the dispersion relation,
+<span><span class="MathJax_Preview">\omega' = \sqrt{g'k'}.</span><script type="math/tex; mode=display">\omega' = \sqrt{g'k'}.</script></span></dd>
 <dt><strong><code>phase_velocity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The phase velocity <em>c</em>, computed as <span><span class="MathJax_Preview">c = \frac{\omega}{k}.</span><script type="math/tex; mode=display">c = \frac{\omega}{k}.</script></span></dd>
+<dd>The phase velocity <em>c'</em>, computed as <span><span class="MathJax_Preview">c' = \frac{\omega'}{k'}.</span><script type="math/tex; mode=display">c' = \frac{\omega'}{k'}.</script></span></dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
 <dd>The period of the wave, computed as
-<span><span class="MathJax_Preview">\text{period} = \frac{2\pi}{\omega}.</span><script type="math/tex; mode=display">\text{period} = \frac{2\pi}{\omega}.</script></span></dd>
+<span><span class="MathJax_Preview">\text{period}' = \frac{2\pi}{\omega'}.</span><script type="math/tex; mode=display">\text{period}' = \frac{2\pi}{\omega'}.</script></span></dd>
 <dt><strong><code>max_velocity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The maximum velocity <em>U</em> at the surface z = 0, computed as
-<span><span class="MathJax_Preview">U = \omega A.</span><script type="math/tex; mode=display">U = \omega A.</script></span></dd>
+<dd>The maximum velocity <em>U'</em> at the surface <em>z'</em> = 0, computed as
+<span><span class="MathJax_Preview">U' = \omega' A'.</span><script type="math/tex; mode=display">U' = \omega' A'.</script></span></dd>
 <dt><strong><code>froude_num</code></strong> :&ensp;<code>float</code></dt>
-<dd>The Froude number <em>Fr</em>, computed as <span><span class="MathJax_Preview">Fr = \frac{U}{c}.</span><script type="math/tex; mode=display">Fr = \frac{U}{c}.</script></span></dd>
+<dd>The Froude number <em>Fr</em>, computed as
+<span><span class="MathJax_Preview">Fr = \sqrt{\frac{k'U'^2}{g'}}.</span><script type="math/tex; mode=display">Fr = \sqrt{\frac{k'U'^2}{g'}}.</script></span></dd>
 <dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Reynolds number <em>Re</em> of the wave, computed as
-<span><span class="MathJax_Preview">Re = \frac{U}{kν}.</span><script type="math/tex; mode=display">Re = \frac{U}{kν}.</script></span></dd>
+<span><span class="MathJax_Preview">Re = \frac{U'}{k'ν'}.</span><script type="math/tex; mode=display">Re = \frac{U'}{k'ν'}.</script></span></dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -268,48 +272,49 @@ is a linear water wave with infinite depth.</p>
                 Attributes
                 ----------
                 depth : float, default=10
-                        The depth of the fluid *h*.
+                        The depth of the fluid *h&#39;*.
                 amplitude : float
-                        The amplitude of the wave *A*.
+                        The amplitude of the wave *A&#39;*.
                 wavelength : float
-                        The wavelength *λ*.
+                        The wavelength *λ&#39;*.
                 kinematic_viscosity : float
-                        The kinematic viscosity ν of seawater.
+                        The kinematic viscosity ν&#39; of seawater.
                 wavenum : float
-                        The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+                        The wavenumber *k&#39;*, computed as $$k&#39; = \frac{2 \pi}{\lambda&#39;}.$$
                 gravity : float
-                        The gravity **g** acting on the fluid.
+                        The gravity **g&#39;** acting on the fluid.
                 angular_freq : float
-                        The angular frequency *ω*, computed using the dispersion relation,
-                        $$\omega = \sqrt{gk}.$$
+                        The angular frequency *ω&#39;*, computed using the dispersion relation,
+                        $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
                 phase_velocity : float
-                        The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
+                        The phase velocity *c&#39;*, computed as $$c&#39; = \frac{\omega&#39;}{k&#39;}.$$
                 period : float
                         The period of the wave, computed as
-                        $$\text{period} = \frac{2\pi}{\omega}.$$
+                        $$\text{period}&#39; = \frac{2\pi}{\omega&#39;}.$$
                 max_velocity : float
-                        The maximum velocity *U* at the surface z = 0, computed as
-                        $$U = \omega A.$$
+                        The maximum velocity *U&#39;* at the surface *z&#39;* = 0, computed as
+                        $$U&#39; = \omega&#39; A&#39;.$$
                 froude_num : float
-                        The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+                        The Froude number *Fr*, computed as
+                        $$Fr = \sqrt{\frac{k&#39;U&#39;^2}{g&#39;}}.$$
                 reynolds_num : float
                         The Reynolds number *Re* of the wave, computed as
-                        $$Re = \frac{U}{kν}.$$
+                        $$Re = \frac{U&#39;}{k&#39;ν&#39;}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth, amplitude, wavelength)
 
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
                 Defines the angular frequency omega with the dispersion relation,
-                $$\omega = \sqrt{gk}.$$
+                $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
                 &#34;&#34;&#34;
                 self.angular_freq = np.sqrt(constants.g * self.wavenum)
 
         def velocity(self, x, z, t):
                 r&#34;&#34;&#34;
-                Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
-                $$u(x, z, t) = Ue^{kz} \cos(kx - \omega t),$$
-                $$w(x, z, t) = Ue^{kz} \sin(kx - \omega t).$$
+                Computes the fluid velocity, $$\textbf{u}&#39; = \langle u&#39;, w&#39; \rangle,$$
+                $$u&#39;(x&#39;, z&#39;, t&#39;) = U&#39;e^{k&#39;z&#39;} \cos(k&#39;x&#39; - \omega&#39; t&#39;),$$
+                $$w&#39;(x&#39;, z&#39;, t&#39;) = U&#39;e^{k&#39;z&#39;} \sin(k&#39;x&#39; - \omega&#39; t&#39;).$$
 
                 Parameters
                 ----------
@@ -322,7 +327,7 @@ is a linear water wave with infinite depth.</p>
 
                 Returns
                 -------
-                Array containing the velocity field vector components *u* and *w*.
+                Array containing the velocity field vector components *u&#39;* and *w&#39;*.
                 &#34;&#34;&#34;
                 U = self.max_velocity
                 k = self.wavenum
@@ -334,8 +339,8 @@ is a linear water wave with infinite depth.</p>
         def partial_t(self, x, z, t): 
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to time,
-                $$\frac{\partial \mathbf{u}}{\partial t} =
-                \langle \omega w, \; -\omega u \rangle.$$
+                $$\frac{\partial \mathbf{u&#39;}}{\partial t&#39;} =
+                \langle \omega&#39; w&#39;, \; -\omega&#39; u&#39; \rangle.$$
 
                 Parameters
                 ----------
@@ -358,7 +363,8 @@ is a linear water wave with infinite depth.</p>
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to the
                 horizontal position,
-                $$\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.$$
+                $$\frac{\partial \mathbf{u}&#39;}{\partial x&#39;}
+                        = \langle -k&#39;w&#39;, \; k&#39;u&#39; \rangle.$$
 
                 Parameters
                 ----------
@@ -381,7 +387,8 @@ is a linear water wave with infinite depth.</p>
                 r&#34;&#34;&#34;
                 Computes the partial derivative of the fluid with respect to the
                 vertical position,
-                $$\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.$$
+                $$\frac{\partial \mathbf{u}&#39;}{\partial z&#39;}
+                        = \langle k&#39;u&#39;, \; k&#39;w&#39; \rangle.$$
 
                 Parameters
                 ----------
@@ -401,9 +408,9 @@ is a linear water wave with infinite depth.</p>
         def material_derivative2(self, x, z, t):
                 r&#34;&#34;&#34;
                 Computes the second order material derivative, where
-                $$\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-                \langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-                w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.$$
+                $$\frac{\mathrm{D}^2\textbf{u}&#39;}{\mathrm{D}t&#39;^2} =
+                \langle U&#39;^2 e^{2k&#39;z&#39;} \omega&#39; k&#39; - \omega&#39;^2 u&#39;, \quad
+                w&#39;(2 e^{2k&#39;z&#39;} U&#39;^2 k&#39;^2 - \omega&#39;^2) \rangle.$$
 
                 Parameters
                 ----------
@@ -441,11 +448,11 @@ is a linear water wave with infinite depth.</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the second order material derivative, where
-<span><span class="MathJax_Preview">\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-\langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</span><script type="math/tex; mode=display">\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-\langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</script></span></p>
+<span><span class="MathJax_Preview">\frac{\mathrm{D}^2\textbf{u}'}{\mathrm{D}t'^2} =
+\langle U'^2 e^{2k'z'} \omega' k' - \omega'^2 u', \quad
+w'(2 e^{2k'z'} U'^2 k'^2 - \omega'^2) \rangle.</span><script type="math/tex; mode=display">\frac{\mathrm{D}^2\textbf{u}'}{\mathrm{D}t'^2} =
+\langle U'^2 e^{2k'z'} \omega' k' - \omega'^2 u', \quad
+w'(2 e^{2k'z'} U'^2 k'^2 - \omega'^2) \rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -464,9 +471,9 @@ w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</script></span></p>
 <pre><code class="python">def material_derivative2(self, x, z, t):
         r&#34;&#34;&#34;
         Computes the second order material derivative, where
-        $$\frac{\mathrm{D}^2\textbf{u}}{\mathrm{D}t^2} =
-        \langle U^2 e^{2kz} \omega k - \omega^2 u, \quad
-        w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.$$
+        $$\frac{\mathrm{D}^2\textbf{u}&#39;}{\mathrm{D}t&#39;^2} =
+        \langle U&#39;^2 e^{2k&#39;z&#39;} \omega&#39; k&#39; - \omega&#39;^2 u&#39;, \quad
+        w&#39;(2 e^{2k&#39;z&#39;} U&#39;^2 k&#39;^2 - \omega&#39;^2) \rangle.$$
 
         Parameters
         ----------
@@ -497,9 +504,9 @@ w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</script></span></p>
 </code></dt>
 <dd>
 <div class="desc"><p>Computes the partial derivative of the fluid with respect to time,
-<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial t} =
-\langle \omega w, \; -\omega u \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial t} =
-\langle \omega w, \; -\omega u \rangle.</script></span></p>
+<span><span class="MathJax_Preview">\frac{\partial \mathbf{u'}}{\partial t'} =
+\langle \omega' w', \; -\omega' u' \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u'}}{\partial t'} =
+\langle \omega' w', \; -\omega' u' \rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -518,8 +525,8 @@ w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</script></span></p>
 <pre><code class="python">def partial_t(self, x, z, t): 
         r&#34;&#34;&#34;
         Computes the partial derivative of the fluid with respect to time,
-        $$\frac{\partial \mathbf{u}}{\partial t} =
-        \langle \omega w, \; -\omega u \rangle.$$
+        $$\frac{\partial \mathbf{u&#39;}}{\partial t&#39;} =
+        \langle \omega&#39; w&#39;, \; -\omega&#39; u&#39; \rangle.$$
 
         Parameters
         ----------
@@ -545,7 +552,9 @@ w(2 e^{2kz} U^2 k^2 - \omega^2) \rangle.</script></span></p>
 <dd>
 <div class="desc"><p>Computes the partial derivative of the fluid with respect to the
 horizontal position,
-<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.</script></span></p>
+<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}'}{\partial x'}
+= \langle -k'w', \; k'u' \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}'}{\partial x'}
+= \langle -k'w', \; k'u' \rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -565,7 +574,8 @@ horizontal position,
         r&#34;&#34;&#34;
         Computes the partial derivative of the fluid with respect to the
         horizontal position,
-        $$\frac{\partial \mathbf{u}}{\partial x} = \langle -kw, \; ku \rangle.$$
+        $$\frac{\partial \mathbf{u}&#39;}{\partial x&#39;}
+                = \langle -k&#39;w&#39;, \; k&#39;u&#39; \rangle.$$
 
         Parameters
         ----------
@@ -591,7 +601,9 @@ horizontal position,
 <dd>
 <div class="desc"><p>Computes the partial derivative of the fluid with respect to the
 vertical position,
-<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.</script></span></p>
+<span><span class="MathJax_Preview">\frac{\partial \mathbf{u}'}{\partial z'}
+= \langle k'u', \; k'w' \rangle.</span><script type="math/tex; mode=display">\frac{\partial \mathbf{u}'}{\partial z'}
+= \langle k'u', \; k'w' \rangle.</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -611,7 +623,8 @@ vertical position,
         r&#34;&#34;&#34;
         Computes the partial derivative of the fluid with respect to the
         vertical position,
-        $$\frac{\partial \mathbf{u}}{\partial z} = \langle ku, \; kw \rangle.$$
+        $$\frac{\partial \mathbf{u}&#39;}{\partial z&#39;}
+                = \langle k&#39;u&#39;, \; k&#39;w&#39; \rangle.$$
 
         Parameters
         ----------
@@ -634,7 +647,7 @@ vertical position,
 </code></dt>
 <dd>
 <div class="desc"><p>Defines the angular frequency omega with the dispersion relation,
-<span><span class="MathJax_Preview">\omega = \sqrt{gk}.</span><script type="math/tex; mode=display">\omega = \sqrt{gk}.</script></span></p></div>
+<span><span class="MathJax_Preview">\omega' = \sqrt{g'k'}.</span><script type="math/tex; mode=display">\omega' = \sqrt{g'k'}.</script></span></p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -642,7 +655,7 @@ vertical position,
 <pre><code class="python">def set_angular_freq(self):
         r&#34;&#34;&#34;
         Defines the angular frequency omega with the dispersion relation,
-        $$\omega = \sqrt{gk}.$$
+        $$\omega&#39; = \sqrt{g&#39;k&#39;}.$$
         &#34;&#34;&#34;
         self.angular_freq = np.sqrt(constants.g * self.wavenum)</code></pre>
 </details>
@@ -651,9 +664,9 @@ vertical position,
 <span>def <span class="ident">velocity</span></span>(<span>self, x, z, t)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\textbf{u} = \langle u, w \rangle,</span><script type="math/tex; mode=display">\textbf{u} = \langle u, w \rangle,</script></span>
-<span><span class="MathJax_Preview">u(x, z, t) = Ue^{kz} \cos(kx - \omega t),</span><script type="math/tex; mode=display">u(x, z, t) = Ue^{kz} \cos(kx - \omega t),</script></span>
-<span><span class="MathJax_Preview">w(x, z, t) = Ue^{kz} \sin(kx - \omega t).</span><script type="math/tex; mode=display">w(x, z, t) = Ue^{kz} \sin(kx - \omega t).</script></span></p>
+<div class="desc"><p>Computes the fluid velocity, <span><span class="MathJax_Preview">\textbf{u}' = \langle u', w' \rangle,</span><script type="math/tex; mode=display">\textbf{u}' = \langle u', w' \rangle,</script></span>
+<span><span class="MathJax_Preview">u'(x', z', t') = U'e^{k'z'} \cos(k'x' - \omega' t'),</span><script type="math/tex; mode=display">u'(x', z', t') = U'e^{k'z'} \cos(k'x' - \omega' t'),</script></span>
+<span><span class="MathJax_Preview">w'(x', z', t') = U'e^{k'z'} \sin(k'x' - \omega' t').</span><script type="math/tex; mode=display">w'(x', z', t') = U'e^{k'z'} \sin(k'x' - \omega' t').</script></span></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>x</code></strong> :&ensp;<code>float</code> or <code>array</code></dt>
@@ -664,16 +677,16 @@ vertical position,
 <dd>The time(s) at which to evaluate the velocity.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Array containing the velocity field vector components <em>u</em> and <em>w</em>.</p></div>
+<p>Array containing the velocity field vector components <em>u'</em> and <em>w'</em>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def velocity(self, x, z, t):
         r&#34;&#34;&#34;
-        Computes the fluid velocity, $$\textbf{u} = \langle u, w \rangle,$$
-        $$u(x, z, t) = Ue^{kz} \cos(kx - \omega t),$$
-        $$w(x, z, t) = Ue^{kz} \sin(kx - \omega t).$$
+        Computes the fluid velocity, $$\textbf{u}&#39; = \langle u&#39;, w&#39; \rangle,$$
+        $$u&#39;(x&#39;, z&#39;, t&#39;) = U&#39;e^{k&#39;z&#39;} \cos(k&#39;x&#39; - \omega&#39; t&#39;),$$
+        $$w&#39;(x&#39;, z&#39;, t&#39;) = U&#39;e^{k&#39;z&#39;} \sin(k&#39;x&#39; - \omega&#39; t&#39;).$$
 
         Parameters
         ----------
@@ -686,7 +699,7 @@ vertical position,
 
         Returns
         -------
-        Array containing the velocity field vector components *u* and *w*.
+        Array containing the velocity field vector components *u&#39;* and *w&#39;*.
         &#34;&#34;&#34;
         U = self.max_velocity
         k = self.wavenum

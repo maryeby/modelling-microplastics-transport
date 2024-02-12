@@ -18,8 +18,9 @@ def main():
 	`data/water_wave` directory.
 	"""
 	# initialize variables
-	betas = [0.5, 0.9]
+	betas = [0.5, 0.8]
 	z_0s = np.linspace(-0.25, -4, 10, endpoint=False)
+	z_0s = np.insert(z_0s, 0, -0.02)
 	St = 0.01
 	h, A, wavelength = 10, 0.02, 1 # wave parameters
 	delta_t = 5e-3
@@ -37,26 +38,29 @@ def main():
 
 		# create condition to help filter through numerical data
 		cond = (numerics['z_0'] == z_0) & (numerics['St'] == St) \
-									  & (numerics['beta'] == beta) \
-									  & (numerics['history'] == history) \
-									  & (numerics['h'] == h) \
-									  & (numerics['A'] == A) \
-									  & (numerics['wavelength'] == wavelength) \
-									  & (numerics['delta_t'] == 5e-4)
+									& (numerics['beta'] == beta) \
+									& (numerics['history'] == history) \
+									& (numerics['h\''] == h) \
+									& (numerics['A\''] == A) \
+									& (numerics['wavelength\''] == wavelength) \
+									& (numerics['delta_t\''] == delta_t)
 		# retrieve relevant data
-		Fr = numerics['Fr'].where(cond).dropna().iloc[0]
+		k = numerics['k\''].where(cond).dropna().iloc[0]
+		A = numerics['A\''].where(cond).dropna().iloc[0]
+		U = numerics['U\''].where(cond).dropna().iloc[0]
 		x = numerics['x'].where(cond).dropna().to_numpy()
 		z = numerics['z'].where(cond).dropna().to_numpy()
 		xdot = numerics['xdot'].where(cond).dropna().to_numpy()
 		t = numerics['t'].where(cond).dropna().to_numpy()
 
 		# compute and scale drift velocity
-		_, _, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
-		avg_u_d = np.average(u_d) / Fr
+		_, z_crossings, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
+		avg_u_d = np.average(u_d) / (k * A)
+		avg_z = np.average(z_crossings)
 
 		# store solutions
 		u_d_list.append(avg_u_d)
-		z_list.append(z_0)
+		z_list.append(avg_z)
 		beta_list.append(beta)
 		history_list.append(history)
 		exact_list.append(True)
@@ -67,15 +71,15 @@ def main():
 
 		# create condition to help filter through numerical data
 		cond = (numerics['St'] == St) & (numerics['beta'] == beta) \
-									  & (numerics['history'] == history) \
-									  & (numerics['h'] == h) \
-									  & (numerics['A'] == A) \
-									  & (numerics['wavelength'] == wavelength) \
-									  & (numerics['delta_t'] == delta_t)
+								& (numerics['history'] == history) \
+								& (numerics['h\''] == h) \
+								& (numerics['A\''] == A) \
+								& (numerics['wavelength\''] == wavelength) \
+								& (numerics['delta_t\''] == delta_t)
 		# retrieve relevant data
-		U = numerics['U'].where(cond).dropna().iloc[0]
-		Fr = numerics['Fr'].where(cond).dropna().iloc[0]
-		k = numerics['k'].where(cond).dropna().iloc[0]
+		k = numerics['k\''].where(cond).dropna().iloc[0]
+		A = numerics['A\''].where(cond).dropna().iloc[0]
+		U = numerics['U\''].where(cond).dropna().iloc[0]
 		x = numerics['x'].where(cond).dropna().to_numpy()
 		z = numerics['z'].where(cond).dropna().to_numpy()
 		xdot = numerics['xdot'].where(cond).dropna().to_numpy()
@@ -83,7 +87,7 @@ def main():
 
 		# compute and scale drift velocity
 		_, z_crossings, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
-		u_d /= Fr
+		u_d /= k * A
 
 		# store exact solutions
 		u_d_list += u_d.tolist()
@@ -109,10 +113,10 @@ def main():
 
 	# compute analytical solutions
 	analytical_z = np.linspace(0, -5, 100) / k
-	analytical_u_d = U * Fr * np.cosh(2 * k * (analytical_z + h)) \
+	analytical_u_d = U * A * k * np.cosh(2 * k * (analytical_z + h)) \
 					   / (2 * np.sinh(k * h) ** 2)
 	analytical_z *= k
-	analytical_u_d /= (U * Fr)
+	analytical_u_d /= U * A * k
 
 	# write results to data file
 	results_dict = {'analytical_z': analytical_z,

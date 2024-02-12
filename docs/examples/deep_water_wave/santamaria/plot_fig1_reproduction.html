@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>modelling-microplastics-transport.examples.deep_water_wave.santamaria_analytics API documentation</title>
+<title>modelling-microplastics-transport.examples.deep_water_wave.santamaria.plot_fig1_reproduction API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -20,7 +20,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>modelling-microplastics-transport.examples.deep_water_wave.santamaria_analytics</code></h1>
+<h1 class="title">Module <code>modelling-microplastics-transport.examples.deep_water_wave.santamaria.plot_fig1_reproduction</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -31,49 +31,34 @@
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
 import pandas as pd
-import numpy as np
-import scipy.constants as constants
-
-from transport_framework import particle as prt
-from models import dim_deep_water_wave as fl
-from models import santamaria_system as ts
+import matplotlib.pyplot as plt
 
 def main():
         &#34;&#34;&#34;
-        This program computes analytical solutions for the Stokes drift velocity of
-        an inertial particle in linear water waves, following the approach outlined
-        in Santamaria et al. (2013), and saves the results to the
-        `data/deep_water_wave` directory.
+        This program reproduces Figure 1 from Santamaria et al. (2013).
         &#34;&#34;&#34;
-        # initialize the flow and related parameters
-        my_flow = fl.DimensionalDeepWaterWave(amplitude=0.02, wavelength=1)
-        omega = my_flow.angular_freq
-        U = my_flow.max_velocity
-        c = my_flow.phase_velocity
+        my_data = pd.read_csv(&#39;../../data/deep_water_wave/&#39;
+                                                  + &#39;santamaria_fig1_recreation.csv&#39;)
+        # plot results
+        plt.figure()
+        plt.title(&#39;Particle Trajectories in Deep Water Waves&#39;, fontsize=18)
+        plt.xlabel(&#39;kx&#39;, fontsize=16)
+        plt.ylabel(&#39;kz&#39;, fontsize=16)
+        plt.axis([0, 3.2, -4, 0])
+        plt.xticks(fontsize=14)
+        plt.yticks([-3, -2, -1, 0], fontsize=14)
 
-        # initialize the remaining variables for computing the analytics
-        num_periods = 50
-        delta_t = 1e-3
-        t = np.arange(0, num_periods * my_flow.period, delta_t)
-        z_0 = 0
-        beta = 0.9
-        bprime = 1 - beta
-        St = 0.157
-        e_2z0t = np.exp(2 * (my_flow.wavenum * z_0 - St * bprime * t * omega))
-
-        # compute analytical drift velocity and settling velocity
-        u_d = U ** 2 / c * e_2z0t * (1 - St ** 2 * bprime)
-        w_d = -c * St * bprime * (1 + 2 * (U / c) ** 2 * e_2z0t)
-        settling_velocity = -bprime * constants.g * (St / omega)
-
-        # store results and write to csv file
-        my_dict = {&#39;t&#39;: t * omega, &#39;u_d&#39;: u_d / U, &#39;w_d&#39;: w_d / U,
-                           &#39;settling_velocity&#39;: settling_velocity / U}
-        my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
-        analytics = pd.DataFrame(my_dict)
-        analytics.to_csv(&#39;../data/deep_water_wave/santamaria_analytics.csv&#39;,
-                                         index=False)
-
+        plt.plot(&#39;sm_heavy_x&#39;, &#39;sm_heavy_z&#39;, c=&#39;grey&#39;, data=my_data,
+                         label=&#39;heavy particle (Santamaria)&#39;)
+        plt.plot(&#39;sm_light_x&#39;, &#39;sm_light_z&#39;, c=&#39;grey&#39;, data=my_data,
+                         label=&#39;light particle (Santamaria)&#39;)
+        plt.plot(&#39;my_heavy_x&#39;, &#39;my_heavy_z&#39;, &#39;--k&#39;, data=my_data,
+                         label=&#39;heavy particle (Daitche)&#39;)
+        plt.plot(&#39;my_light_x&#39;, &#39;my_light_z&#39;, &#39;:k&#39;, data=my_data,
+                         label=&#39;light particle (Daitche)&#39;)
+        plt.legend(fontsize=14)
+        plt.tight_layout()
+        plt.show()
 if __name__ == &#39;__main__&#39;:
         main()</code></pre>
 </details>
@@ -85,53 +70,41 @@ if __name__ == &#39;__main__&#39;:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="modelling-microplastics-transport.examples.deep_water_wave.santamaria_analytics.main"><code class="name flex">
+<dt id="modelling-microplastics-transport.examples.deep_water_wave.santamaria.plot_fig1_reproduction.main"><code class="name flex">
 <span>def <span class="ident">main</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>This program computes analytical solutions for the Stokes drift velocity of
-an inertial particle in linear water waves, following the approach outlined
-in Santamaria et al. (2013), and saves the results to the
-<code>data/deep_water_wave</code> directory.</p></div>
+<div class="desc"><p>This program reproduces Figure 1 from Santamaria et al. (2013).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main():
         &#34;&#34;&#34;
-        This program computes analytical solutions for the Stokes drift velocity of
-        an inertial particle in linear water waves, following the approach outlined
-        in Santamaria et al. (2013), and saves the results to the
-        `data/deep_water_wave` directory.
+        This program reproduces Figure 1 from Santamaria et al. (2013).
         &#34;&#34;&#34;
-        # initialize the flow and related parameters
-        my_flow = fl.DimensionalDeepWaterWave(amplitude=0.02, wavelength=1)
-        omega = my_flow.angular_freq
-        U = my_flow.max_velocity
-        c = my_flow.phase_velocity
+        my_data = pd.read_csv(&#39;../../data/deep_water_wave/&#39;
+                                                  + &#39;santamaria_fig1_recreation.csv&#39;)
+        # plot results
+        plt.figure()
+        plt.title(&#39;Particle Trajectories in Deep Water Waves&#39;, fontsize=18)
+        plt.xlabel(&#39;kx&#39;, fontsize=16)
+        plt.ylabel(&#39;kz&#39;, fontsize=16)
+        plt.axis([0, 3.2, -4, 0])
+        plt.xticks(fontsize=14)
+        plt.yticks([-3, -2, -1, 0], fontsize=14)
 
-        # initialize the remaining variables for computing the analytics
-        num_periods = 50
-        delta_t = 1e-3
-        t = np.arange(0, num_periods * my_flow.period, delta_t)
-        z_0 = 0
-        beta = 0.9
-        bprime = 1 - beta
-        St = 0.157
-        e_2z0t = np.exp(2 * (my_flow.wavenum * z_0 - St * bprime * t * omega))
-
-        # compute analytical drift velocity and settling velocity
-        u_d = U ** 2 / c * e_2z0t * (1 - St ** 2 * bprime)
-        w_d = -c * St * bprime * (1 + 2 * (U / c) ** 2 * e_2z0t)
-        settling_velocity = -bprime * constants.g * (St / omega)
-
-        # store results and write to csv file
-        my_dict = {&#39;t&#39;: t * omega, &#39;u_d&#39;: u_d / U, &#39;w_d&#39;: w_d / U,
-                           &#39;settling_velocity&#39;: settling_velocity / U}
-        my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
-        analytics = pd.DataFrame(my_dict)
-        analytics.to_csv(&#39;../data/deep_water_wave/santamaria_analytics.csv&#39;,
-                                         index=False)</code></pre>
+        plt.plot(&#39;sm_heavy_x&#39;, &#39;sm_heavy_z&#39;, c=&#39;grey&#39;, data=my_data,
+                         label=&#39;heavy particle (Santamaria)&#39;)
+        plt.plot(&#39;sm_light_x&#39;, &#39;sm_light_z&#39;, c=&#39;grey&#39;, data=my_data,
+                         label=&#39;light particle (Santamaria)&#39;)
+        plt.plot(&#39;my_heavy_x&#39;, &#39;my_heavy_z&#39;, &#39;--k&#39;, data=my_data,
+                         label=&#39;heavy particle (Daitche)&#39;)
+        plt.plot(&#39;my_light_x&#39;, &#39;my_light_z&#39;, &#39;:k&#39;, data=my_data,
+                         label=&#39;light particle (Daitche)&#39;)
+        plt.legend(fontsize=14)
+        plt.tight_layout()
+        plt.show()</code></pre>
 </details>
 </dd>
 </dl>
@@ -147,12 +120,12 @@ in Santamaria et al. (2013), and saves the results to the
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave" href="index.html">modelling-microplastics-transport.examples.deep_water_wave</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.santamaria" href="index.html">modelling-microplastics-transport.examples.deep_water_wave.santamaria</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.santamaria_analytics.main" href="#modelling-microplastics-transport.examples.deep_water_wave.santamaria_analytics.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave.santamaria.plot_fig1_reproduction.main" href="#modelling-microplastics-transport.examples.deep_water_wave.santamaria.plot_fig1_reproduction.main">main</a></code></li>
 </ul>
 </li>
 </ul>

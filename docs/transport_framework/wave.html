@@ -31,6 +31,7 @@
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
 import numpy as np
+import scipy.constants as constants
 from abc import ABC, abstractmethod
 from transport_framework import flow
 
@@ -42,32 +43,33 @@ class Wave(flow.Flow):
                 Attributes
                 ----------
                 depth : float
-                        The depth of the fluid *h*.
+                        The depth of the fluid *h&#39;*.
                 amplitude : float
-                        The amplitude of the wave *A*.
+                        The amplitude of the wave *A&#39;*.
                 wavelength : float
-                        The wavelength *λ*.
+                        The wavelength *λ&#39;*.
                 kinematic_viscosity : float
-                        The kinematic viscosity ν of seawater.
+                        The kinematic viscosity ν&#39; of seawater.
                 wavenum : float
-                        The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+                        The wavenumber *k&#39;*, computed as $$k&#39; = \frac{2 \pi}{\lambda&#39;}.$$
                 gravity : float
-                        The gravity **g** acting on the fluid.
+                        The gravity **g&#39;** acting on the fluid.
                 angular_freq : float
-                        The angular frequency *ω*, computed using the dispersion relation.
+                        The angular frequency *ω&#39;*, computed using the dispersion relation.
                 phase_velocity : float
-                        The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
+                        The phase velocity *c&#39;*, computed as $$c&#39; = \frac{\omega&#39;}{k&#39;}.$$
                 period : float
                         The period of the wave, computed as
-                        $$\text{period} = \frac{2\pi}{\omega}.$$
+                        $$\text{period}&#39; = \frac{2\pi}{\omega&#39;}.$$
                 max_velocity : float
-                        The maximum velocity *U* at the surface z = 0, computed as
-                        $$U = \omega A.$$
+                        The maximum velocity *U&#39;* at the surface *z&#39;* = 0, computed as
+                        $$U&#39; = \omega&#39; A&#39;.$$
                 froude_num : float
-                        The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+                        The Froude number *Fr*, computed as
+                        $$Fr = \sqrt{\frac{k&#39;U&#39;^2}{g&#39;}}.$$
                 reynolds_num : float
                         The Reynolds number *Re* of the wave, computed as
-                        $$Re = \frac{U}{kν}.$$
+                        $$Re = \frac{U&#39;}{k&#39;ν&#39;}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth)
                 self.amplitude = amplitude
@@ -80,13 +82,14 @@ class Wave(flow.Flow):
                 self.phase_velocity = self.angular_freq / self.wavenum
                 self.period = 2 * np.pi / self.angular_freq
                 self.max_velocity = self.angular_freq * self.amplitude
-                self.froude_num = self.max_velocity / self.phase_velocity
+                self.froude_num = np.sqrt(self.wavenum * self.max_velocity ** 2
+                                                                                           / constants.g)
                 self.reynolds_num = self.max_velocity / (self.wavenum
                                                                                           * self.kinematic_viscosity)
         
         @abstractmethod
         def set_angular_freq(self):
-                &#34;&#34;&#34;Defines the angular frequency *ω*.&#34;&#34;&#34;
+                &#34;&#34;&#34;Defines the angular frequency *ω&#39;*.&#34;&#34;&#34;
                 pass</code></pre>
 </details>
 </section>
@@ -108,32 +111,33 @@ class Wave(flow.Flow):
 <h2 id="attributes">Attributes</h2>
 <dl>
 <dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
-<dd>The depth of the fluid <em>h</em>.</dd>
+<dd>The depth of the fluid <em>h'</em>.</dd>
 <dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
-<dd>The amplitude of the wave <em>A</em>.</dd>
+<dd>The amplitude of the wave <em>A'</em>.</dd>
 <dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
-<dd>The wavelength <em>λ</em>.</dd>
+<dd>The wavelength <em>λ'</em>.</dd>
 <dt><strong><code>kinematic_viscosity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The kinematic viscosity ν of seawater.</dd>
+<dd>The kinematic viscosity ν' of seawater.</dd>
 <dt><strong><code>wavenum</code></strong> :&ensp;<code>float</code></dt>
-<dd>The wavenumber <em>k</em>, computed as <span><span class="MathJax_Preview">k = \frac{2 \pi}{\lambda}.</span><script type="math/tex; mode=display">k = \frac{2 \pi}{\lambda}.</script></span></dd>
+<dd>The wavenumber <em>k'</em>, computed as <span><span class="MathJax_Preview">k' = \frac{2 \pi}{\lambda'}.</span><script type="math/tex; mode=display">k' = \frac{2 \pi}{\lambda'}.</script></span></dd>
 <dt><strong><code>gravity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The gravity <strong>g</strong> acting on the fluid.</dd>
+<dd>The gravity <strong>g'</strong> acting on the fluid.</dd>
 <dt><strong><code>angular_freq</code></strong> :&ensp;<code>float</code></dt>
-<dd>The angular frequency <em>ω</em>, computed using the dispersion relation.</dd>
+<dd>The angular frequency <em>ω'</em>, computed using the dispersion relation.</dd>
 <dt><strong><code>phase_velocity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The phase velocity <em>c</em>, computed as <span><span class="MathJax_Preview">c = \frac{\omega}{k}.</span><script type="math/tex; mode=display">c = \frac{\omega}{k}.</script></span></dd>
+<dd>The phase velocity <em>c'</em>, computed as <span><span class="MathJax_Preview">c' = \frac{\omega'}{k'}.</span><script type="math/tex; mode=display">c' = \frac{\omega'}{k'}.</script></span></dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
 <dd>The period of the wave, computed as
-<span><span class="MathJax_Preview">\text{period} = \frac{2\pi}{\omega}.</span><script type="math/tex; mode=display">\text{period} = \frac{2\pi}{\omega}.</script></span></dd>
+<span><span class="MathJax_Preview">\text{period}' = \frac{2\pi}{\omega'}.</span><script type="math/tex; mode=display">\text{period}' = \frac{2\pi}{\omega'}.</script></span></dd>
 <dt><strong><code>max_velocity</code></strong> :&ensp;<code>float</code></dt>
-<dd>The maximum velocity <em>U</em> at the surface z = 0, computed as
-<span><span class="MathJax_Preview">U = \omega A.</span><script type="math/tex; mode=display">U = \omega A.</script></span></dd>
+<dd>The maximum velocity <em>U'</em> at the surface <em>z'</em> = 0, computed as
+<span><span class="MathJax_Preview">U' = \omega' A'.</span><script type="math/tex; mode=display">U' = \omega' A'.</script></span></dd>
 <dt><strong><code>froude_num</code></strong> :&ensp;<code>float</code></dt>
-<dd>The Froude number <em>Fr</em>, computed as <span><span class="MathJax_Preview">Fr = \frac{U}{c}.</span><script type="math/tex; mode=display">Fr = \frac{U}{c}.</script></span></dd>
+<dd>The Froude number <em>Fr</em>, computed as
+<span><span class="MathJax_Preview">Fr = \sqrt{\frac{k'U'^2}{g'}}.</span><script type="math/tex; mode=display">Fr = \sqrt{\frac{k'U'^2}{g'}}.</script></span></dd>
 <dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Reynolds number <em>Re</em> of the wave, computed as
-<span><span class="MathJax_Preview">Re = \frac{U}{kν}.</span><script type="math/tex; mode=display">Re = \frac{U}{kν}.</script></span></dd>
+<span><span class="MathJax_Preview">Re = \frac{U'}{k'ν'}.</span><script type="math/tex; mode=display">Re = \frac{U'}{k'ν'}.</script></span></dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -147,32 +151,33 @@ class Wave(flow.Flow):
                 Attributes
                 ----------
                 depth : float
-                        The depth of the fluid *h*.
+                        The depth of the fluid *h&#39;*.
                 amplitude : float
-                        The amplitude of the wave *A*.
+                        The amplitude of the wave *A&#39;*.
                 wavelength : float
-                        The wavelength *λ*.
+                        The wavelength *λ&#39;*.
                 kinematic_viscosity : float
-                        The kinematic viscosity ν of seawater.
+                        The kinematic viscosity ν&#39; of seawater.
                 wavenum : float
-                        The wavenumber *k*, computed as $$k = \frac{2 \pi}{\lambda}.$$
+                        The wavenumber *k&#39;*, computed as $$k&#39; = \frac{2 \pi}{\lambda&#39;}.$$
                 gravity : float
-                        The gravity **g** acting on the fluid.
+                        The gravity **g&#39;** acting on the fluid.
                 angular_freq : float
-                        The angular frequency *ω*, computed using the dispersion relation.
+                        The angular frequency *ω&#39;*, computed using the dispersion relation.
                 phase_velocity : float
-                        The phase velocity *c*, computed as $$c = \frac{\omega}{k}.$$
+                        The phase velocity *c&#39;*, computed as $$c&#39; = \frac{\omega&#39;}{k&#39;}.$$
                 period : float
                         The period of the wave, computed as
-                        $$\text{period} = \frac{2\pi}{\omega}.$$
+                        $$\text{period}&#39; = \frac{2\pi}{\omega&#39;}.$$
                 max_velocity : float
-                        The maximum velocity *U* at the surface z = 0, computed as
-                        $$U = \omega A.$$
+                        The maximum velocity *U&#39;* at the surface *z&#39;* = 0, computed as
+                        $$U&#39; = \omega&#39; A&#39;.$$
                 froude_num : float
-                        The Froude number *Fr*, computed as $$Fr = \frac{U}{c}.$$
+                        The Froude number *Fr*, computed as
+                        $$Fr = \sqrt{\frac{k&#39;U&#39;^2}{g&#39;}}.$$
                 reynolds_num : float
                         The Reynolds number *Re* of the wave, computed as
-                        $$Re = \frac{U}{kν}.$$
+                        $$Re = \frac{U&#39;}{k&#39;ν&#39;}.$$
                 &#34;&#34;&#34;
                 super().__init__(depth)
                 self.amplitude = amplitude
@@ -185,13 +190,14 @@ class Wave(flow.Flow):
                 self.phase_velocity = self.angular_freq / self.wavenum
                 self.period = 2 * np.pi / self.angular_freq
                 self.max_velocity = self.angular_freq * self.amplitude
-                self.froude_num = self.max_velocity / self.phase_velocity
+                self.froude_num = np.sqrt(self.wavenum * self.max_velocity ** 2
+                                                                                           / constants.g)
                 self.reynolds_num = self.max_velocity / (self.wavenum
                                                                                           * self.kinematic_viscosity)
         
         @abstractmethod
         def set_angular_freq(self):
-                &#34;&#34;&#34;Defines the angular frequency *ω*.&#34;&#34;&#34;
+                &#34;&#34;&#34;Defines the angular frequency *ω&#39;*.&#34;&#34;&#34;
                 pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -205,14 +211,14 @@ class Wave(flow.Flow):
 <span>def <span class="ident">set_angular_freq</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Defines the angular frequency <em>ω</em>.</p></div>
+<div class="desc"><p>Defines the angular frequency <em>ω'</em>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
 def set_angular_freq(self):
-        &#34;&#34;&#34;Defines the angular frequency *ω*.&#34;&#34;&#34;
+        &#34;&#34;&#34;Defines the angular frequency *ω&#39;*.&#34;&#34;&#34;
         pass</code></pre>
 </details>
 </dd>

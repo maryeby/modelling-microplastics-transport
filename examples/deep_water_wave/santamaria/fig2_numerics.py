@@ -47,8 +47,8 @@ def main():
 
 	# run numerical simulations and compute drift velocity for Santamaria
 	x, z, xdot, _, t = sm_system.run_numerics(sm_system.maxey_riley,
-											  x_0=x_0, z_0=z_0, delta_t=1e-3,
-											  num_periods=num_periods)
+											  x_0, z_0,
+											  num_periods / T, delta_t=1e-3 / T)
 	sm_u_d, sm_w_d, sm_t = compute_drift_velocity(x, z, xdot, t)
 	my_dict['sm_u_d'] = sm_u_d / U
 	my_dict['sm_w_d'] = sm_w_d / U
@@ -59,7 +59,8 @@ def main():
 											  x_0=k * x_0, z_0=k * z_0,
 											  xdot_0=xdot_0, zdot_0=zdot_0,
 											  delta_t=1e-3 * T,
-											  num_periods=num_periods * T)
+											  num_periods=num_periods * T,
+											  hide_progress=False)
 	fine_u_d, fine_w_d, fine_t = compute_drift_velocity(x, z, xdot, t)
 	my_dict['fine_u_d'] = fine_u_d
 	my_dict['fine_w_d'] = fine_w_d
@@ -70,7 +71,8 @@ def main():
 											  x_0=k * x_0, z_0=k * z_0,
 											  xdot_0=xdot_0, zdot_0=zdot_0,
 											  delta_t=5e-3 * T,
-											  num_periods=num_periods * T)
+											  num_periods=num_periods * T,
+											  hide_progress=False)
 	medium_u_d, medium_w_d, medium_t = compute_drift_velocity(x, z, xdot, t)
 	my_dict['medium_u_d'] = medium_u_d
 	my_dict['medium_w_d'] = medium_w_d
@@ -81,7 +83,8 @@ def main():
 											  x_0=k * x_0, z_0=k * z_0,
 											  xdot_0=xdot_0, zdot_0=zdot_0,
 											  delta_t=1e-2 * T,
-											  num_periods=num_periods * T)
+											  num_periods=num_periods * T,
+											  hide_progress=False)
 	coarse_u_d, coarse_w_d, coarse_t = compute_drift_velocity(x, z, xdot, t)
 	my_dict['coarse_u_d'] = coarse_u_d
 	my_dict['coarse_w_d'] = coarse_w_d
@@ -90,7 +93,7 @@ def main():
 	# write results to data file
 	my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
 	numerics = pd.DataFrame(my_dict)
-	numerics.to_csv('../data/deep_water_wave/santamaria_fig2_recreation.csv',
+	numerics.to_csv('../../data/deep_water_wave/santamaria_fig2_recreation.csv',
 					index=False)
 
 def compute_drift_velocity(x, z, xdot, t):
