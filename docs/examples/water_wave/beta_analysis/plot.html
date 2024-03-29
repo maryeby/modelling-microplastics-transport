@@ -89,14 +89,14 @@ def main():
                 # plot data
                 i = betas.index(beta)
                 plt.scatter(u_d, z, marker=&#39;.&#39;, edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;,
-                                        label=&#39;&#39;)
+                                        label=&#39;&#39;, zorder=2)
                 plt.text(text_position_x[i], text_position_y[i], f&#39;{beta:g}&#39;,
-                                 fontsize=14, bbox=properties)
+                                 fontsize=14, bbox=properties, zorder=3)
                 if beta != 1:
                         plt.plot(estimated_u_d, estimated_z, c=&#39;k&#39;, ls=ls,
-                                         label=label)
+                                         label=label, zorder=0)
         plt.plot(&#39;analytical_u_d&#39;, &#39;analytical_z&#39;, c=&#39;hotpink&#39;, data=analysis,
-                         label=&#39;analytical&#39;)
+                         label=&#39;analytical&#39;, zorder=1)
         plt.legend(fontsize=14)
         plt.show()
 
@@ -174,14 +174,14 @@ velocity of inertial particles of varying densities in linear water waves.</p></
                 # plot data
                 i = betas.index(beta)
                 plt.scatter(u_d, z, marker=&#39;.&#39;, edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;,
-                                        label=&#39;&#39;)
+                                        label=&#39;&#39;, zorder=2)
                 plt.text(text_position_x[i], text_position_y[i], f&#39;{beta:g}&#39;,
-                                 fontsize=14, bbox=properties)
+                                 fontsize=14, bbox=properties, zorder=3)
                 if beta != 1:
                         plt.plot(estimated_u_d, estimated_z, c=&#39;k&#39;, ls=ls,
-                                         label=label)
+                                         label=label, zorder=0)
         plt.plot(&#39;analytical_u_d&#39;, &#39;analytical_z&#39;, c=&#39;hotpink&#39;, data=analysis,
-                         label=&#39;analytical&#39;)
+                         label=&#39;analytical&#39;, zorder=1)
         plt.legend(fontsize=14)
         plt.show()</code></pre>
 </details>

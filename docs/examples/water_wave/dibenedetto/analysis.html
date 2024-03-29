@@ -44,10 +44,9 @@ def main():
         wave and saves the results to the `data/water_wave` directory.
         &#34;&#34;&#34;
         # initialize variables
-        St, beta_SM = 0.01, 0.9
+        St, beta = 0.01, 0.9
         h, A, wavelength = 10, 0.02, 1 # wave parameters
         delta_t = 5e-3
-        R = 2 / 3 * beta_SM
 
         # read numerical data
         in_file = &#39;numerics.csv&#39;
@@ -55,13 +54,13 @@ def main():
         numerics = pd.read_csv(DATA_PATH + in_file)
 
         # create conditions to help filter through numerical data
-        history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta_SM) \
+        history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                          &amp; (numerics[&#39;history&#39;] == True) \
                                                                          &amp; (numerics[&#39;h\&#39;&#39;] == h) \
                                                                          &amp; (numerics[&#39;A\&#39;&#39;] == A) \
                                                                          &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength)\
                                                                          &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
-        no_history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta_SM) \
+        no_history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == False) \
                                                                         &amp; (numerics[&#39;h\&#39;&#39;] == h) \
                                                                         &amp; (numerics[&#39;A\&#39;&#39;] == A) \
@@ -69,11 +68,12 @@ def main():
                                                                         &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
 
         # retrieve relevant numerical results
-        U = numerics[&#39;U\&#39;&#39;].where(no_history).dropna().iloc[0]
         k = numerics[&#39;k\&#39;&#39;].where(no_history).dropna().iloc[0]
         h = numerics[&#39;h\&#39;&#39;].where(no_history).dropna().iloc[0]
+        U = numerics[&#39;U\&#39;&#39;].where(no_history).dropna().iloc[0]
         omega = numerics[&#39;omega\&#39;&#39;].where(no_history).dropna().iloc[0]
-        Fr = numerics[&#39;Fr&#39;].where(no_history).dropna().iloc[0]
+        amplitude = numerics[&#39;A\&#39;&#39;].where(no_history).dropna().iloc[0]
+        kA = k * amplitude
 
         x = numerics[&#39;x&#39;].where(no_history).dropna().to_numpy()
         z = numerics[&#39;z&#39;].where(no_history).dropna().to_numpy()
@@ -86,59 +86,46 @@ def main():
         t_history = numerics[&#39;t&#39;].where(history).dropna().to_numpy()
 
         # compute numerical solutions for the drift velocity
-        x_crossings, z_crossings, u_d, w_d, t_d = ts.compute_drift_velocity(x, z,
-                                                                                                                                                xdot, t)
-        x_crossings_history, z_crossings_history, \
-                u_d_history, w_d_history, t_d_history = ts.compute_drift_velocity(
-                                                                                                   x_history, z_history,
-                                                                                                   xdot_history, t_history)
+        x_p0, z_p0, u_d, w_d, t_d = ts.compute_drift_velocity(x, z, xdot, t)
+        x_p0_history, z_p0_history, u_d_history, w_d_history, \
+                                  t_d_history = ts.compute_drift_velocity(x_history, z_history,
+                                                                                                           xdot_history, t_history)
         # compute analytical solutions for the drift velocity
-        beta = R * (3 * R + 2) / (2 + R * (3 * R - 1))
-        St_lin = omega * St * (beta_SM + ((2 - R) / (2 * R)))
+        St_lin = 3 * St / (2 * beta * kA)
+        epsilon = kA / np.tanh(k * h)
+        A = np.sqrt((1 - St_lin ** 2 * (1 - beta)) ** 2 \
+                                   + (St_lin * (1 - beta)) ** 2)        # relative magnitude
+        v_s_lin = St_lin * (1 - beta) / np.tanh(k * h)  # settling velocity
 
-        relative_magnitude = np.sqrt((1 - St_lin ** 2 * (1 - beta)) ** 2 \
-                                                                        + (St_lin * (1 - beta)) ** 2)
-        settling_velocity = St_lin * (1 - beta) / np.tanh(k * h)
+        u_SD = epsilon ** 2 * np.cosh(2 * (z_p0 + k * h)) \
+                                   / (2 * (np.cosh(k * h)) ** 2)
+        du_SD = epsilon ** 2 * np.sinh(2 * (z_p0 + k * h)) \
+                                        / (np.cosh(k * h) ** 2)
+        u_SD_history = epsilon ** 2 * np.cosh(2 * (z_p0_history + k * h)) \
+                                                   / (2 * (np.cosh(k * h)) ** 2)
+        du_SD_history = epsilon ** 2 * np.sinh(2 * (z_p0_history + k * h)) \
+                                                        / (np.cosh(k * h) ** 2)
 
-        u_SD = k * A / np.tanh(k * h) * np.cosh(2 * (z_crossings + k * h)) \
-                                 / (2 * (np.cosh(k * h)) ** 2)
-        du_SD = k * A / np.tanh(k * h) * np.sinh(2 * (z_crossings + k * h)) \
-                                  / (np.cosh(k * h)) ** 2
-        u_SD_history = k * A / np.tanh(k * h) \
-                                         * np.cosh(2 * (z_crossings_history + k * h)) \
-                                         / (2 * (np.cosh(k * h)) ** 2)
-        du_SD_history = k * A / np.tanh(k * h) \
-                                          * np.sinh(2 * (z_crossings_history + k * h)) \
-                                          / (np.cosh(k * h)) ** 2
-
-        v_x_drift = relative_magnitude / (1 + settling_velocity ** 2) * u_SD
-        v_y_drift = -settling_velocity * (1 + relative_magnitude ** 2
-                                / (1 + settling_velocity ** 2) * u_SD
-                                + 1 / 2 * np.tanh(k * h) * du_SD) 
-        v_x_drift_history = relative_magnitude / (1 + settling_velocity ** 2) \
-                                                                                   * u_SD_history
-        v_y_drift_history = -settling_velocity * (1 + relative_magnitude ** 2
-                                / (1 + settling_velocity ** 2) * u_SD_history
-                                + 1 / 2 * np.tanh(k * h) * du_SD_history) 
-
+        v_x_drift = A ** 2 / (1 + v_s_lin ** 2) * u_SD
+        v_y_drift = -v_s_lin * (1 + A ** 2 / (1 + v_s_lin ** 2) * u_SD
+                                                 + 1 / 2 * np.tanh(k * h) * du_SD) 
+        v_x_drift_history = A ** 2 / (1 + v_s_lin ** 2) * u_SD_history
+        v_y_drift_history = -v_s_lin * (1 + A ** 2 / (1 + v_s_lin ** 2)
+                                                                 * u_SD_history + 1 / 2 * np.tanh(k * h)
+                                                                 * du_SD_history)
         # scale results
-#       t_d /= Fr
-#       u_d /= Fr
-#       w_d *= U ** 2 * k * R / (constants.g * St)
-        
-#       t_d_history /= Fr
-#       u_d_history /= Fr
-#       w_d_history *= U ** 2 * k * R / (constants.g * St)
+        u_d *= kA
+        w_d *= kA
+        u_d_history *= kA
+        w_d_history *= kA
 
         # write results to data file
-        history = [True] * len(x_crossings)
-        no_history = [False] * len(x_crossings)
-        results = {&#39;x_crossings&#39;: x_crossings[1:], &#39;z_crossings&#39;: z_crossings[1:],
-                           &#39;u_d&#39;: u_d, &#39;w_d&#39;: w_d, &#39;t&#39;: t_d,
-                           &#39;v_x_drift&#39;: v_x_drift[1:], &#39;v_y_drift&#39;: v_y_drift[1:],
+        history = [True] * len(x_p0)
+        no_history = [False] * len(x_p0)
+        results = {&#39;x_p0&#39;: x_p0[1:], &#39;z_p0&#39;: z_p0[1:], &#39;u_d&#39;: u_d, &#39;w_d&#39;: w_d,
+                           &#39;t&#39;: t_d, &#39;v_x_drift&#39;: v_x_drift[1:], &#39;v_y_drift&#39;: v_y_drift[1:],
                            &#39;history&#39;: no_history}
-        results_history = {&#39;x_crossings&#39;: x_crossings_history[1:],
-                        &#39;z_crossings&#39;: z_crossings_history[1:],
+        results_history = {&#39;x_p0&#39;: x_p0_history[1:], &#39;z_p0&#39;: z_p0_history[1:],
                                            &#39;u_d&#39;: u_d_history, &#39;w_d&#39;: w_d_history, &#39;t&#39;: t_d_history,
                                            &#39;v_x_drift&#39;: v_x_drift_history[1:],
                                            &#39;v_y_drift&#39;: v_y_drift_history[1:], &#39;history&#39;: history}
@@ -178,10 +165,9 @@ wave and saves the results to the <code>data/water_wave</code> directory.</p></d
         wave and saves the results to the `data/water_wave` directory.
         &#34;&#34;&#34;
         # initialize variables
-        St, beta_SM = 0.01, 0.9
+        St, beta = 0.01, 0.9
         h, A, wavelength = 10, 0.02, 1 # wave parameters
         delta_t = 5e-3
-        R = 2 / 3 * beta_SM
 
         # read numerical data
         in_file = &#39;numerics.csv&#39;
@@ -189,13 +175,13 @@ wave and saves the results to the <code>data/water_wave</code> directory.</p></d
         numerics = pd.read_csv(DATA_PATH + in_file)
 
         # create conditions to help filter through numerical data
-        history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta_SM) \
+        history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                          &amp; (numerics[&#39;history&#39;] == True) \
                                                                          &amp; (numerics[&#39;h\&#39;&#39;] == h) \
                                                                          &amp; (numerics[&#39;A\&#39;&#39;] == A) \
                                                                          &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength)\
                                                                          &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
-        no_history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta_SM) \
+        no_history = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == False) \
                                                                         &amp; (numerics[&#39;h\&#39;&#39;] == h) \
                                                                         &amp; (numerics[&#39;A\&#39;&#39;] == A) \
@@ -203,11 +189,12 @@ wave and saves the results to the <code>data/water_wave</code> directory.</p></d
                                                                         &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
 
         # retrieve relevant numerical results
-        U = numerics[&#39;U\&#39;&#39;].where(no_history).dropna().iloc[0]
         k = numerics[&#39;k\&#39;&#39;].where(no_history).dropna().iloc[0]
         h = numerics[&#39;h\&#39;&#39;].where(no_history).dropna().iloc[0]
+        U = numerics[&#39;U\&#39;&#39;].where(no_history).dropna().iloc[0]
         omega = numerics[&#39;omega\&#39;&#39;].where(no_history).dropna().iloc[0]
-        Fr = numerics[&#39;Fr&#39;].where(no_history).dropna().iloc[0]
+        amplitude = numerics[&#39;A\&#39;&#39;].where(no_history).dropna().iloc[0]
+        kA = k * amplitude
 
         x = numerics[&#39;x&#39;].where(no_history).dropna().to_numpy()
         z = numerics[&#39;z&#39;].where(no_history).dropna().to_numpy()
@@ -220,59 +207,46 @@ wave and saves the results to the <code>data/water_wave</code> directory.</p></d
         t_history = numerics[&#39;t&#39;].where(history).dropna().to_numpy()
 
         # compute numerical solutions for the drift velocity
-        x_crossings, z_crossings, u_d, w_d, t_d = ts.compute_drift_velocity(x, z,
-                                                                                                                                                xdot, t)
-        x_crossings_history, z_crossings_history, \
-                u_d_history, w_d_history, t_d_history = ts.compute_drift_velocity(
-                                                                                                   x_history, z_history,
-                                                                                                   xdot_history, t_history)
+        x_p0, z_p0, u_d, w_d, t_d = ts.compute_drift_velocity(x, z, xdot, t)
+        x_p0_history, z_p0_history, u_d_history, w_d_history, \
+                                  t_d_history = ts.compute_drift_velocity(x_history, z_history,
+                                                                                                           xdot_history, t_history)
         # compute analytical solutions for the drift velocity
-        beta = R * (3 * R + 2) / (2 + R * (3 * R - 1))
-        St_lin = omega * St * (beta_SM + ((2 - R) / (2 * R)))
+        St_lin = 3 * St / (2 * beta * kA)
+        epsilon = kA / np.tanh(k * h)
+        A = np.sqrt((1 - St_lin ** 2 * (1 - beta)) ** 2 \
+                                   + (St_lin * (1 - beta)) ** 2)        # relative magnitude
+        v_s_lin = St_lin * (1 - beta) / np.tanh(k * h)  # settling velocity
 
-        relative_magnitude = np.sqrt((1 - St_lin ** 2 * (1 - beta)) ** 2 \
-                                                                        + (St_lin * (1 - beta)) ** 2)
-        settling_velocity = St_lin * (1 - beta) / np.tanh(k * h)
+        u_SD = epsilon ** 2 * np.cosh(2 * (z_p0 + k * h)) \
+                                   / (2 * (np.cosh(k * h)) ** 2)
+        du_SD = epsilon ** 2 * np.sinh(2 * (z_p0 + k * h)) \
+                                        / (np.cosh(k * h) ** 2)
+        u_SD_history = epsilon ** 2 * np.cosh(2 * (z_p0_history + k * h)) \
+                                                   / (2 * (np.cosh(k * h)) ** 2)
+        du_SD_history = epsilon ** 2 * np.sinh(2 * (z_p0_history + k * h)) \
+                                                        / (np.cosh(k * h) ** 2)
 
-        u_SD = k * A / np.tanh(k * h) * np.cosh(2 * (z_crossings + k * h)) \
-                                 / (2 * (np.cosh(k * h)) ** 2)
-        du_SD = k * A / np.tanh(k * h) * np.sinh(2 * (z_crossings + k * h)) \
-                                  / (np.cosh(k * h)) ** 2
-        u_SD_history = k * A / np.tanh(k * h) \
-                                         * np.cosh(2 * (z_crossings_history + k * h)) \
-                                         / (2 * (np.cosh(k * h)) ** 2)
-        du_SD_history = k * A / np.tanh(k * h) \
-                                          * np.sinh(2 * (z_crossings_history + k * h)) \
-                                          / (np.cosh(k * h)) ** 2
-
-        v_x_drift = relative_magnitude / (1 + settling_velocity ** 2) * u_SD
-        v_y_drift = -settling_velocity * (1 + relative_magnitude ** 2
-                                / (1 + settling_velocity ** 2) * u_SD
-                                + 1 / 2 * np.tanh(k * h) * du_SD) 
-        v_x_drift_history = relative_magnitude / (1 + settling_velocity ** 2) \
-                                                                                   * u_SD_history
-        v_y_drift_history = -settling_velocity * (1 + relative_magnitude ** 2
-                                / (1 + settling_velocity ** 2) * u_SD_history
-                                + 1 / 2 * np.tanh(k * h) * du_SD_history) 
-
+        v_x_drift = A ** 2 / (1 + v_s_lin ** 2) * u_SD
+        v_y_drift = -v_s_lin * (1 + A ** 2 / (1 + v_s_lin ** 2) * u_SD
+                                                 + 1 / 2 * np.tanh(k * h) * du_SD) 
+        v_x_drift_history = A ** 2 / (1 + v_s_lin ** 2) * u_SD_history
+        v_y_drift_history = -v_s_lin * (1 + A ** 2 / (1 + v_s_lin ** 2)
+                                                                 * u_SD_history + 1 / 2 * np.tanh(k * h)
+                                                                 * du_SD_history)
         # scale results
-#       t_d /= Fr
-#       u_d /= Fr
-#       w_d *= U ** 2 * k * R / (constants.g * St)
-        
-#       t_d_history /= Fr
-#       u_d_history /= Fr
-#       w_d_history *= U ** 2 * k * R / (constants.g * St)
+        u_d *= kA
+        w_d *= kA
+        u_d_history *= kA
+        w_d_history *= kA
 
         # write results to data file
-        history = [True] * len(x_crossings)
-        no_history = [False] * len(x_crossings)
-        results = {&#39;x_crossings&#39;: x_crossings[1:], &#39;z_crossings&#39;: z_crossings[1:],
-                           &#39;u_d&#39;: u_d, &#39;w_d&#39;: w_d, &#39;t&#39;: t_d,
-                           &#39;v_x_drift&#39;: v_x_drift[1:], &#39;v_y_drift&#39;: v_y_drift[1:],
+        history = [True] * len(x_p0)
+        no_history = [False] * len(x_p0)
+        results = {&#39;x_p0&#39;: x_p0[1:], &#39;z_p0&#39;: z_p0[1:], &#39;u_d&#39;: u_d, &#39;w_d&#39;: w_d,
+                           &#39;t&#39;: t_d, &#39;v_x_drift&#39;: v_x_drift[1:], &#39;v_y_drift&#39;: v_y_drift[1:],
                            &#39;history&#39;: no_history}
-        results_history = {&#39;x_crossings&#39;: x_crossings_history[1:],
-                        &#39;z_crossings&#39;: z_crossings_history[1:],
+        results_history = {&#39;x_p0&#39;: x_p0_history[1:], &#39;z_p0&#39;: z_p0_history[1:],
                                            &#39;u_d&#39;: u_d_history, &#39;w_d&#39;: w_d_history, &#39;t&#39;: t_d_history,
                                            &#39;v_x_drift&#39;: v_x_drift_history[1:],
                                            &#39;v_y_drift&#39;: v_y_drift_history[1:], &#39;history&#39;: history}

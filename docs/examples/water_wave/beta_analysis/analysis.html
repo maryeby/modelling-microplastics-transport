@@ -125,8 +125,13 @@ def main():
                 history_list += [history] * len(u_d)
                 exact_list += [True] * len(u_d)
 
-                # fit an exponential curve to the data
-                f = lambda x, a, b, c, d : a * np.exp(b * x) + c * np.exp(d * x)
+                # use a power law for data with history effects, exponential otherwise
+                if history:
+                        f = lambda x, a, b, c, d : a * b ** (c * x + d)
+                else:
+                        f = lambda x, a, b, c, d : a * np.exp(b * x) + c * np.exp(d * x)
+
+                # fit curve to data
                 z = z_crossings[1:]
                 coefficients, covariance = curve_fit(f, z, u_d)
                 a, b, c, d = coefficients
@@ -264,8 +269,13 @@ varying buoyancies in linear water waves and saves the results to the
                 history_list += [history] * len(u_d)
                 exact_list += [True] * len(u_d)
 
-                # fit an exponential curve to the data
-                f = lambda x, a, b, c, d : a * np.exp(b * x) + c * np.exp(d * x)
+                # use a power law for data with history effects, exponential otherwise
+                if history:
+                        f = lambda x, a, b, c, d : a * b ** (c * x + d)
+                else:
+                        f = lambda x, a, b, c, d : a * np.exp(b * x) + c * np.exp(d * x)
+
+                # fit curve to data
                 z = z_crossings[1:]
                 coefficients, covariance = curve_fit(f, z, u_d)
                 a, b, c, d = coefficients
