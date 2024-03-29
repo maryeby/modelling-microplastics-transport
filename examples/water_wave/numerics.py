@@ -24,26 +24,33 @@ def main():
 	"""
 	# initialize parameters
 	stokes_num = 0.01
-	beta = 0.8
+	beta = 1
 	depth, amplitude, wavelength = 10, 0.02, 1
-	num_periods, delta_t = 50, 5e-3
+	x_0 = [(0, -0.02), (0, -0.25), (0, -0.625), (0, -1), (0, -1.375),
+		   (0, -1.75), (0, -2.125), (0, -2.5), (0, -2.875), (0, -3.25),
+		   (0, -3.625)]
+	num_periods, delta_t = 10, 5e-3
 	my_wave = fl.WaterWave(depth, amplitude, wavelength)
 
 	# run the simulations with the appropriate function
 	if type(stokes_num) is list:
-		multi_stokes_nums(stokes_num, my_wave, beta, num_periods, delta_t)	
+		multi_stokes_nums(x_0, stokes_num, my_wave, beta, num_periods, delta_t)	
 	elif type(beta) is list:
-		multi_betas(stokes_num, my_wave, beta, num_periods, delta_t)	
+		multi_betas(x_0, stokes_num, my_wave, beta, num_periods, delta_t)	
+	elif type(x_0) is list:
+		multi_positions(x_0, stokes_num, my_wave, beta, num_periods, delta_t)
 	else:
-		single_simulation(stokes_num, my_wave, beta, num_periods, delta_t)
+		single_simulation(x_0, stokes_num, my_wave, beta, num_periods, delta_t)
 
-def single_simulation(stokes_num, wave, beta, num_periods, delta_t):
+def single_simulation(position, stokes_num, wave, beta, num_periods, delta_t):
 	"""
 	Runs a numerical simulation without history effects and a numerical
 	simulation with history effects.
 
 	Parameters
 	----------
+	position : tuple
+		The initial (x_0, z_0) position of the particle.
 	stokes_num : float
 		The Stokes number to use for the initialization of the particle.
 	wave : Wave (obj)
@@ -61,13 +68,13 @@ def single_simulation(stokes_num, wave, beta, num_periods, delta_t):
 	write_results = True if answer.upper() == 'W' else False
 
 	# run simulation without history
-	results = run_numerics(stokes_num, wave, beta, False, num_periods, delta_t,
-						   hide_progress=False)
+	results = run_numerics(position, stokes_num, wave, beta, False, num_periods,
+						   delta_t, hide_progress=False)
 
 	# only write results if they contain no NaNs (skip failed simulations)
 	if write_results and results['x'] is not None:
 		write_data(results)
-		history_results = run_numerics(stokes_num, wave, beta, True,
+		history_results = run_numerics(position, stokes_num, wave, beta, True,
 									   num_periods, delta_t)
 		if history_results['x'] is not None:
 			write_data(history_results)
@@ -94,8 +101,10 @@ def single_simulation(stokes_num, wave, beta, num_periods, delta_t):
 					 label='with history')
 			plt.legend()
 			plt.show()
+	else:
+		print('Error: no results to plot.')
 
-def multi_stokes_nums(stokes_nums, wave, beta, num_periods, delta_t):
+def multi_stokes_nums(position, stokes_nums, wave, beta, num_periods, delta_t):
 	"""
 	Runs a numerical simulation without history effects and a numerical
 	simulation with history effects for each Stokes number, and writes the
@@ -103,11 +112,13 @@ def multi_stokes_nums(stokes_nums, wave, beta, num_periods, delta_t):
 
 	Parameters
 	----------
+	position : tuple
+		The initial (x_0, z_0) position of the particle.
 	stokes_nums : list
 		A list of the Stokes numbers to use for the particle initializations.
 	wave : Wave (obj)
 		The wave through which the particle is transported.
-	betas : float
+	beta : float
 		The ratio between the particle and fluid densities.
 	num_periods : int
 		The number of wave periods to integrate over.
@@ -117,7 +128,8 @@ def multi_stokes_nums(stokes_nums, wave, beta, num_periods, delta_t):
 	num_tasks = len(stokes_nums)
 
 	# run simulations without history effects
-	params = zip(stokes_nums, itertools.repeat(wave), itertools.repeat(beta),
+	params = zip(itertools.repeat(position), stokes_nums,
+				 itertools.repeat(wave), itertools.repeat(beta),
 				 itertools.repeat(False), itertools.repeat(num_periods),
 				 itertools.repeat(delta_t))
 	results = progress_starmap(run_numerics, params, total=num_tasks)
@@ -136,8 +148,8 @@ def multi_stokes_nums(stokes_nums, wave, beta, num_periods, delta_t):
 	if num_tasks != 0:
 		for i in range(num_tasks):
 			print(f'\nRunning simulation {i + 1}/{num_tasks}...')
-			result = run_numerics(stokes_nums[i], wave, beta, True, num_periods,
-								  delta_t)
+			result = run_numerics(position, stokes_nums[i], wave, beta, True,
+								  num_periods, delta_t)
 			history_results.append(result)
 	
 	# remove results that contain NaNs (failed simulations)
@@ -153,13 +165,15 @@ def multi_stokes_nums(stokes_nums, wave, beta, num_periods, delta_t):
 		for result in results:
 			write_data(result)
 
-def multi_betas(stokes_num, wave, betas, num_periods, delta_t):
+def multi_betas(position, stokes_num, wave, betas, num_periods, delta_t):
 	"""
 	Runs a numerical simulation without history effects and a numerical
 	simulation with history effects for each value of beta.
 
 	Parameters
 	----------
+	position : tuple
+		The initial (x_0, z_0) position of the particle.
 	stokes_num : float
 		The Stokes number to use for the initialization of the particle.
 	wave : Wave (obj)
@@ -174,7 +188,8 @@ def multi_betas(stokes_num, wave, betas, num_periods, delta_t):
 	num_tasks = len(betas)
 
 	# run simulations without history effects
-	params = zip(itertools.repeat(stokes_num), itertools.repeat(wave),
+	params = zip(itertools.repeat(position), itertools.repeat(stokes_num),
+				 itertools.repeat(wave),
 				 betas, itertools.repeat(False),
 				 itertools.repeat(num_periods), itertools.repeat(delta_t))
 	results = progress_starmap(run_numerics, params, total=num_tasks)
@@ -193,8 +208,8 @@ def multi_betas(stokes_num, wave, betas, num_periods, delta_t):
 	if num_tasks != 0:
 		for i in range(num_tasks):
 			print(f'\nRunning simulation {i + 1}/{num_tasks}...')
-			result = run_numerics(stokes_num, wave, betas[i], True, num_periods,
-								  delta_t)
+			result = run_numerics(position, stokes_num, wave, betas[i], True,
+								  num_periods, delta_t)
 			history_results.append(result)
 	
 	# remove results that contain NaNs (failed simulations)
@@ -210,13 +225,74 @@ def multi_betas(stokes_num, wave, betas, num_periods, delta_t):
 		for result in results:
 			write_data(result)
 
-def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
-				 hide_progress=True):
+def multi_positions(x_0s, stokes_num, wave, beta, num_periods, delta_t):
+	"""
+	Runs a numerical simulation without history effects and a numerical
+	simulation with history effects for each value of beta.
+
+	Parameters
+	----------
+	x_0s : list of tuples
+		The initial (x_0, z_0) positions of the particle.
+	stokes_num : float
+		The Stokes number to use for the initialization of the particle.
+	wave : Wave (obj)
+		The wave through which the particle is transported.
+	beta : float
+		The ratio between the particle and fluid densities.
+	num_periods : int
+		The number of wave periods to integrate over.
+	delta_t : float
+		The size of the time step used for integration.
+	"""
+	num_tasks = len(x_0s)
+
+	# run simulations without history effects
+	params = zip(x_0s, itertools.repeat(stokes_num), itertools.repeat(wave),
+				 itertools.repeat(beta), itertools.repeat(False),
+				 itertools.repeat(num_periods), itertools.repeat(delta_t))
+	results = progress_starmap(run_numerics, params, total=num_tasks)
+
+	# remove results that contain NaNs (failed simulations)
+	for i in range(len(results)):
+		if results[i]['x'] is None:
+			x_0s[i] = None
+			results[i] = None
+			num_tasks -= 1
+	results = [i for i in results if i is not None]
+	x_0s = [i for i in x_0s if i is not None]
+
+	# run simulations with history effects unless non-history simulations failed
+	history_results = []
+	if num_tasks != 0:
+		for i in range(num_tasks):
+			print(f'\nRunning simulation {i + 1}/{num_tasks}...')
+			result = run_numerics(x_0s[i], stokes_num, wave, beta, True,
+								  num_periods, delta_t)
+			history_results.append(result)
+	
+	# remove results that contain NaNs (failed simulations)
+	for i in range(len(history_results)):
+		if history_results[i]['x'] is None:
+			results[i] = None
+			history_results[i] = None
+	results += history_results
+	results = [i for i in results if i is not None]
+	
+	# write successful results to data file, if there are any
+	if results:
+		for result in results:
+			write_data(result)
+
+def run_numerics(position, stokes_num, wave, beta, include_history, num_periods,
+				 delta_t, hide_progress=True):
 	"""
 	Runs a numerical simulation for the specified parameters.
 
 	Parameters
 	----------
+	position : tuple
+		The initial (x_0, z_0) position of the particle.
 	stokes_num : float
 		The Stokes number to use for the initialization of the particle.
 	wave : Wave (obj)
@@ -238,7 +314,7 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
 		Dictionary containing the numerical solutions.
 	"""
 	# initialize parameters
-	x_0, z_0 = 0, 0
+	x_0, z_0 = position
 	xdot_0, zdot_0 = wave.velocity(x_0, z_0, t=0)
 	R = 2 / 3 * beta
 
@@ -247,10 +323,13 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
 	my_system = ts.MyTransportSystem(my_particle, wave, R)
 
 	# run numerics
-	x, z, xdot, zdot, t = my_system.run_numerics(include_history,
-												 x_0, z_0, xdot_0, zdot_0,
-												 num_periods, delta_t,
-												 hide_progress)
+	x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, \
+	   added_mass_x, added_mass_z, stokes_drag_x, stokes_drag_z, \
+	   history_force_x, \
+	   history_force_z = my_system.run_numerics(include_history, x_0, z_0,
+												xdot_0, zdot_0, num_periods,
+												delta_t, hide_progress,
+												include_forces=True)
 	# get useful wave conditions and the particle Reynolds number
 	h = wave.depth
 	A = wave.amplitude
@@ -263,11 +342,19 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
 	Re_p = None
 
 	# organize results in a dictionary
-	results = {'x': x, 'z': z, 'xdot': xdot, 'zdot': zdot, 't': t, 'z_0': z_0,
-			   'St': stokes_num, 'beta': beta, 'history': include_history,
-			   'h\'': h, 'A\'': A, 'wavelength\'': wavelength, 'k\'': k,
-			   'omega\'': omega, 'Fr': Fr, 'U\'': U,
-			   'general_Re_p': general_Re_p, 'Re_p': Re_p,
+	results = {'x': x, 'z': z, 'xdot': xdot, 'zdot': zdot, 't': t,
+			   'fluid_pressure_gradient_x': fpg_x,
+			   'fluid_pressure_gradient_z': fpg_z,
+			   'buoyancy_force_x': buoyancy_x, 'buoyancy_force_z': buoyancy_z,
+			   'added_mass_force_x': added_mass_x,
+			   'added_mass_force_z': added_mass_z,
+			   'stokes_drag_x': stokes_drag_x, 'stokes_drag_z': stokes_drag_z,
+			   'history_force_x': history_force_x, \
+			   'history_force_z': history_force_z,
+			   'x_0': x_0, 'z_0': z_0, 'St': stokes_num, 'beta': beta,
+			   'history': include_history, 'h\'': h, 'A\'': A,
+			   'wavelength\'': wavelength, 'k\'': k, 'omega\'': omega, 'Fr': Fr,
+			   'U\'': U, 'general_Re_p': general_Re_p, 'Re_p': Re_p,
 			   'num_periods\'': num_periods, 'delta_t\'': delta_t}
 
 	# check if solutions contain any infinite values
@@ -277,6 +364,7 @@ def run_numerics(stokes_num, wave, beta, include_history, num_periods, delta_t,
 									'\u03BB', '\u03C0', '\u03C9', '\u0394'+'t'
 		prime = '\''
 		print('\nSimulation failed')
+		print(f'{"x_0":10}{x_0:^10.4g}')
 		print(f'{"z_0":10}{z_0:^10.4g}')
 		print(f'{"St":10}{stokes_num:^10.4g}')
 		print(f'{beta_char:10}{beta:^10.4g}')

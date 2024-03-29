@@ -73,21 +73,26 @@ def main():
 	plt.minorticks_on()
 
 	# create conditions to help filter through numerical data
+	x_0, z_0 = 0, 0
 	St, beta = 0.01, 0.9
 	h, A, wavelength = 10, 0.02, 1 # wave parameters
 	delta_t = 5e-3
-	history = (numerics['St'] == St) & (numerics['beta'] == beta) \
+	history = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
+									 & (numerics['St'] == St) \
+									 & (numerics['beta'] == beta) \
 									 & (numerics['history'] == True) \
 									 & (numerics['h\''] == h) \
 									 & (numerics['A\''] == A) \
 									 & (numerics['wavelength\''] == wavelength)\
 									 & (numerics['delta_t\''] == delta_t)
-	no_history = (numerics['St'] == St) & (numerics['beta'] == beta) \
-									& (numerics['history'] == False) \
-									& (numerics['h\''] == h) \
-									& (numerics['A\''] == A) \
-									& (numerics['wavelength\''] == wavelength) \
-									& (numerics['delta_t\''] == delta_t)
+	no_history = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
+									 & (numerics['St'] == St) \
+									 & (numerics['beta'] == beta) \
+									 & (numerics['history'] == False) \
+									 & (numerics['h\''] == h) \
+									 & (numerics['A\''] == A) \
+									 & (numerics['wavelength\''] == wavelength)\
+									 & (numerics['delta_t\''] == delta_t)
 
 	# retrieve relevant numerical results
 	x = numerics['x'].where(no_history).dropna()

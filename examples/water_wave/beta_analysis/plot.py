@@ -60,14 +60,14 @@ def main():
 		# plot data
 		i = betas.index(beta)
 		plt.scatter(u_d, z, marker='.', edgecolors='k', facecolors='none',
-					label='')
+					label='', zorder=2)
 		plt.text(text_position_x[i], text_position_y[i], f'{beta:g}',
-				 fontsize=14, bbox=properties)
+				 fontsize=14, bbox=properties, zorder=3)
 		if beta != 1:
 			plt.plot(estimated_u_d, estimated_z, c='k', ls=ls,
-					 label=label)
+					 label=label, zorder=0)
 	plt.plot('analytical_u_d', 'analytical_z', c='hotpink', data=analysis,
-			 label='analytical')
+			 label='analytical', zorder=1)
 	plt.legend(fontsize=14)
 	plt.show()
 

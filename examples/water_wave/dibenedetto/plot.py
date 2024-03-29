@@ -12,9 +12,7 @@ def main():
 	This program plots numerical and analytical solutions for the Stokes drift
 	velocity of a negatively buoyant inertial particle in a linear water wave.
 	"""
-	# read data
-	numerics = pd.read_csv(f'{DATA_PATH}numerics.csv')
-	analysis = pd.read_csv(f'{DATA_PATH}dibenedetto_analysis.csv')
+	analysis = pd.read_csv(f'{DATA_PATH}dibenedetto_analysis.csv') # read data
 
 	# initialize drift velocity figure & left subplot
 	plt.figure()

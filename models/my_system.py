@@ -5,8 +5,8 @@ import numpy as np
 from time import time
 from tqdm import tqdm
 
-from models import deep_water_wave
-from transport_framework import particle, transport_system
+from models import water_wave
+from transport_framework import particle, wave, transport_system
 
 class MyTransportSystem(transport_system.TransportSystem):
 	""" 
@@ -30,11 +30,12 @@ class MyTransportSystem(transport_system.TransportSystem):
 			diameter of the particle.
 		"""
 		super().__init__(particle, flow, density_ratio)
-		self.reynolds_num = (2 * self.flow.max_velocity
-							   * np.sqrt(9 * self.particle.stokes_num 
-							   / (2 * self.flow.wavenum ** 2
-							   * self.flow.reynolds_num))) \
-							   / self.flow.kinematic_viscosity
+		if isinstance(flow, wave.Wave):
+			self.reynolds_num = (2 * self.flow.max_velocity
+								   * np.sqrt(9 * self.particle.stokes_num 
+								   / (2 * self.flow.wavenum ** 2
+								   * self.flow.reynolds_num))) \
+								   / self.flow.kinematic_viscosity
 
 	def maxey_riley(self, include_history, t, y, order, hide_progress):
 		r"""
@@ -74,10 +75,22 @@ class MyTransportSystem(transport_system.TransportSystem):
 		mini_x = np.empty((mini_steps.size, 2)) 
 		mini_v = np.empty((mini_steps.size, 2))
 		mini_u = np.empty((mini_steps.size, 2))
+		mini_fpg = np.empty((mini_steps.size, 2))	   # fluid pressure gradient
+		mini_buoyancy = np.empty((mini_steps.size, 2)) # buoyancy force
+		mini_mass = np.empty((mini_steps.size, 2))	   # added mass force
+		mini_drag = np.empty((mini_steps.size, 2))	   # Stokes drag
+		mini_history = np.empty((mini_steps.size, 2)) if include_history else \
+					   np.zeros((mini_steps.size, 2))  # history force
 		num_steps = t.size - 1
 		x = np.empty((t.size, 2))
 		v = np.empty((t.size, 2))
 		u = np.empty((t.size, 2))
+		fluid_pressure_gradient = np.empty((t.size, 2))
+		buoyancy = np.empty((t.size, 2))
+		added_mass = np.empty((t.size, 2))
+		stokes_drag = np.empty((t.size, 2))
+		history = np.empty((t.size, 2)) if include_history else \
+				  np.zeros((t.size, 2))
 
 		# set initial conditions
 		x[0] = y[:2]
@@ -90,7 +103,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 		# immediately return if z_0 is below the depth of the water (z_0 < -h)
 		if x[0, 1] <= -self.flow.depth:
 			print('Error: Initial vertical position is below the seabed.')
-			return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0]
+			return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0], \
+				   0, 0, 0, 0, 0, 0, 0, 0
 
 		# only compute alpha, beta, gamma, xi if we're including history effects
 		if include_history:
@@ -124,20 +138,29 @@ class MyTransportSystem(transport_system.TransportSystem):
 				print('Simulation ended prematurely: particle reached the',
 					  'seabed.')
 				return x[:n_prime, 0], x[:n_prime, 1], v[:n_prime, 0], \
-					   v[:n_prime, 1], t[:n_prime]
+						v[:n_prime, 1], t[:n_prime], \
+						mini_fpg[:n_prime, 0], mini_fpg[:n_prime, 1], \
+						mini_buoyancy[:n_prime, 0], mini_buoyancy[:n_prime, 1],\
+						mini_mass[:n_prime, 0], mini_mass[:n_prime, 1], \
+						mini_drag[:n_prime, 0], mini_drag[:n_prime, 1], \
+						mini_history[:n_prime, 0], mini_history[:n_prime, 1]
 
 			mini_w = mini_v - mini_u
-			G = (3 / 2 * R - 1) \
-				   * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
-														   mini_x[:, 1].T,
-														   mini_steps,
-														   mini_v.T).T \
-				   - 3 / 2 * R * self.flow.dot_jacobian(mini_w.T,
-														mini_x[:, 0].T,
-														mini_x[:, 1].T,
-														mini_steps).T \
-				   - R / St * mini_w + (1 - 3 * R / 2) * self.flow.gravity
+			mini_fpg = (3 / 2 * R - 1) \
+						* self.flow.derivative_along_trajectory(mini_x[:, 0].T,
+																mini_x[:, 1].T,
+																mini_steps,
+																mini_v.T).T
+			mini_buoyancy[n_prime] = (1 - 3 * R / 2) * self.flow.gravity
+			mini_mass = -3 / 2 * R * self.flow.dot_jacobian(mini_w.T,
+															mini_x[:, 0].T,
+															mini_x[:, 1].T,
+															mini_steps).T
+			mini_drag = -R / St * mini_w
+			G = mini_fpg + mini_buoyancy[n_prime] + mini_mass + mini_drag
 			sum_term = 0
+			history_sum = 0
+
 			# equation (15)
 			if order == 1 or n_prime == 0:
 				mini_x[n_prime + 1] = mini_x[n_prime] + mini_step \
@@ -150,6 +173,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 						sum_term += mini_w[n_prime - j] \
 								  * (mini_alpha[j + 1, n_prime + 1] \
 								  - mini_alpha[j, n_prime])
+						history_sum += mini_w[n_prime - j] \
+									 * mini_alpha[j, n_prime]
+					mini_history[n_prime] = -mini_xi * history_sum
 					mini_v[n_prime + 1] = (mini_w[n_prime] \
 											+ mini_step * G[n_prime] \
 											- mini_xi * sum_term) \
@@ -173,6 +199,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 						sum_term += mini_w[n_prime - j] \
 								  * (mini_beta[j + 1, n_prime + 1]
 								  - mini_beta[j, n_prime])
+						history_sum += mini_w[n_prime - j] \
+									 * mini_beta[j, n_prime]
+					mini_history[n_prime] = -mini_xi * history_sum
 					mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
 											* (3 * G[n_prime] - G[n_prime - 1])
 											- mini_xi * sum_term) / (1 + mini_xi
@@ -196,6 +225,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 						sum_term += mini_w[n_prime - j] \
 								  * (mini_gamma[j + 1, n_prime + 1] \
 								  - mini_gamma[j, n_prime])
+						history_sum += mini_w[n_prime - j] \
+									 * mini_gamma[j, n_prime]
+					mini_history[n_prime] = -mini_xi * history_sum
 					mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
 											* (23 * G[n_prime]
 											- 16 * G[n_prime - 1]
@@ -215,9 +247,19 @@ class MyTransportSystem(transport_system.TransportSystem):
 		x[1] = mini_x[int(mini_steps.size / 2)]
 		v[1] = mini_v[int(mini_steps.size / 2)]
 		u[1] = mini_u[int(mini_steps.size / 2)]
+		fluid_pressure_gradient[1] = mini_fpg[int(mini_steps.size / 2)]
+		buoyancy[1] = mini_buoyancy[int(mini_steps.size / 2)]
+		added_mass[1] = mini_mass[int(mini_steps.size / 2)]
+		stokes_drag[1] = mini_drag[int(mini_steps.size / 2)]
+		history[1] = mini_history[int(mini_steps.size / 2)]
 		x[2] = mini_x[-1]
 		v[2] = mini_v[-1]
 		u[2] = mini_u[-1]
+		fluid_pressure_gradient[2] = mini_fpg[-1]
+		buoyancy[2] = mini_buoyancy[-1]
+		added_mass[2] = mini_mass[-1]
+		stokes_drag[2] = mini_drag[-1]
+		history[2] = mini_history[-1]
 
 		# compute solutions for the remaining intervals
 		if not hide_progress:
@@ -227,16 +269,24 @@ class MyTransportSystem(transport_system.TransportSystem):
 			if x[n, 1] <= -self.flow.depth:
 				print('Simulation ended prematurely: particle reached the',
 					  'seabed.')
-				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n]
-
+				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
+					   fluid_pressure_gradient[:n, 0], \
+					   fluid_pressure_gradient[:n, 1], \
+					   buoyancy[:n, 0], buoyancy[:n, 1], \
+					   added_mass[:n, 0], added_mass[:n, 1], \
+					   stokes_drag[:n, 0], stokes_drag[:n, 1], \
+					   history[:n, 0], history[:n, 1]
 			w = v - u
-			G = (3 / 2 * R - 1) \
-				   * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
-														   t, v.T).T \
-				   - 3 / 2 * R \
-				   * self.flow.dot_jacobian(w.T, x[:, 0].T, x[:, 1].T, t).T \
-				   - R / St * w + (1 - 3 * R / 2) * self.flow.gravity
+			fluid_pressure_gradient = (3 / 2 * R - 1) \
+					* self.flow.derivative_along_trajectory(x[:, 0].T,
+															x[:, 1].T, t, v.T).T
+			buoyancy[n] = (1 - 3 * R / 2) * self.flow.gravity
+			added_mass = -3 / 2 * R \
+					* self.flow.dot_jacobian(w.T, x[:, 0].T, x[:, 1].T, t).T
+			stokes_drag = -R / St * w
+			G = fluid_pressure_gradient + buoyancy[n] + added_mass + stokes_drag
 			sum_term = 0
+			history_sum = 0
 			if order == 1 or n == 0:
 				x[n + 1] = x[n] + delta_t * v[n]
 				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1],
@@ -245,6 +295,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 					for j in range(n + 1):
 						sum_term += w[n - j] * (alpha[j + 1, n + 1]
 											 - alpha[j, n])
+						history_sum += w[n - j] * alpha[j, n]
+					history[n] = -xi * history_sum
 					v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
 									 / (1 + xi * alpha[0, n + 1]) + u[n + 1]
 				else:
@@ -256,6 +308,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 				if include_history:
 					for j in range(n + 1):
 						sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
+						history_sum += w[n - j] * beta[j, n]
+					history[n] = -xi * history_sum
 					v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
 									 - xi * sum_term) \
 									 / (1 + xi * beta[0, n + 1]) + u[n + 1]
@@ -271,16 +325,25 @@ class MyTransportSystem(transport_system.TransportSystem):
 					for j in range(n + 1):
 						sum_term += w[n - j] * (gamma[j + 1, n + 1]
 											 - gamma[j, n])
+						history_sum += w[n - j] * gamma[j, n]
+					history[n] = -xi * history_sum
 					v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
 									 + 5 * G[n - 2]) - xi * sum_term) \
 									 / (1 + xi * gamma[0, n + 1]) + u[n + 1]
 				else:
 					v[n + 1] = w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
 									+ 5 * G[n - 2]) + u[n + 1]
-		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
+		history[:, 0] = np.gradient(history[:, 0], t)
+		history[:, 1] = np.gradient(history[:, 1], t)
+		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
+			   fluid_pressure_gradient[:, 0], fluid_pressure_gradient[:, 1], \
+			   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
+			   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
+			   history[:, 0], history[:, 1]
 
 	def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
-					 num_periods, delta_t, hide_progress, order=3):
+					 num_periods, delta_t, hide_progress, include_forces=False,
+					 order=3):
 		"""
 		Computes the position and velocity of the particle over time.
 
@@ -302,6 +365,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The size of the time steps used for integration.
 		hide_progress : bool
 			Whether to hide the `tqdm` progress bar.
+		include_forces : bool
+			Whether to include the individual forces in the results.
 		order : int, default=3
 			The order of the integration scheme.
 
@@ -320,13 +385,21 @@ class MyTransportSystem(transport_system.TransportSystem):
 		"""
 		# initialize parameters for the solver
 		t_final = num_periods * self.flow.period
-		t_eval = np.arange(0, t_final, delta_t) \
-					/ (self.flow.wavenum * self.flow.max_velocity)
+		t_eval = np.arange(0, t_final, delta_t)
+		if isinstance(self.flow, wave.Wave):
+			t_eval /= (self.flow.wavenum * self.flow.max_velocity)
 		y = [x_0, z_0, xdot_0, zdot_0]
 
 		# run computations
-		return self.maxey_riley(include_history, t_eval, y, order,
-								hide_progress)
+		if include_forces:
+			return self.maxey_riley(include_history, t_eval, y, order,
+									hide_progress)
+		else:
+			x, z, xdot, zdot, t, \
+			_, _, _, _, _, _, _, _, _, _ = self.maxey_riley(include_history,
+															t_eval, y, order,
+															hide_progress)
+			return x, z, xdot, zdot, t
 
 def compute_alpha(size):
 	r"""
