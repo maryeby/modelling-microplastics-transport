@@ -26,15 +26,14 @@ def main():
 	plt.minorticks_on()
 
 	# retrieve relevant numerical and analytical results
-	history = analysis['history'] == True
-	no_history = analysis['history'] == False
-
-	u_d = analysis['u_d'].where(no_history).dropna()
-	t = analysis['t'].where(no_history).dropna()
-	v_x_drift = analysis['v_x_drift'].where(no_history).dropna()
-	u_d_history = analysis['u_d'].where(history).dropna()
-	t_history = analysis['t'].where(history).dropna()
-	v_x_drift_history = analysis['v_x_drift'].where(history).dropna()
+	get = lambda name, history : analysis[name].where(\
+									analysis['history'] == history).dropna()
+	u_d = get('u_d', False)
+	t = get('t', False)
+	v_x_drift = get('v_x_drift', False)
+	u_d_history = get('u_d', True)
+	t_history = get('t', True)
+	v_x_drift_history = get('v_x_drift', True)
 
 	# plot horizontal numerical results
 	plt.plot(t, v_x_drift, c='k', label='analytics without history')
@@ -55,12 +54,12 @@ def main():
 	plt.minorticks_on()
 
 	# retrieve relevant numerical results
-	w_d = analysis['w_d'].where(no_history).dropna()
-	t = analysis['t'].where(no_history).dropna()
-	v_y_drift = analysis['v_y_drift'].where(no_history).dropna()
-	w_d_history = analysis['w_d'].where(history).dropna()
-	t_history = analysis['t'].where(history).dropna()
-	v_y_drift_history = analysis['v_y_drift'].where(history).dropna()
+	w_d = get('w_d', False)
+	t = get('t', False)
+	v_y_drift = get('v_y_drift', False)
+	w_d_history = get('w_d', True)
+	t_history = get('t', True)
+	v_y_drift_history = get('v_y_drift', True)
 
 	# plot vertical numerical results
 	plt.plot(t, v_y_drift, c='k', label='analytics without history')

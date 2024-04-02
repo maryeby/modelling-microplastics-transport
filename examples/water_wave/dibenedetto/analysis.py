@@ -15,6 +15,7 @@ def main():
 	wave and saves the results to the `data/water_wave` directory.
 	"""
 	# initialize variables
+	x_0, z_0 = 0, 0
 	St, beta = 0.01, 0.9
 	h, A, wavelength = 10, 0.02, 1 # wave parameters
 	delta_t = 5e-3
@@ -24,37 +25,35 @@ def main():
 	out_file = 'dibenedetto_analysis.csv'
 	numerics = pd.read_csv(DATA_PATH + in_file)
 
-	# create conditions to help filter through numerical data
-	history = (numerics['St'] == St) & (numerics['beta'] == beta) \
-									 & (numerics['history'] == True) \
-									 & (numerics['h\''] == h) \
-									 & (numerics['A\''] == A) \
-									 & (numerics['wavelength\''] == wavelength)\
-									 & (numerics['delta_t\''] == delta_t)
-	no_history = (numerics['St'] == St) & (numerics['beta'] == beta) \
-									& (numerics['history'] == False) \
-									& (numerics['h\''] == h) \
-									& (numerics['A\''] == A) \
-									& (numerics['wavelength\''] == wavelength) \
-									& (numerics['delta_t\''] == delta_t)
-
+	# create conditions and lambdas to help filter through numerical data
+	condition = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
+                                    & (numerics['St'] == St) \
+                                    & (numerics['beta'] == beta) \
+                                    & (numerics['h\''] == h) \
+                                    & (numerics['A\''] == A) \
+                                    & (numerics['wavelength\''] == wavelength) \
+                                    & (numerics['delta_t\''] == delta_t)
+	get_single = lambda name : numerics[name].where(condition).dropna().iloc[0]
+	get_series = lambda name, history : numerics[name].where(condition & \
+										(numerics['history'] == history))\
+													.dropna().to_numpy()
 	# retrieve relevant numerical results
-	k = numerics['k\''].where(no_history).dropna().iloc[0]
-	h = numerics['h\''].where(no_history).dropna().iloc[0]
-	U = numerics['U\''].where(no_history).dropna().iloc[0]
-	omega = numerics['omega\''].where(no_history).dropna().iloc[0]
-	amplitude = numerics['A\''].where(no_history).dropna().iloc[0]
+	k = get_single('k\'')
+	h = get_single('h\'')
+	U = get_single('U\'')
+	omega = get_single('omega\'')
+	amplitude = get_single('A\'')
 	kA = k * amplitude
 
-	x = numerics['x'].where(no_history).dropna().to_numpy()
-	z = numerics['z'].where(no_history).dropna().to_numpy()
-	xdot = numerics['xdot'].where(no_history).dropna().to_numpy()
-	t = numerics['t'].where(no_history).dropna().to_numpy()
+	x = get_series('x', False)
+	z = get_series('z', False)
+	xdot = get_series('xdot', False)
+	t = get_series('t', False)
 
-	x_history = numerics['x'].where(history).dropna().to_numpy()
-	z_history = numerics['z'].where(history).dropna().to_numpy()
-	xdot_history = numerics['xdot'].where(history).dropna().to_numpy()
-	t_history = numerics['t'].where(history).dropna().to_numpy()
+	x_history = get_series('x', True)
+	z_history = get_series('z', True)
+	xdot_history = get_series('xdot', True)
+	t_history = get_series('t', True)
 
 	# compute numerical solutions for the drift velocity
 	x_p0, z_p0, u_d, w_d, t_d = ts.compute_drift_velocity(x, z, xdot, t)

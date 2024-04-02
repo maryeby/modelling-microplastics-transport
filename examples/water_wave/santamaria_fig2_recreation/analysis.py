@@ -13,6 +13,7 @@ def main():
 	drift velocity of a negatively buoyant inertial particle in a linear water
 	wave and saves the results to the `data/water_wave` directory.
 	"""
+	x_0, z_0 = 0, 0
 	# initialize variables
 	St, beta = 0.01, 0.9
 	h, A, wavelength = 10, 0.02, 1 # wave parameters
@@ -24,34 +25,32 @@ def main():
 	out_file = 'santamaria_fig2_recreation.csv'
 	numerics = pd.read_csv(DATA_PATH + in_file)
 
-	# create conditions to help filter through numerical data
-	history = (numerics['St'] == St) & (numerics['beta'] == beta) \
-									 & (numerics['history'] == True) \
-									 & (numerics['h\''] == h) \
-									 & (numerics['A\''] == A) \
-									 & (numerics['wavelength\''] == wavelength)\
-									 & (numerics['delta_t\''] == delta_t)
-	no_history = (numerics['St'] == St) & (numerics['beta'] == beta) \
-									& (numerics['history'] == False) \
+	# create condition and lambdas to help filter through numerical data
+	condition = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
+									& (numerics['St'] == St) \
+									& (numerics['beta'] == beta) \
 									& (numerics['h\''] == h) \
 									& (numerics['A\''] == A) \
 									& (numerics['wavelength\''] == wavelength) \
 									& (numerics['delta_t\''] == delta_t)
-
+	get_single = lambda name : numerics[name].where(condition).dropna().iloc[0]
+	get_series = lambda name, history : numerics[name].where(condition \
+											& (numerics['history'] == history))\
+													  .dropna().to_numpy()
 	# retrieve relevant numerical results
-	U = numerics['U\''].where(no_history).dropna().iloc[0]
-	k = numerics['k\''].where(no_history).dropna().iloc[0]
-	Fr = numerics['Fr'].where(no_history).dropna().iloc[0]
+	U = get_single('U\'')
+	k = get_single('k\'')
+	Fr = get_single('Fr')
 
-	x = numerics['x'].where(no_history).dropna().to_numpy()
-	z = numerics['z'].where(no_history).dropna().to_numpy()
-	xdot = numerics['xdot'].where(no_history).dropna().to_numpy()
-	t = numerics['t'].where(no_history).dropna().to_numpy()
+	x = get_series('x', False)
+	z = get_series('z', False)
+	xdot = get_series('xdot', False)
+	t = get_series('t', False)
 
-	x_history = numerics['x'].where(history).dropna().to_numpy()
-	z_history = numerics['z'].where(history).dropna().to_numpy()
-	xdot_history = numerics['xdot'].where(history).dropna().to_numpy()
-	t_history = numerics['t'].where(history).dropna().to_numpy()
+	x_history = get_series('x', True)
+	z_history = get_series('z', True)
+	xdot_history = get_series('xdot', True)
+	t_history = get_series('t', True)
 
 	# compute drift velocity
 	x_crossings, z_crossings, u_d, w_d, t_d = ts.compute_drift_velocity(x, z,

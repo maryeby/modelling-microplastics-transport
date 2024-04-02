@@ -43,7 +43,7 @@ def main():
 		history = True if history_input[0].upper() == 'T' else False
 
 		# retrieve relevant numerical results
-		cond = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
+		condition = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
 									& (numerics['St'] == St) \
 									& (numerics['beta'] == beta) \
 									& (numerics['history'] == history) \
@@ -51,10 +51,11 @@ def main():
 									& (numerics['A\''] == A) \
 									& (numerics['wavelength\''] == wavelength) \
 									& (numerics['delta_t\''] == delta_t)
-		x = numerics['x'].where(cond).dropna().tolist()
-		z = numerics['z'].where(cond).dropna().tolist()
-		t = numerics['t'].where(cond).dropna().tolist()
-		xdot = numerics['xdot'].where(cond).dropna().tolist()
+		get = lambda name : numerics[name].where(condition).dropna().tolist()
+		x = get('x')
+		z = get('z')
+		t = get('t')
+		xdot = get('xdot')
 
 		# print whether the data was found
 		answer = 'No'

@@ -27,13 +27,13 @@ def main():
 	plt.minorticks_on()
 
 	# retrieve relevant numerical results
-	history = analysis['history'] == True
-	no_history = analysis['history'] == False
-
-	u_d = analysis['u_d'].where(no_history).dropna()
-	t = analysis['t'].where(no_history).dropna()
-	u_d_history = analysis['u_d'].where(history).dropna()
-	t_history = analysis['t'].where(history).dropna()
+	get_analysis = lambda name, history : analysis[name].where(\
+											analysis['history'] == history)\
+														.dropna()
+	u_d = get_analysis('u_d', False)
+	t = get_analysis('t', False)
+	u_d_history = get_analysis('u_d', True)
+	t_history = get_analysis('t', True)
 
 	# plot horizontal numerical results
 	plt.scatter(t, u_d, marker='o', edgecolors='k', facecolors='none',
@@ -51,10 +51,10 @@ def main():
 	plt.minorticks_on()
 
 	# retrieve relevant numerical results
-	w_d = analysis['w_d'].where(no_history).dropna()
-	t = analysis['t'].where(no_history).dropna()
-	w_d_history = analysis['w_d'].where(history).dropna()
-	t_history = analysis['t'].where(history).dropna()
+	w_d = get_analysis('w_d', False)
+	t = get_analysis('t', False)
+	w_d_history = get_analysis('w_d', True)
+	t_history = get_analysis('t', True)
 
 	# plot vertical numerical results
 	plt.scatter(t, w_d, edgecolors='k', facecolors='none', marker='o',
@@ -77,33 +77,24 @@ def main():
 	St, beta = 0.01, 0.9
 	h, A, wavelength = 10, 0.02, 1 # wave parameters
 	delta_t = 5e-3
-	history = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
+	condition = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
 									 & (numerics['St'] == St) \
 									 & (numerics['beta'] == beta) \
-									 & (numerics['history'] == True) \
 									 & (numerics['h\''] == h) \
 									 & (numerics['A\''] == A) \
 									 & (numerics['wavelength\''] == wavelength)\
 									 & (numerics['delta_t\''] == delta_t)
-	no_history = (numerics['x_0'] == x_0) & (numerics['z_0'] == z_0) \
-									 & (numerics['St'] == St) \
-									 & (numerics['beta'] == beta) \
-									 & (numerics['history'] == False) \
-									 & (numerics['h\''] == h) \
-									 & (numerics['A\''] == A) \
-									 & (numerics['wavelength\''] == wavelength)\
-									 & (numerics['delta_t\''] == delta_t)
-
+	get_numerics = lambda name, history : numerics[name].where(condition \
+											& (numerics['history'] == history))\
+														.dropna()
 	# retrieve relevant numerical results
-	x = numerics['x'].where(no_history).dropna()
-	z = numerics['z'].where(no_history).dropna()
-	x_history = numerics['x'].where(history).dropna()
-	z_history = numerics['z'].where(history).dropna()
+	x = get_numerics('x', False)
+	z = get_numerics('z', False)
+	x_history = get_numerics('x', True)
+	z_history = get_numerics('z', True)
 
-	history = analysis['history'] == True
-	no_history = analysis['history'] == False
-	x_crossings = analysis['x_crossings'].where(no_history).dropna()
-	z_crossings = analysis['z_crossings'].where(no_history).dropna()
+	x_crossings = get_analysis('x_crossings', False)
+	z_crossings = get_analysis('z_crossings', False)
 
 	# plot particle trajectory with and without history
 	plt.plot(x, z, c='k', label='without history')

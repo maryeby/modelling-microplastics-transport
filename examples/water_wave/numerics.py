@@ -24,12 +24,10 @@ def main():
 	"""
 	# initialize parameters
 	stokes_num = 0.01
-	beta = 1
+	beta = 0.9
 	depth, amplitude, wavelength = 10, 0.02, 1
-	x_0 = [(0, -0.02), (0, -0.25), (0, -0.625), (0, -1), (0, -1.375),
-		   (0, -1.75), (0, -2.125), (0, -2.5), (0, -2.875), (0, -3.25),
-		   (0, -3.625)]
-	num_periods, delta_t = 10, 5e-3
+	x_0 = [(0.126, -0.088), (0.099, -0.226), (-0.017, -0.236), (-0.036, -0.127)]
+	num_periods, delta_t = 50, 5e-3
 	my_wave = fl.WaterWave(depth, amplitude, wavelength)
 
 	# run the simulations with the appropriate function
@@ -251,7 +249,7 @@ def multi_positions(x_0s, stokes_num, wave, beta, num_periods, delta_t):
 	params = zip(x_0s, itertools.repeat(stokes_num), itertools.repeat(wave),
 				 itertools.repeat(beta), itertools.repeat(False),
 				 itertools.repeat(num_periods), itertools.repeat(delta_t))
-	results = progress_starmap(run_numerics, params, total=num_tasks)
+	results = progress_starmap(run_numerics, params, n_cpu=2, total=num_tasks)
 
 	# remove results that contain NaNs (failed simulations)
 	for i in range(len(results)):
