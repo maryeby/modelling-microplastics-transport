@@ -37,11 +37,11 @@ class MyTransportSystem(transport_system.TransportSystem):
 								   * self.flow.reynolds_num))) \
 								   / self.flow.kinematic_viscosity
 
-	def maxey_riley(self, include_history, t, y, order, hide_progress):
+	def maxey_riley(self, include_history, t, y, delta_t, order, hide_progress):
 		r"""
 		Implements the integration scheme for the full Maxey-Riley equation, as
-		outlined in Daitche (2013) Section 3, with a slight modification to
-		include buoyancy force.
+		outlined in Daitche (2013) Section 3, modified to include the buoyancy
+		force.
 
 		Parameters
 		----------
@@ -51,6 +51,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The times when the Maxey-Riley equation should be evaluated.
 		y : list (array-like)
 			A list containing the initial particle position and velocity.
+		delta_t : float
+			The size of the time steps used for integration.
 		order : int
 			The order of the integration scheme.
 		hide_progress : bool
@@ -65,7 +67,6 @@ class MyTransportSystem(transport_system.TransportSystem):
 		# initialize local variables
 		R = self.density_ratio
 		St = self.particle.stokes_num
-		delta_t = t[1] - t[0]
 
 		# compute the number of time steps and create arrays to store solutions
 		num_mini_steps = int(np.ceil(2 * np.sqrt(2) / delta_t))
@@ -108,42 +109,45 @@ class MyTransportSystem(transport_system.TransportSystem):
 
 		# only compute alpha, beta, gamma, xi if we're including history effects
 		if include_history:
-			hide_progress = False
 			xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
 			mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
 
 			# compute matrices containing the values of alpha, beta, and gamma
 			if order == 1:
-				mini_alpha = compute_alpha(mini_steps.size)
-				alpha = compute_alpha(t.size)
+				mini_alpha = compute_alpha(mini_steps.size, hide_progress)
+				alpha = compute_alpha(t.size, hide_progress)
 			elif order == 2:
-				mini_alpha = compute_alpha(2)
-				mini_beta = compute_beta(mini_steps.size, mini_alpha[:, 1]) 
+				mini_alpha = compute_alpha(2, hide_progress)
+				mini_beta = compute_beta(mini_steps.size, mini_alpha[:, 1],
+										 hide_progress) 
 				alpha = mini_alpha
-				beta = compute_beta(t.size, alpha[:, 1])
+				beta = compute_beta(t.size, alpha[:, 1], hide_progress)
 			else: # order == 3
-				mini_alpha = compute_alpha(2)
-				mini_beta = compute_beta(3, mini_alpha[:, 1]) 
-				mini_gamma = compute_gamma(mini_steps.size, mini_beta[:, 2]) 
+				mini_alpha = compute_alpha(2, hide_progress)
+				mini_beta = compute_beta(3, mini_alpha[:, 1], hide_progress) 
+				mini_gamma = compute_gamma(mini_steps.size, mini_beta[:, 2],
+										   hide_progress) 
 				alpha = mini_alpha
 				beta = mini_beta
-				gamma = compute_gamma(t.size, beta[:, 2])
+				gamma = compute_gamma(t.size, beta[:, 2], hide_progress)
 
 		# compute solutions for the first two intervals using finer time steps
 		if not hide_progress:
 			print('Computing the first two intervals using mini steps...')
 		for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
 			# return immediately if the particle reaches the seabed (z < -h)
-			if x[n_prime, 1] <= -self.flow.depth:
-				print('Simulation ended prematurely: particle reached the',
-					  'seabed.')
-				return x[:n_prime, 0], x[:n_prime, 1], v[:n_prime, 0], \
-						v[:n_prime, 1], t[:n_prime], \
-						mini_fpg[:n_prime, 0], mini_fpg[:n_prime, 1], \
-						mini_buoyancy[:n_prime, 0], mini_buoyancy[:n_prime, 1],\
-						mini_mass[:n_prime, 0], mini_mass[:n_prime, 1], \
-						mini_drag[:n_prime, 0], mini_drag[:n_prime, 1], \
-						mini_history[:n_prime, 0], mini_history[:n_prime, 1]
+			if mini_x[n_prime, 1] <= -self.flow.depth:
+				if not hide_progress:
+					print('Simulation ended prematurely: particle reached the',
+						  'seabed.')
+				return mini_x[:n_prime, 0], mini_x[:n_prime, 1], \
+					   mini_v[:n_prime, 0], mini_v[:n_prime, 1], \
+					   mini_steps[:n_prime], \
+					   mini_fpg[:n_prime, 0], mini_fpg[:n_prime, 1], \
+					   mini_buoyancy[:n_prime, 0], mini_buoyancy[:n_prime, 1],\
+					   mini_mass[:n_prime, 0], mini_mass[:n_prime, 1], \
+					   mini_drag[:n_prime, 0], mini_drag[:n_prime, 1], \
+					   mini_history[:n_prime, 0], mini_history[:n_prime, 1]
 
 			mini_w = mini_v - mini_u
 			mini_fpg = (3 / 2 * R - 1) \
@@ -267,8 +271,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 		for n in tqdm(range(2, num_steps), disable=hide_progress):
 			# return immediately if the particle reaches the seabed (z < -h)
 			if x[n, 1] <= -self.flow.depth:
-				print('Simulation ended prematurely: particle reached the',
-					  'seabed.')
+				if not hide_progress:
+					print('Simulation ended prematurely: particle reached the',
+						  'seabed.')
 				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
 					   fluid_pressure_gradient[:n, 0], \
 					   fluid_pressure_gradient[:n, 1], \
@@ -333,13 +338,15 @@ class MyTransportSystem(transport_system.TransportSystem):
 				else:
 					v[n + 1] = w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
 									+ 5 * G[n - 2]) + u[n + 1]
-		history[:, 0] = np.gradient(history[:, 0], t)
-		history[:, 1] = np.gradient(history[:, 1], t)
+		H = np.copy(history)
+		history[:, 0] = np.gradient(history[:, 0], t, edge_order=2)
+		history[:, 1] = np.gradient(history[:, 1], t, edge_order=2)
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
 			   fluid_pressure_gradient[:, 0], fluid_pressure_gradient[:, 1], \
 			   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
 			   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
 			   history[:, 0], history[:, 1]
+#			   H[:, 0], H[:, 1], \
 
 	def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
 					 num_periods, delta_t, hide_progress, include_forces=False,
@@ -392,16 +399,16 @@ class MyTransportSystem(transport_system.TransportSystem):
 
 		# run computations
 		if include_forces:
-			return self.maxey_riley(include_history, t_eval, y, order,
+			return self.maxey_riley(include_history, t_eval, y, delta_t, order,
 									hide_progress)
 		else:
 			x, z, xdot, zdot, t, \
 			_, _, _, _, _, _, _, _, _, _ = self.maxey_riley(include_history,
-															t_eval, y, order,
-															hide_progress)
+												t_eval, y, delta_t, order,
+												hide_progress)
 			return x, z, xdot, zdot, t
 
-def compute_alpha(size):
+def compute_alpha(size, hide_progress):
 	r"""
 	Computes a matrix containing the values of alpha as defined in equation (9)
 	from Daitche (2013),
@@ -416,14 +423,17 @@ def compute_alpha(size):
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
+	hide_progress : bool
+		Whether to hide the progress print statements.
 
 	Returns
 	-------
 	Array
 		The matrix containing the values of the coefficient alpha.
 	"""
-	print('Computing matrix of alpha coefficients...', end='', flush=True)
-	start = time()
+	if not hide_progress:
+		print('Computing matrix of alpha coefficients...', end='', flush=True)
+		start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape, dtype='float128')
 
@@ -448,10 +458,10 @@ def compute_alpha(size):
 					 + exp * np.sqrt(n[0, 1:]))
 	diagonal = np.insert(diagonal, 0, 0)
 	np.fill_diagonal(arr, diagonal.astype('float64'))
-	print('done.\t\t{:7.2f}s'.format(time() - start))
+	if not hide_progress: print('done.\t\t{:7.2f}s'.format(time() - start))
 	return np.triu(arr)
 
-def compute_beta(size, alpha):
+def compute_beta(size, alpha, hide_progress):
 	r"""
 	Computes a matrix containing the values of beta as defined in Section 2 of
 	Daitche (2013). The value $$\beta_j^n$$
@@ -463,14 +473,17 @@ def compute_beta(size, alpha):
 		The number of rows and columns for the square matrix.
 	alpha : array-like
 		The values of the coefficient alpha at n = 1.
+	hide_progress : bool
+		Whether to hide the progress print statements.
 
 	Returns
 	-------
 	Array
 		The matrix containing the values of the coefficient beta.
 	"""
-	print('Computing matrix of beta coefficients...', end='', flush=True)
-	start = time()
+	if not hide_progress:
+		print('Computing matrix of beta coefficients...', end='', flush=True)
+		start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape, dtype='float128')
 	arr[:, 0] = 0		# n = 0 (should never be called for beta)
@@ -539,10 +552,10 @@ def compute_beta(size, alpha):
 					  + (j[3:-2, 5:] - one) ** exp1)
 		vals = vals[np.triu(vals) != 0]
 		np.place(arr, mask, vals.astype('float64'))
-	print('done.\t\t{:7.2f}s'.format(time() - start))
+	if not hide_progress: print('done.\t\t{:7.2f}s'.format(time() - start))
 	return np.triu(arr)
 
-def compute_gamma(size, beta):
+def compute_gamma(size, beta, hide_progress):
 	r"""
 	Computes a matrix containing the values of gamma as defined in Section 2 of
 	Daitche (2013). The value $$\gamma_j^n$$
@@ -554,14 +567,17 @@ def compute_gamma(size, beta):
 		The number of rows and columns for the square matrix.
 	beta : array-like
 		The values of the coefficient beta at n = 2.
+	hide_progress : bool
+		Whether to hide the progress print statements.
 
 	Returns
 	-------
 	Array
 		The matrix containing the values of the coefficient gamma.
 	"""
-	print('Computing matrix of gamma coefficients...', end='', flush=True)
-	start = time()
+	if not hide_progress:
+		print('Computing matrix of gamma coefficients...', end='', flush=True)
+		start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[:, :2] = 0		# n = 0 and n = 1 (should never be called for gamma)
@@ -708,7 +724,7 @@ def compute_gamma(size, beta):
 				 - (j[4:-4, 8:] - two) ** exp1 - six * j[4:-4, 8:] ** exp1)
 	vals = vals[np.triu(vals) != 0]
 	np.place(arr, mask, vals.astype('float64'))
-	print('done.\t\t{:7.2f}s'.format(time() - start))
+	if not hide_progress: print('done.\t\t{:7.2f}s'.format(time() - start))
 	return np.triu(arr)
 
 def compute_drift_velocity(x, z, xdot, t):

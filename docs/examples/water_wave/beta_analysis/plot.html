@@ -44,13 +44,17 @@ def main():
         analysis = pd.read_csv(DATA_PATH + &#39;beta_analysis.csv&#39;) # read data
 
         # initialize drift velocity figure &amp; left subplot
+        fs, lfs = 14, 16
         plt.figure(1)
-        plt.title(r&#39;Stokes drift velocity vs depth&#39;, fontsize=18)
-        plt.xlabel(r&#39;$\frac{u_d}{UkA}$&#39;, fontsize=16)
-        plt.ylabel(&#39;kz&#39;, fontsize=16)
+#       plt.title(r&#39;Stokes drift velocity vs depth&#39;, fontsize=18)
+#       plt.xlabel(r&#39;$\frac{u_d}{UkA}$&#39;, fontsize=lfs)
+#       plt.ylabel(&#39;kz&#39;, fontsize=lfs)
+        plt.xlabel(r&#39;$u_d$&#39;, fontsize=lfs)
+        plt.ylabel(&#39;z&#39;, fontsize=lfs)
+        plt.gca().set_box_aspect(1)
         plt.axis([0, 1, -4, 0.1])
-        plt.xticks(fontsize=14)
-        plt.yticks(fontsize=14)
+        plt.xticks(fontsize=fs)
+        plt.yticks(fontsize=fs)
         plt.minorticks_on()
 
         # initialize lists of beta values and history
@@ -59,7 +63,7 @@ def main():
 
         # position bubble labels
         text_position_x = [0.6, 0.3, 0.4]
-        text_position_y = [-0.3, -1.8, -0.78]
+        text_position_y = [-0.3, -1.75, -0.76]
         properties = dict(boxstyle=&#39;circle&#39;, facecolor=&#39;w&#39;, edgecolor=&#39;k&#39;)
 
         for i in itertools.product(betas, history):
@@ -82,22 +86,22 @@ def main():
                 # determine labels and markers depending on what data is being plotted
                 if history:
                         ls = &#39;--&#39;
-                        label = &#39;with history&#39; if beta == betas[-1] else &#39;&#39;
+                        label = &#39;with history effects&#39; if beta == betas[-1] else &#39;&#39;
                 elif beta == betas[-1]:
-                        label = &#39;without history&#39;
+                        label = &#39;without history effects&#39;
 
                 # plot data
                 i = betas.index(beta)
                 plt.scatter(u_d, z, marker=&#39;.&#39;, edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;,
                                         label=&#39;&#39;, zorder=2)
                 plt.text(text_position_x[i], text_position_y[i], f&#39;{beta:g}&#39;,
-                                 fontsize=14, bbox=properties, zorder=3)
+                                 fontsize=fs, bbox=properties, zorder=3)
                 if beta != 1:
                         plt.plot(estimated_u_d, estimated_z, c=&#39;k&#39;, ls=ls,
                                          label=label, zorder=0)
-        plt.plot(&#39;analytical_u_d&#39;, &#39;analytical_z&#39;, c=&#39;hotpink&#39;, data=analysis,
-                         label=&#39;analytical&#39;, zorder=1)
-        plt.legend(fontsize=14)
+        plt.plot(&#39;analytical_u_d&#39;, &#39;analytical_z&#39;, c=&#39;#018571&#39;, data=analysis,
+                         label=&#39;analytical solution&#39;, zorder=1)
+#       plt.legend(fontsize=fs)
         plt.show()
 
 if __name__ == &#39;__main__&#39;:
@@ -129,13 +133,17 @@ velocity of inertial particles of varying densities in linear water waves.</p></
         analysis = pd.read_csv(DATA_PATH + &#39;beta_analysis.csv&#39;) # read data
 
         # initialize drift velocity figure &amp; left subplot
+        fs, lfs = 14, 16
         plt.figure(1)
-        plt.title(r&#39;Stokes drift velocity vs depth&#39;, fontsize=18)
-        plt.xlabel(r&#39;$\frac{u_d}{UkA}$&#39;, fontsize=16)
-        plt.ylabel(&#39;kz&#39;, fontsize=16)
+#       plt.title(r&#39;Stokes drift velocity vs depth&#39;, fontsize=18)
+#       plt.xlabel(r&#39;$\frac{u_d}{UkA}$&#39;, fontsize=lfs)
+#       plt.ylabel(&#39;kz&#39;, fontsize=lfs)
+        plt.xlabel(r&#39;$u_d$&#39;, fontsize=lfs)
+        plt.ylabel(&#39;z&#39;, fontsize=lfs)
+        plt.gca().set_box_aspect(1)
         plt.axis([0, 1, -4, 0.1])
-        plt.xticks(fontsize=14)
-        plt.yticks(fontsize=14)
+        plt.xticks(fontsize=fs)
+        plt.yticks(fontsize=fs)
         plt.minorticks_on()
 
         # initialize lists of beta values and history
@@ -144,7 +152,7 @@ velocity of inertial particles of varying densities in linear water waves.</p></
 
         # position bubble labels
         text_position_x = [0.6, 0.3, 0.4]
-        text_position_y = [-0.3, -1.8, -0.78]
+        text_position_y = [-0.3, -1.75, -0.76]
         properties = dict(boxstyle=&#39;circle&#39;, facecolor=&#39;w&#39;, edgecolor=&#39;k&#39;)
 
         for i in itertools.product(betas, history):
@@ -167,22 +175,22 @@ velocity of inertial particles of varying densities in linear water waves.</p></
                 # determine labels and markers depending on what data is being plotted
                 if history:
                         ls = &#39;--&#39;
-                        label = &#39;with history&#39; if beta == betas[-1] else &#39;&#39;
+                        label = &#39;with history effects&#39; if beta == betas[-1] else &#39;&#39;
                 elif beta == betas[-1]:
-                        label = &#39;without history&#39;
+                        label = &#39;without history effects&#39;
 
                 # plot data
                 i = betas.index(beta)
                 plt.scatter(u_d, z, marker=&#39;.&#39;, edgecolors=&#39;k&#39;, facecolors=&#39;none&#39;,
                                         label=&#39;&#39;, zorder=2)
                 plt.text(text_position_x[i], text_position_y[i], f&#39;{beta:g}&#39;,
-                                 fontsize=14, bbox=properties, zorder=3)
+                                 fontsize=fs, bbox=properties, zorder=3)
                 if beta != 1:
                         plt.plot(estimated_u_d, estimated_z, c=&#39;k&#39;, ls=ls,
                                          label=label, zorder=0)
-        plt.plot(&#39;analytical_u_d&#39;, &#39;analytical_z&#39;, c=&#39;hotpink&#39;, data=analysis,
-                         label=&#39;analytical&#39;, zorder=1)
-        plt.legend(fontsize=14)
+        plt.plot(&#39;analytical_u_d&#39;, &#39;analytical_z&#39;, c=&#39;#018571&#39;, data=analysis,
+                         label=&#39;analytical solution&#39;, zorder=1)
+#       plt.legend(fontsize=fs)
         plt.show()</code></pre>
 </details>
 </dd>

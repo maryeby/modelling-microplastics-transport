@@ -28,8 +28,10 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import sys
+import warnings
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
+warnings.filterwarnings(&#39;ignore&#39;)
 import numpy as np
 import pandas as pd
 import itertools
@@ -65,22 +67,26 @@ def main():
                 z_0, history = i
                 beta = 1
 
-                # create condition to help filter through numerical data
-                cond = (numerics[&#39;z_0&#39;] == z_0) &amp; (numerics[&#39;St&#39;] == St) \
+                # create condition and lambdas to help filter through numerical data
+                condition = (numerics[&#39;z_0&#39;] == z_0) &amp; (numerics[&#39;St&#39;] == St) \
                                                                         &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == history) \
                                                                         &amp; (numerics[&#39;h\&#39;&#39;] == h) \
                                                                         &amp; (numerics[&#39;A\&#39;&#39;] == A) \
                                                                         &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
                                                                         &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
+                get_single = lambda name : numerics[name].where(condition).dropna()\
+                                                                                                 .iloc[0]
+                get_series = lambda name : numerics[name].where(condition).dropna()\
+                                                                                                  .to_numpy()
                 # retrieve relevant data
-                k = numerics[&#39;k\&#39;&#39;].where(cond).dropna().iloc[0]
-                A = numerics[&#39;A\&#39;&#39;].where(cond).dropna().iloc[0]
-                U = numerics[&#39;U\&#39;&#39;].where(cond).dropna().iloc[0]
-                x = numerics[&#39;x&#39;].where(cond).dropna().to_numpy()
-                z = numerics[&#39;z&#39;].where(cond).dropna().to_numpy()
-                xdot = numerics[&#39;xdot&#39;].where(cond).dropna().to_numpy()
-                t = numerics[&#39;t&#39;].where(cond).dropna().to_numpy()
+                k = get_single(&#39;k\&#39;&#39;)
+                A = get_single(&#39;A\&#39;&#39;)
+                U = get_single(&#39;U\&#39;&#39;)
+                x = get_series(&#39;x&#39;)
+                z = get_series(&#39;z&#39;)
+                xdot = get_series(&#39;xdot&#39;)
+                t = get_series(&#39;t&#39;)
 
                 # compute and scale drift velocity
                 _, z_crossings, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
@@ -98,21 +104,25 @@ def main():
         for i in itertools.product(betas, [True, False]):
                 beta, history = i
 
-                # create condition to help filter through numerical data
-                cond = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
+                # create condition and lambdas to help filter through numerical data
+                condition = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                 &amp; (numerics[&#39;history&#39;] == history) \
                                                                 &amp; (numerics[&#39;h\&#39;&#39;] == h) \
                                                                 &amp; (numerics[&#39;A\&#39;&#39;] == A) \
                                                                 &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
                                                                 &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
+                get_single = lambda name : numerics[name].where(condition).dropna()\
+                                                                                                 .iloc[0]
+                get_series = lambda name : numerics[name].where(condition).dropna()\
+                                                                                                  .to_numpy()
                 # retrieve relevant data
-                k = numerics[&#39;k\&#39;&#39;].where(cond).dropna().iloc[0]
-                A = numerics[&#39;A\&#39;&#39;].where(cond).dropna().iloc[0]
-                U = numerics[&#39;U\&#39;&#39;].where(cond).dropna().iloc[0]
-                x = numerics[&#39;x&#39;].where(cond).dropna().to_numpy()
-                z = numerics[&#39;z&#39;].where(cond).dropna().to_numpy()
-                xdot = numerics[&#39;xdot&#39;].where(cond).dropna().to_numpy()
-                t = numerics[&#39;t&#39;].where(cond).dropna().to_numpy()
+                k = get_single(&#39;k\&#39;&#39;)
+                A = get_single(&#39;A\&#39;&#39;)
+                U = get_single(&#39;U\&#39;&#39;)
+                x = get_series(&#39;x&#39;)
+                z = get_series(&#39;z&#39;)
+                xdot = get_series(&#39;xdot&#39;)
+                t = get_series(&#39;t&#39;)
 
                 # compute and scale drift velocity
                 _, z_crossings, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
@@ -209,22 +219,26 @@ varying buoyancies in linear water waves and saves the results to the
                 z_0, history = i
                 beta = 1
 
-                # create condition to help filter through numerical data
-                cond = (numerics[&#39;z_0&#39;] == z_0) &amp; (numerics[&#39;St&#39;] == St) \
+                # create condition and lambdas to help filter through numerical data
+                condition = (numerics[&#39;z_0&#39;] == z_0) &amp; (numerics[&#39;St&#39;] == St) \
                                                                         &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == history) \
                                                                         &amp; (numerics[&#39;h\&#39;&#39;] == h) \
                                                                         &amp; (numerics[&#39;A\&#39;&#39;] == A) \
                                                                         &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
                                                                         &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
+                get_single = lambda name : numerics[name].where(condition).dropna()\
+                                                                                                 .iloc[0]
+                get_series = lambda name : numerics[name].where(condition).dropna()\
+                                                                                                  .to_numpy()
                 # retrieve relevant data
-                k = numerics[&#39;k\&#39;&#39;].where(cond).dropna().iloc[0]
-                A = numerics[&#39;A\&#39;&#39;].where(cond).dropna().iloc[0]
-                U = numerics[&#39;U\&#39;&#39;].where(cond).dropna().iloc[0]
-                x = numerics[&#39;x&#39;].where(cond).dropna().to_numpy()
-                z = numerics[&#39;z&#39;].where(cond).dropna().to_numpy()
-                xdot = numerics[&#39;xdot&#39;].where(cond).dropna().to_numpy()
-                t = numerics[&#39;t&#39;].where(cond).dropna().to_numpy()
+                k = get_single(&#39;k\&#39;&#39;)
+                A = get_single(&#39;A\&#39;&#39;)
+                U = get_single(&#39;U\&#39;&#39;)
+                x = get_series(&#39;x&#39;)
+                z = get_series(&#39;z&#39;)
+                xdot = get_series(&#39;xdot&#39;)
+                t = get_series(&#39;t&#39;)
 
                 # compute and scale drift velocity
                 _, z_crossings, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
@@ -242,21 +256,25 @@ varying buoyancies in linear water waves and saves the results to the
         for i in itertools.product(betas, [True, False]):
                 beta, history = i
 
-                # create condition to help filter through numerical data
-                cond = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
+                # create condition and lambdas to help filter through numerical data
+                condition = (numerics[&#39;St&#39;] == St) &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                 &amp; (numerics[&#39;history&#39;] == history) \
                                                                 &amp; (numerics[&#39;h\&#39;&#39;] == h) \
                                                                 &amp; (numerics[&#39;A\&#39;&#39;] == A) \
                                                                 &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
                                                                 &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
+                get_single = lambda name : numerics[name].where(condition).dropna()\
+                                                                                                 .iloc[0]
+                get_series = lambda name : numerics[name].where(condition).dropna()\
+                                                                                                  .to_numpy()
                 # retrieve relevant data
-                k = numerics[&#39;k\&#39;&#39;].where(cond).dropna().iloc[0]
-                A = numerics[&#39;A\&#39;&#39;].where(cond).dropna().iloc[0]
-                U = numerics[&#39;U\&#39;&#39;].where(cond).dropna().iloc[0]
-                x = numerics[&#39;x&#39;].where(cond).dropna().to_numpy()
-                z = numerics[&#39;z&#39;].where(cond).dropna().to_numpy()
-                xdot = numerics[&#39;xdot&#39;].where(cond).dropna().to_numpy()
-                t = numerics[&#39;t&#39;].where(cond).dropna().to_numpy()
+                k = get_single(&#39;k\&#39;&#39;)
+                A = get_single(&#39;A\&#39;&#39;)
+                U = get_single(&#39;U\&#39;&#39;)
+                x = get_series(&#39;x&#39;)
+                z = get_series(&#39;z&#39;)
+                xdot = get_series(&#39;xdot&#39;)
+                t = get_series(&#39;t&#39;)
 
                 # compute and scale drift velocity
                 _, z_crossings, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)

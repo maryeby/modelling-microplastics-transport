@@ -25,13 +25,16 @@ def main():
 	trajectory_int_times = int_times.iloc[:21]
 
 	# generate plots
+	fs, lfs = 14, 16
 	plt.figure(1)
-	plt.title('Particle Trajectory: Rigid Body Rotation',
-			  fontsize=18)
-	plt.xlabel(r'$x$', fontsize=16)
-	plt.ylabel(r'$z$', fontsize=16)
-	plt.xticks(fontsize=14)
-	plt.yticks(fontsize=14)
+#	plt.title('Particle Trajectory: Rigid Body Rotation',
+#			  fontsize=18)
+	plt.xlabel(r'$x$', fontsize=lfs)
+	plt.ylabel(r'$z$', fontsize=lfs)
+	plt.xticks(fontsize=fs)
+	plt.yticks(fontsize=fs)
+	plt.gca().set_aspect('equal')
+	plt.gca().set_box_aspect(1)
 	plt.minorticks_on()
 	plt.axis([-2, 2.5, -2.5, 2])
 
@@ -42,43 +45,44 @@ def main():
 	plt.plot('third_x', 'third_z', c='k', ls=':', data=trajectory_numerics,
 			 label='third order')
 	plt.plot('x_ana', 'z_ana', c='k', data=trajectory_analytics, label='exact')
-	plt.scatter('first_x', 'first_z', c='k', marker='x', data=daitche,
-				label='1st order extracted')
+#	plt.scatter('first_x', 'first_z', c='k', marker='x', data=daitche,
+#				label='1st order extracted')
 	plt.scatter('int_x', 'int_z', c='k', marker='o', data=trajectory_int_times,
-				label='integer time steps')
-	plt.legend(fontsize=14)
+				label='')
+#				label='integer time steps')
+	plt.legend(fontsize=fs, loc='center', frameon=False)
 	plt.tight_layout()
 
 	plt.figure(2)
-	plt.title(r'Relative Error with $\Delta t =$1e-2: Rigid Body Rotation',
-			  fontsize=18)
-	plt.xlabel(r'$t$', fontsize=16)
-	plt.ylabel(r'$E_{rel}$', fontsize=16)
-	plt.xticks(fontsize=14)
-	plt.yticks(fontsize=14)
+#	plt.title(r'Relative Error with $\Delta t =$1e-2: Rigid Body Rotation',
+#			  fontsize=18)
+	plt.xlabel(r'$t$', fontsize=lfs)
+	plt.ylabel(r'$E_{rel}$', fontsize=lfs)
+	plt.xticks(fontsize=fs)
+	plt.yticks(fontsize=fs)
 	plt.yscale('log')
 	plt.minorticks_on()
 	plt.axis([0, 100, 1e-7, 1e0])
 
-	plt.plot('t1', 'rel_error1', c='grey', data=daitche, label='')
-	plt.plot('t2', 'rel_error2', c='grey', data=daitche, label='')
-	plt.plot('t3', 'rel_error3', c='grey', data=daitche, label='')
+	plt.plot('t1', 'rel_error1', c='silver', data=daitche, label='')
+	plt.plot('t2', 'rel_error2', c='silver', data=daitche, label='')
+	plt.plot('t3', 'rel_error3', c='silver', data=daitche, label='')
 	plt.plot('t', 'e_rel1', '--k', mfc='none', data=rel_error,
 			 label='first order')
 	plt.plot('t', 'e_rel2', '-.k', data=rel_error,
 			 label='second order')
 	plt.plot('t', 'e_rel3', ':k', mfc='none', data=rel_error,
 			 label='third order')
-	plt.legend(fontsize=14)
+	plt.legend(fontsize=fs)
 	plt.tight_layout()
 
 	plt.figure(3)
 	plt.title('Global Error: Rigid Body Rotation',
 			  fontsize=18)
-	plt.xlabel(r'$\Delta t$', fontsize=16)
-	plt.ylabel(r'$\mathcal{\epsilon}$', fontsize=16)
-	plt.xticks(fontsize=14)
-	plt.yticks(fontsize=14)
+	plt.xlabel(r'$\Delta t$', fontsize=lfs)
+	plt.ylabel(r'$\mathcal{\epsilon}$', fontsize=lfs)
+	plt.xticks(fontsize=fs)
+	plt.yticks(fontsize=fs)
 	plt.xscale('log')
 	plt.yscale('log')
 	plt.minorticks_on()
@@ -94,16 +98,16 @@ def main():
 			 label='second order')
 	plt.plot('delta_t', 'global_error3', '.:k', data=global_error,
 			 label='third order')
-	plt.legend(fontsize=14)
+	plt.legend(fontsize=fs)
 	plt.tight_layout()
 
 	plt.figure(4)
 	plt.title('Timestep Size vs Computation Time: Rigid Body Rotation',
 			  fontsize=18)
-	plt.xlabel(r'$\Delta t$', fontsize=16)
-	plt.ylabel('computation time (s)', fontsize=16)
-	plt.xticks(fontsize=14)
-	plt.yticks(fontsize=14)
+	plt.xlabel(r'$\Delta t$', fontsize=lfs)
+	plt.ylabel('computation time (s)', fontsize=lfs)
+	plt.xticks(fontsize=fs)
+	plt.yticks(fontsize=fs)
 	plt.xscale('log')
 	plt.yscale('log')
 	plt.minorticks_on()

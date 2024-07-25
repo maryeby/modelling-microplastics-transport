@@ -72,7 +72,7 @@ def main():
                 history = True if history_input[0].upper() == &#39;T&#39; else False
 
                 # retrieve relevant numerical results
-                cond = (numerics[&#39;x_0&#39;] == x_0) &amp; (numerics[&#39;z_0&#39;] == z_0) \
+                condition = (numerics[&#39;x_0&#39;] == x_0) &amp; (numerics[&#39;z_0&#39;] == z_0) \
                                                                         &amp; (numerics[&#39;St&#39;] == St) \
                                                                         &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == history) \
@@ -80,10 +80,11 @@ def main():
                                                                         &amp; (numerics[&#39;A\&#39;&#39;] == A) \
                                                                         &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
                                                                         &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
-                x = numerics[&#39;x&#39;].where(cond).dropna().tolist()
-                z = numerics[&#39;z&#39;].where(cond).dropna().tolist()
-                t = numerics[&#39;t&#39;].where(cond).dropna().tolist()
-                xdot = numerics[&#39;xdot&#39;].where(cond).dropna().tolist()
+                get = lambda name : numerics[name].where(condition).dropna().tolist()
+                x = get(&#39;x&#39;)
+                z = get(&#39;z&#39;)
+                t = get(&#39;t&#39;)
+                xdot = get(&#39;xdot&#39;)
 
                 # print whether the data was found
                 answer = &#39;No&#39;
@@ -99,12 +100,14 @@ def main():
                         x_crossings, z_crossings, _, _, _ = ts.compute_drift_velocity(x, z,
                                                                                                                                           xdot, t)
                         # initialize figure
+                        fs, lfs = 14, 16 # font sizes
                         plt.figure()
-                        plt.title(r&#39;Particle Trajectory&#39;, fontsize=18)
-                        plt.xlabel(&#39;x&#39;, fontsize=14)
-                        plt.ylabel(&#39;z&#39;, fontsize=14)
-                        plt.xticks(fontsize=14)
-                        plt.yticks(fontsize=14)
+#                       plt.title(r&#39;Particle Trajectory&#39;, fontsize=18)
+                        plt.xlabel(&#39;x&#39;, fontsize=lfs)
+                        plt.ylabel(&#39;z&#39;, fontsize=lfs)
+                        plt.gca().set_box_aspect(1)
+                        plt.xticks(fontsize=fs)
+                        plt.yticks(fontsize=fs)
                         plt.minorticks_on()
 
                         # plot particle trajectory and period endpoints
@@ -173,7 +176,7 @@ user is given the option to plot the trajectory of the particle.</p></div>
                 history = True if history_input[0].upper() == &#39;T&#39; else False
 
                 # retrieve relevant numerical results
-                cond = (numerics[&#39;x_0&#39;] == x_0) &amp; (numerics[&#39;z_0&#39;] == z_0) \
+                condition = (numerics[&#39;x_0&#39;] == x_0) &amp; (numerics[&#39;z_0&#39;] == z_0) \
                                                                         &amp; (numerics[&#39;St&#39;] == St) \
                                                                         &amp; (numerics[&#39;beta&#39;] == beta) \
                                                                         &amp; (numerics[&#39;history&#39;] == history) \
@@ -181,10 +184,11 @@ user is given the option to plot the trajectory of the particle.</p></div>
                                                                         &amp; (numerics[&#39;A\&#39;&#39;] == A) \
                                                                         &amp; (numerics[&#39;wavelength\&#39;&#39;] == wavelength) \
                                                                         &amp; (numerics[&#39;delta_t\&#39;&#39;] == delta_t)
-                x = numerics[&#39;x&#39;].where(cond).dropna().tolist()
-                z = numerics[&#39;z&#39;].where(cond).dropna().tolist()
-                t = numerics[&#39;t&#39;].where(cond).dropna().tolist()
-                xdot = numerics[&#39;xdot&#39;].where(cond).dropna().tolist()
+                get = lambda name : numerics[name].where(condition).dropna().tolist()
+                x = get(&#39;x&#39;)
+                z = get(&#39;z&#39;)
+                t = get(&#39;t&#39;)
+                xdot = get(&#39;xdot&#39;)
 
                 # print whether the data was found
                 answer = &#39;No&#39;
@@ -200,12 +204,14 @@ user is given the option to plot the trajectory of the particle.</p></div>
                         x_crossings, z_crossings, _, _, _ = ts.compute_drift_velocity(x, z,
                                                                                                                                           xdot, t)
                         # initialize figure
+                        fs, lfs = 14, 16 # font sizes
                         plt.figure()
-                        plt.title(r&#39;Particle Trajectory&#39;, fontsize=18)
-                        plt.xlabel(&#39;x&#39;, fontsize=14)
-                        plt.ylabel(&#39;z&#39;, fontsize=14)
-                        plt.xticks(fontsize=14)
-                        plt.yticks(fontsize=14)
+#                       plt.title(r&#39;Particle Trajectory&#39;, fontsize=18)
+                        plt.xlabel(&#39;x&#39;, fontsize=lfs)
+                        plt.ylabel(&#39;z&#39;, fontsize=lfs)
+                        plt.gca().set_box_aspect(1)
+                        plt.xticks(fontsize=fs)
+                        plt.yticks(fontsize=fs)
                         plt.minorticks_on()
 
                         # plot particle trajectory and period endpoints

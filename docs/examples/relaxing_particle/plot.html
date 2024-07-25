@@ -45,51 +45,50 @@ def main():
 
         # generate plots
         plt.figure()
-        plt.title(&#39;Relaxing Particle Velocity with Third Order History Effects&#39;,
-                          fontsize=18)
-        plt.xlabel(r&#39;$t$&#39;, fontsize=16)
-        plt.ylabel(r&#39;$\dot{x}$&#39;, fontsize=16)
-        plt.xticks(fontsize=14)
-        plt.yticks(fontsize=14)
+        fs, lfs = 14, 16
+        colors = [&#39;#d7301f&#39;, &#39;#fc8d59&#39;, &#39;#fdcc8a&#39;]
+#       plt.title(&#39;Relaxing Particle Velocity with Third Order History Effects&#39;,
+#                         fontsize=18)
+        plt.xlabel(r&#39;$t$&#39;, fontsize=lfs)
+        plt.ylabel(r&#39;$\dot{x}$&#39;, fontsize=lfs)
+        plt.xticks(fontsize=fs)
+        plt.yticks(fontsize=fs)
         plt.minorticks_on()
         plt.yscale(&#39;log&#39;)
         plt.axis([0, 14.5, 1e-5, 1e1])
 
-        plt.plot(&#39;t&#39;, &#39;light_xdot_history&#39;, c=&#39;hotpink&#39;, data=numerics,
+        plt.plot(&#39;t&#39;, &#39;light_xdot_history&#39;, c=colors[0], data=numerics,
                          label=r&#39;$\beta = 0.01$&#39;)
-        plt.plot(&#39;t&#39;, &#39;light_xdot&#39;, c=&#39;hotpink&#39;, ls=&#39;--&#39;, data=numerics, label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;light&#39;, c=&#39;hotpink&#39;, ls=&#39;:&#39;, data=asymptotics, label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;neutral_xdot_history&#39;, c=&#39;mediumpurple&#39;, data=numerics,
+        plt.plot(&#39;t&#39;, &#39;light_xdot&#39;, c=colors[0], ls=&#39;--&#39;, data=numerics, label=&#39;&#39;)
+        plt.plot(&#39;t&#39;, &#39;light&#39;, c=colors[0], ls=&#39;:&#39;, data=asymptotics, label=&#39;&#39;)
+        plt.plot(&#39;t&#39;, &#39;neutral_xdot_history&#39;, c=colors[1], data=numerics,
                          label=r&#39;$\beta = 1$&#39;)
-        plt.plot(&#39;t&#39;, &#39;neutral_xdot&#39;, c=&#39;mediumpurple&#39;, ls=&#39;--&#39;, data=numerics,
+        plt.plot(&#39;t&#39;, &#39;neutral_xdot&#39;, c=colors[1], ls=&#39;--&#39;, data=numerics,
                          label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;neutral&#39;, c=&#39;mediumpurple&#39;, ls=&#39;:&#39;, data=asymptotics,
-                         label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;heavy_xdot_history&#39;, c=&#39;cornflowerblue&#39;, data=numerics,
+        plt.plot(&#39;t&#39;, &#39;neutral&#39;, c=colors[1], ls=&#39;:&#39;, data=asymptotics, label=&#39;&#39;)
+        plt.plot(&#39;t&#39;, &#39;heavy_xdot_history&#39;, c=colors[2], data=numerics,
                          label=r&#39;$\beta = 5$&#39;)
-        plt.plot(&#39;t&#39;, &#39;heavy_xdot&#39;, c=&#39;cornflowerblue&#39;, ls=&#39;--&#39;, data=numerics,
-                         label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;heavy&#39;, c=&#39;cornflowerblue&#39;, ls=&#39;:&#39;, data=asymptotics,
-                         label=&#39;&#39;)
-        plt.plot(&#39;light_t_history&#39;, &#39;light_xdot_history&#39;, c=&#39;silver&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;light_t&#39;, &#39;light_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;light_t_asymp&#39;, &#39;light_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
-                         data=prasath, label=&#39;&#39;)
-        plt.plot(&#39;neutral_t_history&#39;, &#39;neutral_xdot_history&#39;, c=&#39;silver&#39;,
-                         data=prasath, label=&#39;&#39;)
-        plt.plot(&#39;neutral_t&#39;, &#39;neutral_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;neutral_t_asymp&#39;, &#39;neutral_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
-                         data=prasath, label=&#39;&#39;)
-        plt.plot(&#39;heavy_t_history&#39;, &#39;heavy_xdot_history&#39;, c=&#39;silver&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;heavy_t&#39;, &#39;heavy_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;heavy_t_asymp&#39;, &#39;heavy_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
-                         data=prasath, label=&#39;&#39;)
-        plt.legend(fontsize=14)
+        plt.plot(&#39;t&#39;, &#39;heavy_xdot&#39;, c=colors[2], ls=&#39;--&#39;, data=numerics, label=&#39;&#39;)
+        plt.plot(&#39;t&#39;, &#39;heavy&#39;, c=colors[2], ls=&#39;:&#39;, data=asymptotics, label=&#39;&#39;)
+#       plt.plot(&#39;light_t_history&#39;, &#39;light_xdot_history&#39;, c=&#39;silver&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;light_t&#39;, &#39;light_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;light_t_asymp&#39;, &#39;light_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
+#                        data=prasath, label=&#39;&#39;)
+#       plt.plot(&#39;neutral_t_history&#39;, &#39;neutral_xdot_history&#39;, c=&#39;silver&#39;,
+#                        data=prasath, label=&#39;&#39;)
+#       plt.plot(&#39;neutral_t&#39;, &#39;neutral_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;neutral_t_asymp&#39;, &#39;neutral_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
+#                        data=prasath, label=&#39;&#39;)
+#       plt.plot(&#39;heavy_t_history&#39;, &#39;heavy_xdot_history&#39;, c=&#39;silver&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;heavy_t&#39;, &#39;heavy_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;heavy_t_asymp&#39;, &#39;heavy_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
+#                        data=prasath, label=&#39;&#39;)
+        plt.legend(fontsize=fs)
         plt.tight_layout()
         plt.show()
 
@@ -126,51 +125,50 @@ particle in a quiescent flow.</p></div>
 
         # generate plots
         plt.figure()
-        plt.title(&#39;Relaxing Particle Velocity with Third Order History Effects&#39;,
-                          fontsize=18)
-        plt.xlabel(r&#39;$t$&#39;, fontsize=16)
-        plt.ylabel(r&#39;$\dot{x}$&#39;, fontsize=16)
-        plt.xticks(fontsize=14)
-        plt.yticks(fontsize=14)
+        fs, lfs = 14, 16
+        colors = [&#39;#d7301f&#39;, &#39;#fc8d59&#39;, &#39;#fdcc8a&#39;]
+#       plt.title(&#39;Relaxing Particle Velocity with Third Order History Effects&#39;,
+#                         fontsize=18)
+        plt.xlabel(r&#39;$t$&#39;, fontsize=lfs)
+        plt.ylabel(r&#39;$\dot{x}$&#39;, fontsize=lfs)
+        plt.xticks(fontsize=fs)
+        plt.yticks(fontsize=fs)
         plt.minorticks_on()
         plt.yscale(&#39;log&#39;)
         plt.axis([0, 14.5, 1e-5, 1e1])
 
-        plt.plot(&#39;t&#39;, &#39;light_xdot_history&#39;, c=&#39;hotpink&#39;, data=numerics,
+        plt.plot(&#39;t&#39;, &#39;light_xdot_history&#39;, c=colors[0], data=numerics,
                          label=r&#39;$\beta = 0.01$&#39;)
-        plt.plot(&#39;t&#39;, &#39;light_xdot&#39;, c=&#39;hotpink&#39;, ls=&#39;--&#39;, data=numerics, label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;light&#39;, c=&#39;hotpink&#39;, ls=&#39;:&#39;, data=asymptotics, label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;neutral_xdot_history&#39;, c=&#39;mediumpurple&#39;, data=numerics,
+        plt.plot(&#39;t&#39;, &#39;light_xdot&#39;, c=colors[0], ls=&#39;--&#39;, data=numerics, label=&#39;&#39;)
+        plt.plot(&#39;t&#39;, &#39;light&#39;, c=colors[0], ls=&#39;:&#39;, data=asymptotics, label=&#39;&#39;)
+        plt.plot(&#39;t&#39;, &#39;neutral_xdot_history&#39;, c=colors[1], data=numerics,
                          label=r&#39;$\beta = 1$&#39;)
-        plt.plot(&#39;t&#39;, &#39;neutral_xdot&#39;, c=&#39;mediumpurple&#39;, ls=&#39;--&#39;, data=numerics,
+        plt.plot(&#39;t&#39;, &#39;neutral_xdot&#39;, c=colors[1], ls=&#39;--&#39;, data=numerics,
                          label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;neutral&#39;, c=&#39;mediumpurple&#39;, ls=&#39;:&#39;, data=asymptotics,
-                         label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;heavy_xdot_history&#39;, c=&#39;cornflowerblue&#39;, data=numerics,
+        plt.plot(&#39;t&#39;, &#39;neutral&#39;, c=colors[1], ls=&#39;:&#39;, data=asymptotics, label=&#39;&#39;)
+        plt.plot(&#39;t&#39;, &#39;heavy_xdot_history&#39;, c=colors[2], data=numerics,
                          label=r&#39;$\beta = 5$&#39;)
-        plt.plot(&#39;t&#39;, &#39;heavy_xdot&#39;, c=&#39;cornflowerblue&#39;, ls=&#39;--&#39;, data=numerics,
-                         label=&#39;&#39;)
-        plt.plot(&#39;t&#39;, &#39;heavy&#39;, c=&#39;cornflowerblue&#39;, ls=&#39;:&#39;, data=asymptotics,
-                         label=&#39;&#39;)
-        plt.plot(&#39;light_t_history&#39;, &#39;light_xdot_history&#39;, c=&#39;silver&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;light_t&#39;, &#39;light_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;light_t_asymp&#39;, &#39;light_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
-                         data=prasath, label=&#39;&#39;)
-        plt.plot(&#39;neutral_t_history&#39;, &#39;neutral_xdot_history&#39;, c=&#39;silver&#39;,
-                         data=prasath, label=&#39;&#39;)
-        plt.plot(&#39;neutral_t&#39;, &#39;neutral_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;neutral_t_asymp&#39;, &#39;neutral_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
-                         data=prasath, label=&#39;&#39;)
-        plt.plot(&#39;heavy_t_history&#39;, &#39;heavy_xdot_history&#39;, c=&#39;silver&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;heavy_t&#39;, &#39;heavy_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
-                         label=&#39;&#39;)
-        plt.plot(&#39;heavy_t_asymp&#39;, &#39;heavy_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
-                         data=prasath, label=&#39;&#39;)
-        plt.legend(fontsize=14)
+        plt.plot(&#39;t&#39;, &#39;heavy_xdot&#39;, c=colors[2], ls=&#39;--&#39;, data=numerics, label=&#39;&#39;)
+        plt.plot(&#39;t&#39;, &#39;heavy&#39;, c=colors[2], ls=&#39;:&#39;, data=asymptotics, label=&#39;&#39;)
+#       plt.plot(&#39;light_t_history&#39;, &#39;light_xdot_history&#39;, c=&#39;silver&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;light_t&#39;, &#39;light_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;light_t_asymp&#39;, &#39;light_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
+#                        data=prasath, label=&#39;&#39;)
+#       plt.plot(&#39;neutral_t_history&#39;, &#39;neutral_xdot_history&#39;, c=&#39;silver&#39;,
+#                        data=prasath, label=&#39;&#39;)
+#       plt.plot(&#39;neutral_t&#39;, &#39;neutral_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;neutral_t_asymp&#39;, &#39;neutral_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
+#                        data=prasath, label=&#39;&#39;)
+#       plt.plot(&#39;heavy_t_history&#39;, &#39;heavy_xdot_history&#39;, c=&#39;silver&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;heavy_t&#39;, &#39;heavy_xdot&#39;, c=&#39;silver&#39;, ls=&#39;--&#39;, data=prasath,
+#                        label=&#39;&#39;)
+#       plt.plot(&#39;heavy_t_asymp&#39;, &#39;heavy_xdot_asymp&#39;, c=&#39;silver&#39;, ls=&#39;:&#39;,
+#                        data=prasath, label=&#39;&#39;)
+        plt.legend(fontsize=fs)
         plt.tight_layout()
         plt.show()</code></pre>
 </details>

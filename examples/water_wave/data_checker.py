@@ -71,12 +71,14 @@ def main():
 			x_crossings, z_crossings, _, _, _ = ts.compute_drift_velocity(x, z,
 																	  xdot, t)
 			# initialize figure
+			fs, lfs = 14, 16 # font sizes
 			plt.figure()
-			plt.title(r'Particle Trajectory', fontsize=18)
-			plt.xlabel('x', fontsize=14)
-			plt.ylabel('z', fontsize=14)
-			plt.xticks(fontsize=14)
-			plt.yticks(fontsize=14)
+#			plt.title(r'Particle Trajectory', fontsize=18)
+			plt.xlabel('x', fontsize=lfs)
+			plt.ylabel('z', fontsize=lfs)
+			plt.gca().set_box_aspect(1)
+			plt.xticks(fontsize=fs)
+			plt.yticks(fontsize=fs)
 			plt.minorticks_on()
 
 			# plot particle trajectory and period endpoints

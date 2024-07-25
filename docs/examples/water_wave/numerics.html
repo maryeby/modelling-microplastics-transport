@@ -28,6 +28,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import sys 
+import os
 import warnings
 sys.path.append(&#39;/home/s2182576/Documents/academia/thesis/&#39;
                                 + &#39;modelling-microplastics-transport&#39;)
@@ -43,35 +44,9 @@ from transport_framework import particle as prt
 from models import water_wave as fl
 from models import my_system as ts
 
-DATA_PATH = &#39;../data/water_wave/&#39;
-
-def main():
-        &#34;&#34;&#34;
-        This program produces numerical solutions for the motion of inertial
-        particles in linear water waves and saves the results to the
-        `data/water_wave` directory.
-        &#34;&#34;&#34;
-        # initialize parameters
-        stokes_num = 0.01
-        beta = 1
-        depth, amplitude, wavelength = 10, 0.02, 1
-        x_0 = [(0, -0.02), (0, -0.25), (0, -0.625), (0, -1), (0, -1.375),
-                   (0, -1.75), (0, -2.125), (0, -2.5), (0, -2.875), (0, -3.25),
-                   (0, -3.625)]
-        num_periods, delta_t = 10, 5e-3
-        my_wave = fl.WaterWave(depth, amplitude, wavelength)
-
-        # run the simulations with the appropriate function
-        if type(stokes_num) is list:
-                multi_stokes_nums(x_0, stokes_num, my_wave, beta, num_periods, delta_t) 
-        elif type(beta) is list:
-                multi_betas(x_0, stokes_num, my_wave, beta, num_periods, delta_t)       
-        elif type(x_0) is list:
-                multi_positions(x_0, stokes_num, my_wave, beta, num_periods, delta_t)
-        else:
-                single_simulation(x_0, stokes_num, my_wave, beta, num_periods, delta_t)
-
-def single_simulation(position, stokes_num, wave, beta, num_periods, delta_t):
+def single_simulation(position, stokes_num, depth, amplitude, wavelength, beta,
+                                          num_periods, delta_t, filepath, mode=&#39;w&#39;, crop=[],
+                                          hide_progress=False):
         &#34;&#34;&#34;
         Runs a numerical simulation without history effects and a numerical
         simulation with history effects.
@@ -82,58 +57,62 @@ def single_simulation(position, stokes_num, wave, beta, num_periods, delta_t):
                 The initial (x_0, z_0) position of the particle.
         stokes_num : float
                 The Stokes number to use for the initialization of the particle.
-        wave : Wave (obj)
-                The wave through which the particle is transported.
+        depth : float
+                The depth of the fluid *h&#39;*.
+        amplitude : float
+                The amplitude of the wave *A&#39;*.
+        wavelength : float
+                The wavelength *λ&#39;*.
         beta : float
                 The ratio between the particle and fluid densities.
         num_periods : int
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time steps used for integration.
+        filepath : str
+                The path of the file where results will be stored.
+        mode : str, default=&#39;w&#39;
+                How to handle the results: either write &#39;w&#39;, plot &#39;p&#39;, or return &#39;r&#39;.
+        crop : list, default=[]
+                List of the variables to include in the results (includes all if empty).
+        hide_progress : boolean, default=False
+                Whether to hide the `tqdm` progress bar.
         &#34;&#34;&#34;
-        # ask the user whether to write the results or plot results without writing
-        answer = input(&#39;(W)rite the results to the data file or (P)lot the results&#39;
-                                   &#39; without writing? &#39;)
-        write_results = True if answer.upper() == &#39;W&#39; else False
-
         # run simulation without history
-        results = run_numerics(position, stokes_num, wave, beta, False, num_periods,
-                                                   delta_t, hide_progress=False)
-
-        # only write results if they contain no NaNs (skip failed simulations)
-        if write_results and results[&#39;x&#39;] is not None:
-                write_data(results)
-                history_results = run_numerics(position, stokes_num, wave, beta, True,
-                                                                           num_periods, delta_t)
-                if history_results[&#39;x&#39;] is not None:
-                        write_data(history_results)
-
-        # only plot results if they contain no NaNs (skip failed simulations)
-        elif not write_results and results[&#39;x&#39;] is not None:
-                # initialize plot
-                plt.figure()
-                plt.title(r&#39;Particle Trajectory&#39;, fontsize=18)
-                plt.xlabel(&#39;x&#39;, fontsize=14)
-                plt.ylabel(&#39;z&#39;, fontsize=14)
-                plt.xticks(fontsize=14)
-                plt.yticks(fontsize=14)
-                plt.minorticks_on()
-
-                # plot results without history
-                plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, data=results, label=&#39;without history&#39;)
-                history_results = run_numerics(stokes_num, wave, beta, True,
-                                                                           num_periods, delta_t)
-                # plot results with history
-                if history_results[&#39;x&#39;] is not None:
-                        print(&#39;Plotting...&#39;)
-                        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, ls=&#39;--&#39;, data=history_results,
-                                         label=&#39;with history&#39;)
-                        plt.legend()
-                        plt.show()
+        wave = fl.WaterWave(depth, amplitude, wavelength)
+        results1 = run_simulation(position, stokes_num, wave, beta, False,
+                                                          num_periods, delta_t, hide_progress)
+        if results1[&#39;x&#39;] is None:
+                print(&#39;Simulation failed without history effects.&#39;)
         else:
-                print(&#39;Error: no results to plot.&#39;)
+                if mode == &#39;w&#39;: write_data(results1, filepath)
+                results2 = run_simulation(position, stokes_num, wave, beta, True,
+                                                                  num_periods, delta_t, hide_progress)
+                if results2[&#39;x&#39;] is None:
+                        print(&#39;Simulation failed with history effects.&#39;)
+                else: # both simulations succeeded
+                        if mode == &#39;w&#39;:
+                                write_data(results2, filepath)
+                        elif mode == &#39;p&#39;:
+                                plot_trajectory(results1, results2)
+                                path_list = filepath.split(&#39;/&#39;)
+                                filename = path_list[-1]
+                                user_input = input(f&#39;Write data to {filename}? (Y/N): &#39;)
+                                if user_input.upper() == &#39;Y&#39;:
+                                        write_data(results1, filepath)
+                                        write_data(results2, filepath)
+                        elif mode == &#39;r&#39;:
+                                if not crop:
+                                        return list(results1.values()), list(results2.values())
+                                else:
+                                        return [results1[key] for key in crop], \
+                                                   [results2[key] for key in crop]
+                        else:
+                                print(&#39;Error: mode incorrectly specified.&#39;)
+                                print(&#39;Mode options: write \&#39;w\&#39;, plot \&#39;p\&#39;, or return \&#39;r\&#39;.&#39;)
 
-def multi_stokes_nums(position, stokes_nums, wave, beta, num_periods, delta_t):
+def multi_stokes_nums(position, stokes_nums, depth, amplitude, wavelength, beta,
+                                          num_periods, delta_t, filepath):
         &#34;&#34;&#34;
         Runs a numerical simulation without history effects and a numerical
         simulation with history effects for each Stokes number, and writes the
@@ -145,56 +124,65 @@ def multi_stokes_nums(position, stokes_nums, wave, beta, num_periods, delta_t):
                 The initial (x_0, z_0) position of the particle.
         stokes_nums : list
                 A list of the Stokes numbers to use for the particle initializations.
-        wave : Wave (obj)
-                The wave through which the particle is transported.
+        depth : float
+                The depth of the fluid *h&#39;*.
+        amplitude : float
+                The amplitude of the wave *A&#39;*.
+        wavelength : float
+                The wavelength *λ&#39;*.
         beta : float
                 The ratio between the particle and fluid densities.
         num_periods : int
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time step used for integration.
+        filepath : str
+                The path of the file where results will be stored.
         &#34;&#34;&#34;
-        num_tasks = len(stokes_nums)
+        tasks = len(stokes_nums)
+        wave = fl.WaterWave(depth, amplitude, wavelength)
 
         # run simulations without history effects
         params = zip(itertools.repeat(position), stokes_nums,
                                  itertools.repeat(wave), itertools.repeat(beta),
                                  itertools.repeat(False), itertools.repeat(num_periods),
                                  itertools.repeat(delta_t))
-        results = progress_starmap(run_numerics, params, total=num_tasks)
+        results1 = progress_starmap(run_simulation, params, n_cpu=4, total=tasks)
 
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(results)):
-                if results[i][&#39;x&#39;] is None:
+        for i in range(len(results1)):
+                if results1[i][&#39;x&#39;] is None:
                         stokes_nums[i] = None
-                        results[i] = None
-                        num_tasks -= 1
-        results = [i for i in results if i is not None]
+                        results1[i] = None
+                        tasks -= 1
+        results1 = [i for i in results1 if i is not None]
         stokes_nums = [i for i in stokes_nums if i is not None]
 
         # run simulations with history effects unless non-history simulations failed
-        history_results = []
-        if num_tasks != 0:
-                for i in range(num_tasks):
-                        print(f&#39;\nRunning simulation {i + 1}/{num_tasks}...&#39;)
-                        result = run_numerics(position, stokes_nums[i], wave, beta, True,
-                                                                  num_periods, delta_t)
-                        history_results.append(result)
+        results2 = []
+        if tasks != 0:
+                for i in range(tasks):
+                        print(f&#39;\nRunning simulation {i + 1}/{tasks}...&#39;)
+                        result = run_simulation(position, stokes_nums[i], wave, beta, True,
+                                                                    num_periods, delta_t)
+                        results2.append(result)
         
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(history_results)):
-                if history_results[i][&#39;x&#39;] is None:
-                        results[i] = None
-                        history_results[i] = None
-        results += history_results
-        results = [i for i in results if i is not None]
+        for i in range(len(results2)):
+                if results2[i][&#39;x&#39;] is None or results2[i][&#39;x&#39;].size == 1:
+                        print_failed_simulation(results2[i])
+                        results1[i] = None
+                        results2[i] = None
+        results1 += results2
+        results1 = [i for i in results1 if i is not None]
         
         # write successful results to data file, if there are any
-        if results:
-                for result in results:
-                        write_data(result)
+        if results1:
+                for result in results1:
+                        write_data(result, filepath)
 
-def multi_betas(position, stokes_num, wave, betas, num_periods, delta_t):
+def multi_betas(position, stokes_num, depth, amplitude, wavelength, betas,
+                                num_periods, delta_t, filepath):
         &#34;&#34;&#34;
         Runs a numerical simulation without history effects and a numerical
         simulation with history effects for each value of beta.
@@ -205,56 +193,65 @@ def multi_betas(position, stokes_num, wave, betas, num_periods, delta_t):
                 The initial (x_0, z_0) position of the particle.
         stokes_num : float
                 The Stokes number to use for the initialization of the particle.
-        wave : Wave (obj)
-                The wave through which the particle is transported.
+        depth : float
+                The depth of the fluid *h&#39;*.
+        amplitude : float
+                The amplitude of the wave *A&#39;*.
+        wavelength : float
+                The wavelength *λ&#39;*.
         betas : list
                 A list of the ratios between the particle and fluid densities.
         num_periods : int
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time step used for integration.
+        filepath : str
+                The path of the file where results will be stored.
         &#34;&#34;&#34;
-        num_tasks = len(betas)
+        tasks = len(betas)
+        wave = fl.WaterWave(depth, amplitude, wavelength)
 
         # run simulations without history effects
         params = zip(itertools.repeat(position), itertools.repeat(stokes_num),
                                  itertools.repeat(wave),
                                  betas, itertools.repeat(False),
                                  itertools.repeat(num_periods), itertools.repeat(delta_t))
-        results = progress_starmap(run_numerics, params, total=num_tasks)
+        results1 = progress_starmap(run_simulation, params, n_cpu=4, total=tasks)
 
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(results)):
-                if results[i][&#39;x&#39;] is None:
+        for i in range(len(results1)):
+                if results1[i][&#39;x&#39;] is None:
                         betas[i] = None
-                        results[i] = None
-                        num_tasks -= 1
-        results = [i for i in results if i is not None]
+                        results1[i] = None
+                        tasks -= 1
+        results1 = [i for i in results1 if i is not None]
         betas = [i for i in betas if i is not None]
 
         # run simulations with history effects unless non-history simulations failed
-        history_results = []
-        if num_tasks != 0:
-                for i in range(num_tasks):
-                        print(f&#39;\nRunning simulation {i + 1}/{num_tasks}...&#39;)
-                        result = run_numerics(position, stokes_num, wave, betas[i], True,
-                                                                  num_periods, delta_t)
-                        history_results.append(result)
+        results2 = []
+        if tasks != 0:
+                for i in range(tasks):
+                        print(f&#39;\nRunning simulation {i + 1}/{tasks}...&#39;)
+                        result = run_simulation(position, stokes_num, wave, betas[i], True,
+                                                                    num_periods, delta_t)
+                        results2.append(result)
         
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(history_results)):
-                if history_results[i][&#39;x&#39;] is None:
-                        results[i] = None
-                        history_results[i] = None
-        results += history_results
-        results = [i for i in results if i is not None]
+        for i in range(len(results2)):
+                if results2[i][&#39;x&#39;] is None or results2[i][&#39;x&#39;].size == 1:
+                        print_failed_simulation(results2[i])
+                        results1[i] = None
+                        results2[i] = None
+        results1 += results2
+        results1 = [i for i in results1 if i is not None]
         
         # write successful results to data file, if there are any
-        if results:
-                for result in results:
-                        write_data(result)
+        if results1:
+                for result in results1:
+                        write_data(result, filepath)
 
-def multi_positions(x_0s, stokes_num, wave, beta, num_periods, delta_t):
+def multi_positions(x_0s, stokes_num, depth, amplitude, wavelength, beta,
+                                        num_periods, delta_t, filepath):
         &#34;&#34;&#34;
         Runs a numerical simulation without history effects and a numerical
         simulation with history effects for each value of beta.
@@ -265,56 +262,64 @@ def multi_positions(x_0s, stokes_num, wave, beta, num_periods, delta_t):
                 The initial (x_0, z_0) positions of the particle.
         stokes_num : float
                 The Stokes number to use for the initialization of the particle.
-        wave : Wave (obj)
-                The wave through which the particle is transported.
+        depth : float
+                The depth of the fluid *h&#39;*.
+        amplitude : float
+                The amplitude of the wave *A&#39;*.
+        wavelength : float
+                The wavelength *λ&#39;*.
         beta : float
                 The ratio between the particle and fluid densities.
         num_periods : int
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time step used for integration.
+        filepath : str
+                The path of the file where results will be stored.
         &#34;&#34;&#34;
-        num_tasks = len(x_0s)
+        tasks = len(x_0s)
+        wave = fl.WaterWave(depth, amplitude, wavelength)
 
         # run simulations without history effects
         params = zip(x_0s, itertools.repeat(stokes_num), itertools.repeat(wave),
                                  itertools.repeat(beta), itertools.repeat(False),
                                  itertools.repeat(num_periods), itertools.repeat(delta_t))
-        results = progress_starmap(run_numerics, params, total=num_tasks)
+        results1 = progress_starmap(run_simulation, params, n_cpu=4, total=tasks)
 
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(results)):
-                if results[i][&#39;x&#39;] is None:
+        for i in range(len(results1)):
+                if results1[i][&#39;x&#39;] is None:
                         x_0s[i] = None
-                        results[i] = None
-                        num_tasks -= 1
-        results = [i for i in results if i is not None]
+                        results1[i] = None
+                        tasks -= 1
+        results1 = [i for i in results1 if i is not None]
         x_0s = [i for i in x_0s if i is not None]
 
         # run simulations with history effects unless non-history simulations failed
-        history_results = []
-        if num_tasks != 0:
-                for i in range(num_tasks):
-                        print(f&#39;\nRunning simulation {i + 1}/{num_tasks}...&#39;)
-                        result = run_numerics(x_0s[i], stokes_num, wave, beta, True,
-                                                                  num_periods, delta_t)
-                        history_results.append(result)
+        results2 = []
+        if tasks != 0:
+                for i in range(tasks):
+                        print(f&#39;\nRunning simulation {i + 1}/{tasks}...&#39;)
+                        result = run_simulation(x_0s[i], stokes_num, wave, beta, True,
+                                                                    num_periods, delta_t)
+                        results2.append(result)
         
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(history_results)):
-                if history_results[i][&#39;x&#39;] is None:
-                        results[i] = None
-                        history_results[i] = None
-        results += history_results
-        results = [i for i in results if i is not None]
+        for i in range(len(results2)):
+                if results2[i][&#39;x&#39;] is None or results2[i][&#39;x&#39;].size == 1:
+                        print_failed_simulation(results2[i])
+                        results1[i] = None
+                        results2[i] = None
+        results1 += results2
+        results1 = [i for i in results1 if i is not None]
         
         # write successful results to data file, if there are any
-        if results:
-                for result in results:
-                        write_data(result)
+        if results1:
+                for result in results1:
+                        write_data(result, filepath)
 
-def run_numerics(position, stokes_num, wave, beta, include_history, num_periods,
-                                 delta_t, hide_progress=True):
+def run_simulation(position, stokes_num, wave, beta, include_history,
+                                   num_periods, delta_t, hide_progress=True):
         &#34;&#34;&#34;
         Runs a numerical simulation for the specified parameters.
 
@@ -334,7 +339,7 @@ def run_numerics(position, stokes_num, wave, beta, include_history, num_periods,
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time step used for integration.
-        hide_progress : bool, default=True
+        hide_progress : boolean, default=True
                 Whether to hide the `tqdm` progress bar.
 
         Returns
@@ -388,36 +393,8 @@ def run_numerics(position, stokes_num, wave, beta, include_history, num_periods,
 
         # check if solutions contain any infinite values
         if np.isinf([x, z, xdot, zdot]).any():
-                # print the failed simulation and the values of its parameters
-                beta_char, lambda_char, pi_char, omega_char, deltat_char = &#39;\u03B2&#39;, \
-                                                                        &#39;\u03BB&#39;, &#39;\u03C0&#39;, &#39;\u03C9&#39;, &#39;\u0394&#39;+&#39;t&#39;
-                prime = &#39;\&#39;&#39;
-                print(&#39;\nSimulation failed&#39;)
-                print(f&#39;{&#34;x_0&#34;:10}{x_0:^10.4g}&#39;)
-                print(f&#39;{&#34;z_0&#34;:10}{z_0:^10.4g}&#39;)
-                print(f&#39;{&#34;St&#34;:10}{stokes_num:^10.4g}&#39;)
-                print(f&#39;{beta_char:10}{beta:^10.4g}&#39;)
-                print(f&#39;{&#34;history&#34;:10}{include_history!s:^10}&#39;)
-                print(f&#39;{&#34;h&#34;, prime:10}{h:^10}&#39;)
-                print(f&#39;{&#34;A&#34;, prime:10}{A:^10.4g}&#39;)
-                print(f&#39;{lambda_char, prime:10}{wavelength:^10}&#39;)
-
-                # print k as a multiple of pi if possible
-                if k % np.pi == 0:
-                        k = f&#39;{int(k // np.pi):d}{pi_char}&#39;
-                        print(f&#39;{&#34;k&#34;, prime:10}{k:^10}&#39;)
-                else:
-                        print(f&#39;{&#34;k&#34;, prime:10}{k:^10.4f}&#39;)
-
-                print(f&#39;{omega_char, prime:10}{omega.item():^10.4f}&#39;)
-                print(f&#39;{&#34;Fr&#34;:10}{Fr.item():^10.4f}&#39;)
-                print(f&#39;{&#34;U&#34;, prime:10}{U.item():^10.4f}&#39;)
-                print(f&#39;{&#34;periods&#34;, prime:10}{num_periods:^10}&#39;)
-                print(f&#39;{deltat_char, prime:10}{delta_t:^10.4g}&#39;)
-                print(f&#39;{&#34;Re_p&#34;:10}{general_Re_p:^10.4g}\n&#39;)
-                # set the results of the failed simulation to None
+                print_failed_simulation(results)
                 results = {key: None for key, value in results.items()}
-
         else:
                 # compute the Reynolds number for each timestep
                 u = wave.velocity(x, z, t) * U
@@ -427,23 +404,90 @@ def run_numerics(position, stokes_num, wave, beta, include_history, num_periods,
                                   / wave.kinematic_viscosity
 
                 # organize data
-                for key, value in list(results.items())[5:]:
+                for key, value in list(results.items())[15:]:
                         if key == &#39;Re_p&#39;:
                                 results[&#39;Re_p&#39;] = Re_p
                         else:
-                                value = [value] * len(x)
+                                results[key] = np.repeat(value, x.size)
         return results
 
-def write_data(results):
-        &#34;&#34;&#34;Writes the provided `results` dictionary to a csv file.&#34;&#34;&#34;
-        filename = &#39;numerics.csv&#39;
+def print_failed_simulation(results):
+        &#34;&#34;&#34;Prints the failed simulation and the values of its parameters.&#34;&#34;&#34;
+        beta_char, lambda_char, pi_char = &#39;\u03B2&#39;, &#39;\u03BB&#39;, &#39;\u03C0&#39;
+        omega_char, delta_t_char = &#39;\u03C9&#39;, &#39;\u0394&#39;+&#39;t&#39;
+        get = lambda name : results[name]
+
+        # extract parameter values from results
+        x_0, z_0 = get(&#39;x_0&#39;), get(&#39;z_0&#39;)
+        stokes_num, beta = get(&#39;St&#39;), get(&#39;beta&#39;)
+        include_history = get(&#39;history&#39;)
+        h, A, wavelength = get(&#39;h\&#39;&#39;), get(&#39;A\&#39;&#39;), get(&#39;wavelength\&#39;&#39;)
+        k, omega = get(&#39;k\&#39;&#39;), get(&#39;omega\&#39;&#39;)
+        Fr, U = get(&#39;Fr&#39;), get(&#39;U\&#39;&#39;)
+        num_periods, delta_t = get(&#39;num_periods\&#39;&#39;), get(&#39;delta_t\&#39;&#39;)
+        general_Re_p = get(&#39;general_Re_p&#39;)
+
+        prime = &#39;\&#39;&#39;
+        print(&#39;\nSimulation failed&#39;)
+        print(f&#39;{&#34;x_0&#34;:10}{x_0:^10.4g}&#39;)
+        print(f&#39;{&#34;z_0&#34;:10}{z_0:^10.4g}&#39;)
+        print(f&#39;{&#34;St&#34;:10}{stokes_num:^10.4g}&#39;)
+        print(f&#39;{beta_char:10}{beta:^10.4g}&#39;)
+        print(f&#39;{&#34;history&#34;:10}{include_history!s:^10}&#39;)
+        print(f&#39;{&#34;h&#34; + prime:10}{h:^10}&#39;)
+        print(f&#39;{&#34;A&#34; + prime:10}{A:^10.4g}&#39;)
+        print(f&#39;{lambda_char + prime:10}{wavelength:^10}&#39;)
+
+        # print k as a multiple of pi if possible
+        if k % np.pi == 0:
+                k = f&#39;{int(k // np.pi):d}{pi_char}&#39;
+                print(f&#39;{&#34;k&#34; + prime:10}{k:^10}&#39;)
+        else:
+                print(f&#39;{&#34;k&#34; + prime:10}{k:^10.4f}&#39;)
+
+        print(f&#39;{omega_char + prime:10}{omega.item():^10.4f}&#39;)
+        print(f&#39;{&#34;Fr&#34;:10}{Fr.item():^10.4f}&#39;)
+        print(f&#39;{&#34;U&#34; + prime:10}{U.item():^10.4f}&#39;)
+        print(f&#39;{&#34;periods&#34; + prime:10}{num_periods:^10}&#39;)
+        print(f&#39;{delta_t_char + prime:10}{delta_t:^10.4g}&#39;)
+        print(f&#39;{&#34;Re_p&#34;:10}{general_Re_p:^10.4g}\n&#39;)
+
+def write_data(results, filepath):
+        &#34;&#34;&#34;Writes the provided `results` dictionary to the provided csv file.&#34;&#34;&#34;
         df = pd.DataFrame(results)
         numerics = df.explode(list(df.columns.values), ignore_index=True)
-        numerics.to_csv(DATA_PATH + filename, mode=&#39;a&#39;, header=False, index=False)
-        print(f&#39;Data added to {filename}.&#39;)
+        path_list = filepath.split(&#39;/&#39;)
+        filename = path_list[-1]
+        if os.path.exists(filepath): # append if file already exists
+                numerics.to_csv(filepath, mode=&#39;a&#39;, header=False,
+                                                index=False)
+                print(f&#39;Data appended to {filename}.&#39;)
+        else:
+                numerics.to_csv(filepath, index=False)
+                print(f&#39;Data written to {filename}.&#39;)
 
-if __name__ == &#39;__main__&#39;:
-        main()</code></pre>
+def plot_trajectory(results1, results2):
+        &#34;&#34;&#34;Plots the trajectory of the particle with and without history effects.&#34;&#34;&#34;
+        x1, z1 = results1[&#39;x&#39;], results1[&#39;z&#39;]
+        x2, z2 = results2[&#39;x&#39;], results2[&#39;z&#39;]
+        x_crossings1, z_crossings1, _, _, _ = ts.compute_drift_velocity(x1, z1,
+                                                                                         results1[&#39;xdot&#39;], results1[&#39;t&#39;])
+        x_crossings2, z_crossings2, _, _, _ = ts.compute_drift_velocity(x2, z2,
+                                                                                         results2[&#39;xdot&#39;], results2[&#39;t&#39;])
+        print(&#39;Plotting...&#39;)
+        fs, lfs = 14, 16 # font sizes
+        plt.figure()
+        plt.xlabel(&#39;x&#39;, fontsize=lfs)
+        plt.ylabel(&#39;z&#39;, fontsize=lfs)
+        plt.xticks(fontsize=fs)
+        plt.yticks(fontsize=fs)
+        plt.minorticks_on()
+        plt.plot(x1, z1, &#39;-k&#39;, label=&#39;without history&#39;)
+        plt.plot(x2, z2, &#39;:k&#39;, label=&#39;with history&#39;)
+        plt.scatter(x_crossings1, z_crossings1, c=&#39;k&#39;, marker=&#39;x&#39;)
+        plt.scatter(x_crossings2, z_crossings2, c=&#39;k&#39;, marker=&#39;x&#39;)
+        plt.legend(fontsize=fs)
+        plt.show()</code></pre>
 </details>
 </section>
 <section>
@@ -453,46 +497,8 @@ if __name__ == &#39;__main__&#39;:
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="modelling-microplastics-transport.examples.water_wave.numerics.main"><code class="name flex">
-<span>def <span class="ident">main</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>This program produces numerical solutions for the motion of inertial
-particles in linear water waves and saves the results to the
-<code>data/water_wave</code> directory.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def main():
-        &#34;&#34;&#34;
-        This program produces numerical solutions for the motion of inertial
-        particles in linear water waves and saves the results to the
-        `data/water_wave` directory.
-        &#34;&#34;&#34;
-        # initialize parameters
-        stokes_num = 0.01
-        beta = 1
-        depth, amplitude, wavelength = 10, 0.02, 1
-        x_0 = [(0, -0.02), (0, -0.25), (0, -0.625), (0, -1), (0, -1.375),
-                   (0, -1.75), (0, -2.125), (0, -2.5), (0, -2.875), (0, -3.25),
-                   (0, -3.625)]
-        num_periods, delta_t = 10, 5e-3
-        my_wave = fl.WaterWave(depth, amplitude, wavelength)
-
-        # run the simulations with the appropriate function
-        if type(stokes_num) is list:
-                multi_stokes_nums(x_0, stokes_num, my_wave, beta, num_periods, delta_t) 
-        elif type(beta) is list:
-                multi_betas(x_0, stokes_num, my_wave, beta, num_periods, delta_t)       
-        elif type(x_0) is list:
-                multi_positions(x_0, stokes_num, my_wave, beta, num_periods, delta_t)
-        else:
-                single_simulation(x_0, stokes_num, my_wave, beta, num_periods, delta_t)</code></pre>
-</details>
-</dd>
 <dt id="modelling-microplastics-transport.examples.water_wave.numerics.multi_betas"><code class="name flex">
-<span>def <span class="ident">multi_betas</span></span>(<span>position, stokes_num, wave, betas, num_periods, delta_t)</span>
+<span>def <span class="ident">multi_betas</span></span>(<span>position, stokes_num, depth, amplitude, wavelength, betas, num_periods, delta_t, filepath)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Runs a numerical simulation without history effects and a numerical
@@ -503,20 +509,27 @@ simulation with history effects for each value of beta.</p>
 <dd>The initial (x_0, z_0) position of the particle.</dd>
 <dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Stokes number to use for the initialization of the particle.</dd>
-<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
-<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
+<dd>The depth of the fluid <em>h'</em>.</dd>
+<dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
+<dd>The amplitude of the wave <em>A'</em>.</dd>
+<dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
+<dd>The wavelength <em>λ'</em>.</dd>
 <dt><strong><code>betas</code></strong> :&ensp;<code>list</code></dt>
 <dd>A list of the ratios between the particle and fluid densities.</dd>
 <dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code></dt>
 <dd>The number of wave periods to integrate over.</dd>
 <dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
 <dd>The size of the time step used for integration.</dd>
+<dt><strong><code>filepath</code></strong> :&ensp;<code>str</code></dt>
+<dd>The path of the file where results will be stored.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def multi_betas(position, stokes_num, wave, betas, num_periods, delta_t):
+<pre><code class="python">def multi_betas(position, stokes_num, depth, amplitude, wavelength, betas,
+                                num_periods, delta_t, filepath):
         &#34;&#34;&#34;
         Runs a numerical simulation without history effects and a numerical
         simulation with history effects for each value of beta.
@@ -527,58 +540,66 @@ simulation with history effects for each value of beta.</p>
                 The initial (x_0, z_0) position of the particle.
         stokes_num : float
                 The Stokes number to use for the initialization of the particle.
-        wave : Wave (obj)
-                The wave through which the particle is transported.
+        depth : float
+                The depth of the fluid *h&#39;*.
+        amplitude : float
+                The amplitude of the wave *A&#39;*.
+        wavelength : float
+                The wavelength *λ&#39;*.
         betas : list
                 A list of the ratios between the particle and fluid densities.
         num_periods : int
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time step used for integration.
+        filepath : str
+                The path of the file where results will be stored.
         &#34;&#34;&#34;
-        num_tasks = len(betas)
+        tasks = len(betas)
+        wave = fl.WaterWave(depth, amplitude, wavelength)
 
         # run simulations without history effects
         params = zip(itertools.repeat(position), itertools.repeat(stokes_num),
                                  itertools.repeat(wave),
                                  betas, itertools.repeat(False),
                                  itertools.repeat(num_periods), itertools.repeat(delta_t))
-        results = progress_starmap(run_numerics, params, total=num_tasks)
+        results1 = progress_starmap(run_simulation, params, n_cpu=4, total=tasks)
 
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(results)):
-                if results[i][&#39;x&#39;] is None:
+        for i in range(len(results1)):
+                if results1[i][&#39;x&#39;] is None:
                         betas[i] = None
-                        results[i] = None
-                        num_tasks -= 1
-        results = [i for i in results if i is not None]
+                        results1[i] = None
+                        tasks -= 1
+        results1 = [i for i in results1 if i is not None]
         betas = [i for i in betas if i is not None]
 
         # run simulations with history effects unless non-history simulations failed
-        history_results = []
-        if num_tasks != 0:
-                for i in range(num_tasks):
-                        print(f&#39;\nRunning simulation {i + 1}/{num_tasks}...&#39;)
-                        result = run_numerics(position, stokes_num, wave, betas[i], True,
-                                                                  num_periods, delta_t)
-                        history_results.append(result)
+        results2 = []
+        if tasks != 0:
+                for i in range(tasks):
+                        print(f&#39;\nRunning simulation {i + 1}/{tasks}...&#39;)
+                        result = run_simulation(position, stokes_num, wave, betas[i], True,
+                                                                    num_periods, delta_t)
+                        results2.append(result)
         
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(history_results)):
-                if history_results[i][&#39;x&#39;] is None:
-                        results[i] = None
-                        history_results[i] = None
-        results += history_results
-        results = [i for i in results if i is not None]
+        for i in range(len(results2)):
+                if results2[i][&#39;x&#39;] is None or results2[i][&#39;x&#39;].size == 1:
+                        print_failed_simulation(results2[i])
+                        results1[i] = None
+                        results2[i] = None
+        results1 += results2
+        results1 = [i for i in results1 if i is not None]
         
         # write successful results to data file, if there are any
-        if results:
-                for result in results:
-                        write_data(result)</code></pre>
+        if results1:
+                for result in results1:
+                        write_data(result, filepath)</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.examples.water_wave.numerics.multi_positions"><code class="name flex">
-<span>def <span class="ident">multi_positions</span></span>(<span>x_0s, stokes_num, wave, beta, num_periods, delta_t)</span>
+<span>def <span class="ident">multi_positions</span></span>(<span>x_0s, stokes_num, depth, amplitude, wavelength, beta, num_periods, delta_t, filepath)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Runs a numerical simulation without history effects and a numerical
@@ -589,20 +610,27 @@ simulation with history effects for each value of beta.</p>
 <dd>The initial (x_0, z_0) positions of the particle.</dd>
 <dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Stokes number to use for the initialization of the particle.</dd>
-<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
-<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
+<dd>The depth of the fluid <em>h'</em>.</dd>
+<dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
+<dd>The amplitude of the wave <em>A'</em>.</dd>
+<dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
+<dd>The wavelength <em>λ'</em>.</dd>
 <dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
 <dd>The ratio between the particle and fluid densities.</dd>
 <dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code></dt>
 <dd>The number of wave periods to integrate over.</dd>
 <dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
 <dd>The size of the time step used for integration.</dd>
+<dt><strong><code>filepath</code></strong> :&ensp;<code>str</code></dt>
+<dd>The path of the file where results will be stored.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def multi_positions(x_0s, stokes_num, wave, beta, num_periods, delta_t):
+<pre><code class="python">def multi_positions(x_0s, stokes_num, depth, amplitude, wavelength, beta,
+                                        num_periods, delta_t, filepath):
         &#34;&#34;&#34;
         Runs a numerical simulation without history effects and a numerical
         simulation with history effects for each value of beta.
@@ -613,57 +641,65 @@ simulation with history effects for each value of beta.</p>
                 The initial (x_0, z_0) positions of the particle.
         stokes_num : float
                 The Stokes number to use for the initialization of the particle.
-        wave : Wave (obj)
-                The wave through which the particle is transported.
+        depth : float
+                The depth of the fluid *h&#39;*.
+        amplitude : float
+                The amplitude of the wave *A&#39;*.
+        wavelength : float
+                The wavelength *λ&#39;*.
         beta : float
                 The ratio between the particle and fluid densities.
         num_periods : int
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time step used for integration.
+        filepath : str
+                The path of the file where results will be stored.
         &#34;&#34;&#34;
-        num_tasks = len(x_0s)
+        tasks = len(x_0s)
+        wave = fl.WaterWave(depth, amplitude, wavelength)
 
         # run simulations without history effects
         params = zip(x_0s, itertools.repeat(stokes_num), itertools.repeat(wave),
                                  itertools.repeat(beta), itertools.repeat(False),
                                  itertools.repeat(num_periods), itertools.repeat(delta_t))
-        results = progress_starmap(run_numerics, params, total=num_tasks)
+        results1 = progress_starmap(run_simulation, params, n_cpu=4, total=tasks)
 
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(results)):
-                if results[i][&#39;x&#39;] is None:
+        for i in range(len(results1)):
+                if results1[i][&#39;x&#39;] is None:
                         x_0s[i] = None
-                        results[i] = None
-                        num_tasks -= 1
-        results = [i for i in results if i is not None]
+                        results1[i] = None
+                        tasks -= 1
+        results1 = [i for i in results1 if i is not None]
         x_0s = [i for i in x_0s if i is not None]
 
         # run simulations with history effects unless non-history simulations failed
-        history_results = []
-        if num_tasks != 0:
-                for i in range(num_tasks):
-                        print(f&#39;\nRunning simulation {i + 1}/{num_tasks}...&#39;)
-                        result = run_numerics(x_0s[i], stokes_num, wave, beta, True,
-                                                                  num_periods, delta_t)
-                        history_results.append(result)
+        results2 = []
+        if tasks != 0:
+                for i in range(tasks):
+                        print(f&#39;\nRunning simulation {i + 1}/{tasks}...&#39;)
+                        result = run_simulation(x_0s[i], stokes_num, wave, beta, True,
+                                                                    num_periods, delta_t)
+                        results2.append(result)
         
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(history_results)):
-                if history_results[i][&#39;x&#39;] is None:
-                        results[i] = None
-                        history_results[i] = None
-        results += history_results
-        results = [i for i in results if i is not None]
+        for i in range(len(results2)):
+                if results2[i][&#39;x&#39;] is None or results2[i][&#39;x&#39;].size == 1:
+                        print_failed_simulation(results2[i])
+                        results1[i] = None
+                        results2[i] = None
+        results1 += results2
+        results1 = [i for i in results1 if i is not None]
         
         # write successful results to data file, if there are any
-        if results:
-                for result in results:
-                        write_data(result)</code></pre>
+        if results1:
+                for result in results1:
+                        write_data(result, filepath)</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.examples.water_wave.numerics.multi_stokes_nums"><code class="name flex">
-<span>def <span class="ident">multi_stokes_nums</span></span>(<span>position, stokes_nums, wave, beta, num_periods, delta_t)</span>
+<span>def <span class="ident">multi_stokes_nums</span></span>(<span>position, stokes_nums, depth, amplitude, wavelength, beta, num_periods, delta_t, filepath)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Runs a numerical simulation without history effects and a numerical
@@ -675,20 +711,27 @@ results to a data file.</p>
 <dd>The initial (x_0, z_0) position of the particle.</dd>
 <dt><strong><code>stokes_nums</code></strong> :&ensp;<code>list</code></dt>
 <dd>A list of the Stokes numbers to use for the particle initializations.</dd>
-<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
-<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
+<dd>The depth of the fluid <em>h'</em>.</dd>
+<dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
+<dd>The amplitude of the wave <em>A'</em>.</dd>
+<dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
+<dd>The wavelength <em>λ'</em>.</dd>
 <dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
 <dd>The ratio between the particle and fluid densities.</dd>
 <dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code></dt>
 <dd>The number of wave periods to integrate over.</dd>
 <dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
 <dd>The size of the time step used for integration.</dd>
+<dt><strong><code>filepath</code></strong> :&ensp;<code>str</code></dt>
+<dd>The path of the file where results will be stored.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def multi_stokes_nums(position, stokes_nums, wave, beta, num_periods, delta_t):
+<pre><code class="python">def multi_stokes_nums(position, stokes_nums, depth, amplitude, wavelength, beta,
+                                          num_periods, delta_t, filepath):
         &#34;&#34;&#34;
         Runs a numerical simulation without history effects and a numerical
         simulation with history effects for each Stokes number, and writes the
@@ -700,58 +743,150 @@ results to a data file.</p>
                 The initial (x_0, z_0) position of the particle.
         stokes_nums : list
                 A list of the Stokes numbers to use for the particle initializations.
-        wave : Wave (obj)
-                The wave through which the particle is transported.
+        depth : float
+                The depth of the fluid *h&#39;*.
+        amplitude : float
+                The amplitude of the wave *A&#39;*.
+        wavelength : float
+                The wavelength *λ&#39;*.
         beta : float
                 The ratio between the particle and fluid densities.
         num_periods : int
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time step used for integration.
+        filepath : str
+                The path of the file where results will be stored.
         &#34;&#34;&#34;
-        num_tasks = len(stokes_nums)
+        tasks = len(stokes_nums)
+        wave = fl.WaterWave(depth, amplitude, wavelength)
 
         # run simulations without history effects
         params = zip(itertools.repeat(position), stokes_nums,
                                  itertools.repeat(wave), itertools.repeat(beta),
                                  itertools.repeat(False), itertools.repeat(num_periods),
                                  itertools.repeat(delta_t))
-        results = progress_starmap(run_numerics, params, total=num_tasks)
+        results1 = progress_starmap(run_simulation, params, n_cpu=4, total=tasks)
 
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(results)):
-                if results[i][&#39;x&#39;] is None:
+        for i in range(len(results1)):
+                if results1[i][&#39;x&#39;] is None:
                         stokes_nums[i] = None
-                        results[i] = None
-                        num_tasks -= 1
-        results = [i for i in results if i is not None]
+                        results1[i] = None
+                        tasks -= 1
+        results1 = [i for i in results1 if i is not None]
         stokes_nums = [i for i in stokes_nums if i is not None]
 
         # run simulations with history effects unless non-history simulations failed
-        history_results = []
-        if num_tasks != 0:
-                for i in range(num_tasks):
-                        print(f&#39;\nRunning simulation {i + 1}/{num_tasks}...&#39;)
-                        result = run_numerics(position, stokes_nums[i], wave, beta, True,
-                                                                  num_periods, delta_t)
-                        history_results.append(result)
+        results2 = []
+        if tasks != 0:
+                for i in range(tasks):
+                        print(f&#39;\nRunning simulation {i + 1}/{tasks}...&#39;)
+                        result = run_simulation(position, stokes_nums[i], wave, beta, True,
+                                                                    num_periods, delta_t)
+                        results2.append(result)
         
         # remove results that contain NaNs (failed simulations)
-        for i in range(len(history_results)):
-                if history_results[i][&#39;x&#39;] is None:
-                        results[i] = None
-                        history_results[i] = None
-        results += history_results
-        results = [i for i in results if i is not None]
+        for i in range(len(results2)):
+                if results2[i][&#39;x&#39;] is None or results2[i][&#39;x&#39;].size == 1:
+                        print_failed_simulation(results2[i])
+                        results1[i] = None
+                        results2[i] = None
+        results1 += results2
+        results1 = [i for i in results1 if i is not None]
         
         # write successful results to data file, if there are any
-        if results:
-                for result in results:
-                        write_data(result)</code></pre>
+        if results1:
+                for result in results1:
+                        write_data(result, filepath)</code></pre>
 </details>
 </dd>
-<dt id="modelling-microplastics-transport.examples.water_wave.numerics.run_numerics"><code class="name flex">
-<span>def <span class="ident">run_numerics</span></span>(<span>position, stokes_num, wave, beta, include_history, num_periods, delta_t, hide_progress=True)</span>
+<dt id="modelling-microplastics-transport.examples.water_wave.numerics.plot_trajectory"><code class="name flex">
+<span>def <span class="ident">plot_trajectory</span></span>(<span>results1, results2)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plots the trajectory of the particle with and without history effects.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_trajectory(results1, results2):
+        &#34;&#34;&#34;Plots the trajectory of the particle with and without history effects.&#34;&#34;&#34;
+        x1, z1 = results1[&#39;x&#39;], results1[&#39;z&#39;]
+        x2, z2 = results2[&#39;x&#39;], results2[&#39;z&#39;]
+        x_crossings1, z_crossings1, _, _, _ = ts.compute_drift_velocity(x1, z1,
+                                                                                         results1[&#39;xdot&#39;], results1[&#39;t&#39;])
+        x_crossings2, z_crossings2, _, _, _ = ts.compute_drift_velocity(x2, z2,
+                                                                                         results2[&#39;xdot&#39;], results2[&#39;t&#39;])
+        print(&#39;Plotting...&#39;)
+        fs, lfs = 14, 16 # font sizes
+        plt.figure()
+        plt.xlabel(&#39;x&#39;, fontsize=lfs)
+        plt.ylabel(&#39;z&#39;, fontsize=lfs)
+        plt.xticks(fontsize=fs)
+        plt.yticks(fontsize=fs)
+        plt.minorticks_on()
+        plt.plot(x1, z1, &#39;-k&#39;, label=&#39;without history&#39;)
+        plt.plot(x2, z2, &#39;:k&#39;, label=&#39;with history&#39;)
+        plt.scatter(x_crossings1, z_crossings1, c=&#39;k&#39;, marker=&#39;x&#39;)
+        plt.scatter(x_crossings2, z_crossings2, c=&#39;k&#39;, marker=&#39;x&#39;)
+        plt.legend(fontsize=fs)
+        plt.show()</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.examples.water_wave.numerics.print_failed_simulation"><code class="name flex">
+<span>def <span class="ident">print_failed_simulation</span></span>(<span>results)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Prints the failed simulation and the values of its parameters.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def print_failed_simulation(results):
+        &#34;&#34;&#34;Prints the failed simulation and the values of its parameters.&#34;&#34;&#34;
+        beta_char, lambda_char, pi_char = &#39;\u03B2&#39;, &#39;\u03BB&#39;, &#39;\u03C0&#39;
+        omega_char, delta_t_char = &#39;\u03C9&#39;, &#39;\u0394&#39;+&#39;t&#39;
+        get = lambda name : results[name]
+
+        # extract parameter values from results
+        x_0, z_0 = get(&#39;x_0&#39;), get(&#39;z_0&#39;)
+        stokes_num, beta = get(&#39;St&#39;), get(&#39;beta&#39;)
+        include_history = get(&#39;history&#39;)
+        h, A, wavelength = get(&#39;h\&#39;&#39;), get(&#39;A\&#39;&#39;), get(&#39;wavelength\&#39;&#39;)
+        k, omega = get(&#39;k\&#39;&#39;), get(&#39;omega\&#39;&#39;)
+        Fr, U = get(&#39;Fr&#39;), get(&#39;U\&#39;&#39;)
+        num_periods, delta_t = get(&#39;num_periods\&#39;&#39;), get(&#39;delta_t\&#39;&#39;)
+        general_Re_p = get(&#39;general_Re_p&#39;)
+
+        prime = &#39;\&#39;&#39;
+        print(&#39;\nSimulation failed&#39;)
+        print(f&#39;{&#34;x_0&#34;:10}{x_0:^10.4g}&#39;)
+        print(f&#39;{&#34;z_0&#34;:10}{z_0:^10.4g}&#39;)
+        print(f&#39;{&#34;St&#34;:10}{stokes_num:^10.4g}&#39;)
+        print(f&#39;{beta_char:10}{beta:^10.4g}&#39;)
+        print(f&#39;{&#34;history&#34;:10}{include_history!s:^10}&#39;)
+        print(f&#39;{&#34;h&#34; + prime:10}{h:^10}&#39;)
+        print(f&#39;{&#34;A&#34; + prime:10}{A:^10.4g}&#39;)
+        print(f&#39;{lambda_char + prime:10}{wavelength:^10}&#39;)
+
+        # print k as a multiple of pi if possible
+        if k % np.pi == 0:
+                k = f&#39;{int(k // np.pi):d}{pi_char}&#39;
+                print(f&#39;{&#34;k&#34; + prime:10}{k:^10}&#39;)
+        else:
+                print(f&#39;{&#34;k&#34; + prime:10}{k:^10.4f}&#39;)
+
+        print(f&#39;{omega_char + prime:10}{omega.item():^10.4f}&#39;)
+        print(f&#39;{&#34;Fr&#34;:10}{Fr.item():^10.4f}&#39;)
+        print(f&#39;{&#34;U&#34; + prime:10}{U.item():^10.4f}&#39;)
+        print(f&#39;{&#34;periods&#34; + prime:10}{num_periods:^10}&#39;)
+        print(f&#39;{delta_t_char + prime:10}{delta_t:^10.4g}&#39;)
+        print(f&#39;{&#34;Re_p&#34;:10}{general_Re_p:^10.4g}\n&#39;)</code></pre>
+</details>
+</dd>
+<dt id="modelling-microplastics-transport.examples.water_wave.numerics.run_simulation"><code class="name flex">
+<span>def <span class="ident">run_simulation</span></span>(<span>position, stokes_num, wave, beta, include_history, num_periods, delta_t, hide_progress=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Runs a numerical simulation for the specified parameters.</p>
@@ -771,7 +906,7 @@ results to a data file.</p>
 <dd>The number of wave periods to integrate over.</dd>
 <dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
 <dd>The size of the time step used for integration.</dd>
-<dt><strong><code>hide_progress</code></strong> :&ensp;<code>bool</code>, default=<code>True</code></dt>
+<dt><strong><code>hide_progress</code></strong> :&ensp;<code>boolean</code>, default=<code>True</code></dt>
 <dd>Whether to hide the <code>tqdm</code> progress bar.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -783,8 +918,8 @@ results to a data file.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def run_numerics(position, stokes_num, wave, beta, include_history, num_periods,
-                                 delta_t, hide_progress=True):
+<pre><code class="python">def run_simulation(position, stokes_num, wave, beta, include_history,
+                                   num_periods, delta_t, hide_progress=True):
         &#34;&#34;&#34;
         Runs a numerical simulation for the specified parameters.
 
@@ -804,7 +939,7 @@ results to a data file.</p>
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time step used for integration.
-        hide_progress : bool, default=True
+        hide_progress : boolean, default=True
                 Whether to hide the `tqdm` progress bar.
 
         Returns
@@ -858,36 +993,8 @@ results to a data file.</p>
 
         # check if solutions contain any infinite values
         if np.isinf([x, z, xdot, zdot]).any():
-                # print the failed simulation and the values of its parameters
-                beta_char, lambda_char, pi_char, omega_char, deltat_char = &#39;\u03B2&#39;, \
-                                                                        &#39;\u03BB&#39;, &#39;\u03C0&#39;, &#39;\u03C9&#39;, &#39;\u0394&#39;+&#39;t&#39;
-                prime = &#39;\&#39;&#39;
-                print(&#39;\nSimulation failed&#39;)
-                print(f&#39;{&#34;x_0&#34;:10}{x_0:^10.4g}&#39;)
-                print(f&#39;{&#34;z_0&#34;:10}{z_0:^10.4g}&#39;)
-                print(f&#39;{&#34;St&#34;:10}{stokes_num:^10.4g}&#39;)
-                print(f&#39;{beta_char:10}{beta:^10.4g}&#39;)
-                print(f&#39;{&#34;history&#34;:10}{include_history!s:^10}&#39;)
-                print(f&#39;{&#34;h&#34;, prime:10}{h:^10}&#39;)
-                print(f&#39;{&#34;A&#34;, prime:10}{A:^10.4g}&#39;)
-                print(f&#39;{lambda_char, prime:10}{wavelength:^10}&#39;)
-
-                # print k as a multiple of pi if possible
-                if k % np.pi == 0:
-                        k = f&#39;{int(k // np.pi):d}{pi_char}&#39;
-                        print(f&#39;{&#34;k&#34;, prime:10}{k:^10}&#39;)
-                else:
-                        print(f&#39;{&#34;k&#34;, prime:10}{k:^10.4f}&#39;)
-
-                print(f&#39;{omega_char, prime:10}{omega.item():^10.4f}&#39;)
-                print(f&#39;{&#34;Fr&#34;:10}{Fr.item():^10.4f}&#39;)
-                print(f&#39;{&#34;U&#34;, prime:10}{U.item():^10.4f}&#39;)
-                print(f&#39;{&#34;periods&#34;, prime:10}{num_periods:^10}&#39;)
-                print(f&#39;{deltat_char, prime:10}{delta_t:^10.4g}&#39;)
-                print(f&#39;{&#34;Re_p&#34;:10}{general_Re_p:^10.4g}\n&#39;)
-                # set the results of the failed simulation to None
+                print_failed_simulation(results)
                 results = {key: None for key, value in results.items()}
-
         else:
                 # compute the Reynolds number for each timestep
                 u = wave.velocity(x, z, t) * U
@@ -897,16 +1004,16 @@ results to a data file.</p>
                                   / wave.kinematic_viscosity
 
                 # organize data
-                for key, value in list(results.items())[5:]:
+                for key, value in list(results.items())[15:]:
                         if key == &#39;Re_p&#39;:
                                 results[&#39;Re_p&#39;] = Re_p
                         else:
-                                value = [value] * len(x)
+                                results[key] = np.repeat(value, x.size)
         return results</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.examples.water_wave.numerics.single_simulation"><code class="name flex">
-<span>def <span class="ident">single_simulation</span></span>(<span>position, stokes_num, wave, beta, num_periods, delta_t)</span>
+<span>def <span class="ident">single_simulation</span></span>(<span>position, stokes_num, depth, amplitude, wavelength, beta, num_periods, delta_t, filepath, mode='w', crop=[], hide_progress=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Runs a numerical simulation without history effects and a numerical
@@ -917,20 +1024,34 @@ simulation with history effects.</p>
 <dd>The initial (x_0, z_0) position of the particle.</dd>
 <dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Stokes number to use for the initialization of the particle.</dd>
-<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
-<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>depth</code></strong> :&ensp;<code>float</code></dt>
+<dd>The depth of the fluid <em>h'</em>.</dd>
+<dt><strong><code>amplitude</code></strong> :&ensp;<code>float</code></dt>
+<dd>The amplitude of the wave <em>A'</em>.</dd>
+<dt><strong><code>wavelength</code></strong> :&ensp;<code>float</code></dt>
+<dd>The wavelength <em>λ'</em>.</dd>
 <dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
 <dd>The ratio between the particle and fluid densities.</dd>
 <dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code></dt>
 <dd>The number of wave periods to integrate over.</dd>
 <dt><strong><code>delta_t</code></strong> :&ensp;<code>float</code></dt>
 <dd>The size of the time steps used for integration.</dd>
+<dt><strong><code>filepath</code></strong> :&ensp;<code>str</code></dt>
+<dd>The path of the file where results will be stored.</dd>
+<dt><strong><code>mode</code></strong> :&ensp;<code>str</code>, default=<code>'w'</code></dt>
+<dd>How to handle the results: either write 'w', plot 'p', or return 'r'.</dd>
+<dt><strong><code>crop</code></strong> :&ensp;<code>list</code>, default=<code>[]</code></dt>
+<dd>List of the variables to include in the results (includes all if empty).</dd>
+<dt><strong><code>hide_progress</code></strong> :&ensp;<code>boolean</code>, default=<code>False</code></dt>
+<dd>Whether to hide the <code>tqdm</code> progress bar.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def single_simulation(position, stokes_num, wave, beta, num_periods, delta_t):
+<pre><code class="python">def single_simulation(position, stokes_num, depth, amplitude, wavelength, beta,
+                                          num_periods, delta_t, filepath, mode=&#39;w&#39;, crop=[],
+                                          hide_progress=False):
         &#34;&#34;&#34;
         Runs a numerical simulation without history effects and a numerical
         simulation with history effects.
@@ -941,74 +1062,83 @@ simulation with history effects.</p>
                 The initial (x_0, z_0) position of the particle.
         stokes_num : float
                 The Stokes number to use for the initialization of the particle.
-        wave : Wave (obj)
-                The wave through which the particle is transported.
+        depth : float
+                The depth of the fluid *h&#39;*.
+        amplitude : float
+                The amplitude of the wave *A&#39;*.
+        wavelength : float
+                The wavelength *λ&#39;*.
         beta : float
                 The ratio between the particle and fluid densities.
         num_periods : int
                 The number of wave periods to integrate over.
         delta_t : float
                 The size of the time steps used for integration.
+        filepath : str
+                The path of the file where results will be stored.
+        mode : str, default=&#39;w&#39;
+                How to handle the results: either write &#39;w&#39;, plot &#39;p&#39;, or return &#39;r&#39;.
+        crop : list, default=[]
+                List of the variables to include in the results (includes all if empty).
+        hide_progress : boolean, default=False
+                Whether to hide the `tqdm` progress bar.
         &#34;&#34;&#34;
-        # ask the user whether to write the results or plot results without writing
-        answer = input(&#39;(W)rite the results to the data file or (P)lot the results&#39;
-                                   &#39; without writing? &#39;)
-        write_results = True if answer.upper() == &#39;W&#39; else False
-
         # run simulation without history
-        results = run_numerics(position, stokes_num, wave, beta, False, num_periods,
-                                                   delta_t, hide_progress=False)
-
-        # only write results if they contain no NaNs (skip failed simulations)
-        if write_results and results[&#39;x&#39;] is not None:
-                write_data(results)
-                history_results = run_numerics(position, stokes_num, wave, beta, True,
-                                                                           num_periods, delta_t)
-                if history_results[&#39;x&#39;] is not None:
-                        write_data(history_results)
-
-        # only plot results if they contain no NaNs (skip failed simulations)
-        elif not write_results and results[&#39;x&#39;] is not None:
-                # initialize plot
-                plt.figure()
-                plt.title(r&#39;Particle Trajectory&#39;, fontsize=18)
-                plt.xlabel(&#39;x&#39;, fontsize=14)
-                plt.ylabel(&#39;z&#39;, fontsize=14)
-                plt.xticks(fontsize=14)
-                plt.yticks(fontsize=14)
-                plt.minorticks_on()
-
-                # plot results without history
-                plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, data=results, label=&#39;without history&#39;)
-                history_results = run_numerics(stokes_num, wave, beta, True,
-                                                                           num_periods, delta_t)
-                # plot results with history
-                if history_results[&#39;x&#39;] is not None:
-                        print(&#39;Plotting...&#39;)
-                        plt.plot(&#39;x&#39;, &#39;z&#39;, c=&#39;k&#39;, ls=&#39;--&#39;, data=history_results,
-                                         label=&#39;with history&#39;)
-                        plt.legend()
-                        plt.show()
+        wave = fl.WaterWave(depth, amplitude, wavelength)
+        results1 = run_simulation(position, stokes_num, wave, beta, False,
+                                                          num_periods, delta_t, hide_progress)
+        if results1[&#39;x&#39;] is None:
+                print(&#39;Simulation failed without history effects.&#39;)
         else:
-                print(&#39;Error: no results to plot.&#39;)</code></pre>
+                if mode == &#39;w&#39;: write_data(results1, filepath)
+                results2 = run_simulation(position, stokes_num, wave, beta, True,
+                                                                  num_periods, delta_t, hide_progress)
+                if results2[&#39;x&#39;] is None:
+                        print(&#39;Simulation failed with history effects.&#39;)
+                else: # both simulations succeeded
+                        if mode == &#39;w&#39;:
+                                write_data(results2, filepath)
+                        elif mode == &#39;p&#39;:
+                                plot_trajectory(results1, results2)
+                                path_list = filepath.split(&#39;/&#39;)
+                                filename = path_list[-1]
+                                user_input = input(f&#39;Write data to {filename}? (Y/N): &#39;)
+                                if user_input.upper() == &#39;Y&#39;:
+                                        write_data(results1, filepath)
+                                        write_data(results2, filepath)
+                        elif mode == &#39;r&#39;:
+                                if not crop:
+                                        return list(results1.values()), list(results2.values())
+                                else:
+                                        return [results1[key] for key in crop], \
+                                                   [results2[key] for key in crop]
+                        else:
+                                print(&#39;Error: mode incorrectly specified.&#39;)
+                                print(&#39;Mode options: write \&#39;w\&#39;, plot \&#39;p\&#39;, or return \&#39;r\&#39;.&#39;)</code></pre>
 </details>
 </dd>
 <dt id="modelling-microplastics-transport.examples.water_wave.numerics.write_data"><code class="name flex">
-<span>def <span class="ident">write_data</span></span>(<span>results)</span>
+<span>def <span class="ident">write_data</span></span>(<span>results, filepath)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Writes the provided <code>results</code> dictionary to a csv file.</p></div>
+<div class="desc"><p>Writes the provided <code>results</code> dictionary to the provided csv file.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def write_data(results):
-        &#34;&#34;&#34;Writes the provided `results` dictionary to a csv file.&#34;&#34;&#34;
-        filename = &#39;numerics.csv&#39;
+<pre><code class="python">def write_data(results, filepath):
+        &#34;&#34;&#34;Writes the provided `results` dictionary to the provided csv file.&#34;&#34;&#34;
         df = pd.DataFrame(results)
         numerics = df.explode(list(df.columns.values), ignore_index=True)
-        numerics.to_csv(DATA_PATH + filename, mode=&#39;a&#39;, header=False, index=False)
-        print(f&#39;Data added to {filename}.&#39;)</code></pre>
+        path_list = filepath.split(&#39;/&#39;)
+        filename = path_list[-1]
+        if os.path.exists(filepath): # append if file already exists
+                numerics.to_csv(filepath, mode=&#39;a&#39;, header=False,
+                                                index=False)
+                print(f&#39;Data appended to {filename}.&#39;)
+        else:
+                numerics.to_csv(filepath, index=False)
+                print(f&#39;Data written to {filename}.&#39;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1028,12 +1158,13 @@ simulation with history effects.</p>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="two-column">
-<li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.main" href="#modelling-microplastics-transport.examples.water_wave.numerics.main">main</a></code></li>
+<ul class="">
 <li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.multi_betas" href="#modelling-microplastics-transport.examples.water_wave.numerics.multi_betas">multi_betas</a></code></li>
 <li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.multi_positions" href="#modelling-microplastics-transport.examples.water_wave.numerics.multi_positions">multi_positions</a></code></li>
 <li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.multi_stokes_nums" href="#modelling-microplastics-transport.examples.water_wave.numerics.multi_stokes_nums">multi_stokes_nums</a></code></li>
-<li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.run_numerics" href="#modelling-microplastics-transport.examples.water_wave.numerics.run_numerics">run_numerics</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.plot_trajectory" href="#modelling-microplastics-transport.examples.water_wave.numerics.plot_trajectory">plot_trajectory</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.print_failed_simulation" href="#modelling-microplastics-transport.examples.water_wave.numerics.print_failed_simulation">print_failed_simulation</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.run_simulation" href="#modelling-microplastics-transport.examples.water_wave.numerics.run_simulation">run_simulation</a></code></li>
 <li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.single_simulation" href="#modelling-microplastics-transport.examples.water_wave.numerics.single_simulation">single_simulation</a></code></li>
 <li><code><a title="modelling-microplastics-transport.examples.water_wave.numerics.write_data" href="#modelling-microplastics-transport.examples.water_wave.numerics.write_data">write_data</a></code></li>
 </ul>

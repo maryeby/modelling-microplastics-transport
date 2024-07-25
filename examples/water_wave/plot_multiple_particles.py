@@ -56,7 +56,7 @@ def main():
 		n = period * 10
 		plt.plot(x[:n], z[:n], c=colors[i])
 
-	plt.legend(fontsize=14)
+#	plt.legend(fontsize=14)
 	plt.show()
 
 if __name__ == '__main__':
