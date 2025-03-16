@@ -1,5 +1,5 @@
 class Particle:
-	"""Respresents a rigid, spherical, inertial particle."""
+	"""Respresent a rigid, spherical, inertial particle."""
 
 	def __init__(self, stokes_num):
 		"""

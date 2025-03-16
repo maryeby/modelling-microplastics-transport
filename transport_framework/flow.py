@@ -3,7 +3,7 @@ import numpy as np
 import scipy.constants as constants
 
 class Flow(ABC):
-	"""Represents a fluid flow."""
+	"""Represent a fluid flow."""
 
 	def __init__(self, depth):
 		r"""
@@ -11,8 +11,8 @@ class Flow(ABC):
 		----------
 		depth : float
 			The depth of the fluid *h'*.
-		gravity : array
-			The gravity **g'** acting on the fluid.
+		gravity : ndarray
+			1D array of `float` data, the gravity **g'** acting on the fluid.
 		period : float
 			A parameter used in the computation of the integration timespan.
 		"""
@@ -23,105 +23,100 @@ class Flow(ABC):
 	@abstractmethod
 	def velocity(self, x, z, t):
 		r"""
-		Computes the fluid velocity, $$\mathbf{u} = \langle u, w \rangle.$$
+		Compute the fluid velocity, $$\mathbf{u} = \langle u, w \rangle.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the velocity.
-		z : float or array
-			The vertical position(s) at which to evaluate the velocity.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the velocity.
 
 		Returns
 		-------
-		Array containing the velocity field vector components *u* and *w*.
+		ndarray
+			1D array of `float` data, the vector components *u* and *w*.
 		"""
 		pass
 
 	@abstractmethod
 	def partial_t(self, x, z, t): 
 		r"""
-		Computes the partial derivative of the fluid with respect to time,
+		Compute the partial derivative of the fluid with respect to time,
 		$$\frac{\partial \mathbf{u}}{\partial t}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
 		pass
 
 	@abstractmethod
 	def partial_x(self, x, z, t): 
 		r"""
-		Computes the partial derivative of the fluid with respect to the
+		Compute the partial derivative of the fluid with respect to the
 		horizontal position, $$\frac{\partial \mathbf{u}}{\partial x}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
 		pass
 
 	@abstractmethod
 	def partial_z(self, x, z, t):
 		r"""
-		Computes the partial derivative of the fluid with respect to the
+		Compute the partial derivative of the fluid with respect to the
 		vertical position, $$\frac{\partial \mathbf{u}}{\partial z}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
 		pass
 
 	def dot_jacobian(self, vec, x, z, t):
 		r"""
-		Computes the dot product of the provided vector with the Jacobian of the
-		fluid, $$\texttt{vec} \cdot \nabla \mathbf{u}.$$
+		Compute the dot product of `vec` with the Jacobian of the fluid,
+		$$\texttt{vec} \cdot \nabla \mathbf{u}.$$
 
 		Parameters
 		----------
-		vec: array
-			The vector to be used in the dot product.
-		x : float or array
-			The horizontal position(s) at which to evaluate the solution.
-		z : float or array
-			The vertical position(s) at which to evaluate the solution.
-		t : float or array
+		vec: ndarray
+			1D array of `float` data, the vector to be used in the dot product.
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the solution.
 
 		Returns
 		-------
-		Array containing the vector components of the dot product.
+		ndarray
+			1D array of `float` data, the vector components of the solution.
 		"""
 		x_component, z_component = vec
 		dxu, dxw = self.partial_x(x, z, t)
@@ -131,48 +126,45 @@ class Flow(ABC):
 
 	def material_derivative(self, x, z, t): 
 		r"""
-		Computes the material derivative,
+		Compute the material derivative,
 		$$\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
 			= \frac{\partial \mathbf{u}}{\partial t}
 			+ \mathbf{u} \cdot \nabla \mathbf{u}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the material derivative vector components.
+		ndarray
+			1D array of `float` data, the material derivative vector components.
 		"""
 		return self.partial_t(x, z, t) \
 			   + self.dot_jacobian(self.velocity(x, z, t), x, z, t)
 
 	def derivative_along_trajectory(self, x, z, t, v):
 		r"""
-		Computes the derivative of the fluid along the provided trajectory of
-		the particle,
+		Compute the derivative of the fluid along the particle trajectory,
 		$$\frac{\mathrm{d}\mathbf{u}}{\mathrm{d}t}
 			= \frac{\partial \mathbf{u}}{\partial t}
 			+ \mathbf{v} \cdot \nabla \mathbf{u}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s) of the particle.
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
-		v : array
-			The velocity of the particle.
+		v : ndarray
+			1D array of `float` data, the particle velocity.
 
 		Returns
 		-------
-		Array containing the derivative vector components.
+		ndarray
+			1D array of `float` data, the vector components of the solution.
 		"""
 		return self.partial_t(x, z, t) + self.dot_jacobian(v, x, z, t)

@@ -1,16 +1,9 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 import scipy.integrate as integrate
-from models import dim_deep_water_wave
-from transport_framework import particle, transport_system
+from transport_framework import particle, wave, transport_system
 
 class SantamariaTransportSystem(transport_system.TransportSystem):
-	""" 
-	Represents the transport of an inertial particle in a linear water wave as
-	described by Santamaria et al. (2013).
-	"""
+	"""Represent the transport of a particle in a linear deep water wave.[^1]"""
 
 	def __init__(self, particle, flow, density_ratio):
 		r"""
@@ -30,6 +23,13 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		st_response_time : float
 			The Stokes response time τ', computed as
 			$$\tau' = \frac{St}{\omega'}.$$
+
+		References
+		----------
+		[^1]: [F. Santamaria et al. (2013).](
+			  https://doi.org/10.1209/0295-5075/102/14003)
+			  Stokes drift for inertial particles transported by water waves.
+			  *EPL (Europhysics Letters)* 102(1), 14003.
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.reynolds_num = (2 * self.flow.max_velocity
@@ -42,8 +42,23 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 
 	def maxey_riley(self, t, y):
 		r"""
-		Evaluates the Maxey-Riley equation without history effects,
-		corresponding to equations (3) and (4) in Santamaria et al. (2013),
+		Evaluate the Maxey-Riley equation without history effects.
+		
+		Parameters
+		----------
+		t : ndarray
+			1D array containing `float` time series data.
+		y : list
+			A list of `float` data, the initial particle position and velocity.
+
+		Returns
+		-------
+		ndarray
+			1D array of `float` data, the particle velocity and acceleration.
+
+		Notes
+		-----
+		Computations correspond to equations (3) and (4) in [1],
 		$$\frac{\mathrm{d}\mathbf{x'}}{\mathrm{d}t'} = \mathbf{v'},$$
 		$$\frac{\mathrm{d}\mathbf{v'}}{\mathrm{d}t'}
 			= \frac{\mathbf{u'} - \mathbf{v'}}{\tau'} + (1 - \beta) \mathbf{g'}
@@ -52,18 +67,13 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 			\qquad \beta = \frac{3 \rho'_f}{\rho'_f + 2 \rho'_p},$$
 		where *a'* is the particle radius, *ν'* is the kinematic viscosity, and
 		*ρ'* is the density of the particle or the fluid.
-		
-		Parameters
-		----------
-		t : float or array
-			The time(s) when the Maxey-Riley equation should be evaluated.
-		y : list (array-like)
-			A list containing the initial particle position and velocity.
 
-		Returns
-		-------
-		Array
-			The components of the particle's velocity and acceleration.
+		References
+		----------
+		[^1]: [F. Santamaria et al. (2013).](
+			  https://doi.org/10.1209/0295-5075/102/14003)
+			  Stokes drift for inertial particles transported by water waves.
+			  *EPL (Europhysics Letters)* 102(1), 14003.
 		"""
 		beta = self.density_ratio
 		tau = self.st_response_time
@@ -79,8 +89,33 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 
 	def inertial_equation(self, t, y, order):
 		r"""
-		Evalutes the inertial equation, corresponding to equation (5) in
-		Santamaria et al. (2013),
+		Evaluate the inertial equation.[^1]
+
+		Parameters
+		----------
+		t : ndarray
+			1D array containing `float` time series data.
+		y : list
+			A list of `float` data, the initial particle position and velocity.
+		order : int
+			The order of the inertial equation (leading, first, or second).
+
+		Returns
+		-------
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		zdot : ndarray
+			1D array of `float` data, the vertical particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+
+		Notes
+		-----
+		Computations correspond to equation (5) in [1],
 		$$\mathbf{v'} = \mathbf{u'} + \tau' (1 - \beta) \Bigg(\mathbf{g}'
 		- \frac{\mathrm{D}\mathbf{u}'}{\mathrm{D}t'}\Bigg)
 		+ \tau'^2 (1 - \beta) \frac{\mathrm{D}^2\mathbf{u}'}{\mathrm{D}t'^2}
@@ -90,19 +125,12 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		where *a'* is the particle radius, *ν'* is the kinematic viscosity, and
 		*ρ'* is the density of the particle or the fluid.
 
-		Parameters
+		References
 		----------
-		t : float or array
-			The time(s) when the inertial equation should be evaluated.
-		y : list (array-like)
-			A list containing the x and z values to use in the computations.
-		order : int
-			The order of the inertial equation (leading, first, or second).
-
-		Returns
-		-------
-		Array
-			The components of the particle's velocity and acceleration.
+		[^1]: [F. Santamaria et al. (2013).](
+			  https://doi.org/10.1209/0295-5075/102/14003)
+			  Stokes drift for inertial particles transported by water waves.
+			  *EPL (Europhysics Letters)* 102(1), 14003.
 		"""
 		beta = self.density_ratio
 		tau = self.st_response_time
@@ -131,45 +159,40 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 
 		return np.concatenate((particle_velocity, particle_accel))
 
-	def run_numerics(self, equation, x_0, z_0, num_periods, delta_t, order=2,
-					 method='BDF'):
+	def run_numerics(self, equation, x_0, z_0, num_periods, delta_t, order=2):
 		"""
-		Computes the position and velocity of the particle over time.
+		Compute the position and velocity of the particle over time.
 
 		Parameters
 		----------
-		equation : fun
+		equation : function
 			The equation to evaluate, either M-R or the inertial equation.
-		x_0 : float
-			The initial horizontal position of the particle.
-		z_0 : float
-			The initial vertical position of the particle.
+		x_0, z_0 : float
+			The initial horizontal and vertical position of the particle.
 		num_periods : int
 			The number of wave periods to integrate over.
 		delta_t : float
 			The size of the timesteps used for integration.
 		order : int, default=2
 			The order of the inertial equation (leading, first, or second).
-		method : str, default='BDF'
-			The method of integration to use.
 
 		Returns
 		-------
-		x : array
-			The horizontal positions of the particle.
-		z : array
-			The vertical positions of the particle.
-		xdot : array
-			The horizontal velocities of the particle.
-		zdot : array
-			The vertical velocities of the particle.
-		t : array
-			The times at which the model was evaluated.
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		zdot : ndarray
+			1D array of `float` data, the vertical particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
 
 		Notes
 		-----
-		The velocity of the particle is set to the initial velocity of the
-		fluid.
+		The initial velocity of the particle is set to the initial velocity of
+		the fluid.
 		"""
 		# initial parameters
 		t_final = num_periods * self.flow.period
@@ -181,15 +204,15 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		if 'maxey_riley' in str(equation):
 			sols = integrate.solve_ivp(equation, t_span,
 									   [x_0, z_0, xdot_0, zdot_0],
-									   method=method, t_eval=t_eval,
+									   method='BDF', t_eval=t_eval,
 									   rtol=1e-10, atol=1e-12)
 		elif 'inertial' in str(equation):
 			sols = integrate.solve_ivp(equation, t_span,
 									   [x_0, z_0, xdot_0, zdot_0],
-									   method=method, t_eval=t_eval,
+									   method='BDF', t_eval=t_eval,
 									   rtol=1e-8, atol=1e-10, args=(order,))
 		else:
-			print('Could not recognize equation.')
+			print('FAILURE: Could not recognize equation.')
 
 		# unpack and return solutions
 		x, z, xdot, zdot = sols.y

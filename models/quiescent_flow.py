@@ -1,20 +1,17 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 from transport_framework import flow
 
 class QuiescentFlow(flow.Flow):
-	"""Represents a quiescent fluid flow."""
+	"""Represent a quiescent fluid flow."""
 
-	def __init__(self, depth=15):
+	def __init__(self, depth=50):
 		r"""
 		Attributes
 		----------
-		depth : float, default=15
+		depth : float, default=50
 			The depth of the fluid *h*.
-		gravity : float
-			The gravity **g** acting on the fluid.
+		gravity : ndarray
+			1D array of `float` data, the gravity **g'** acting on the fluid.
 		period : float
 			A parameter used in the computation of the integration timespan.
 		"""
@@ -23,101 +20,111 @@ class QuiescentFlow(flow.Flow):
 	
 	def velocity(self, x, z, t):
 		r"""
-		Computes the fluid velocity as, $$\mathbf{u} = (u, w) = \mathbf{0}.$$
+		Compute the fluid velocity,
+		$$\mathbf{u} = \langle u, w \rangle = \mathbf{0}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the velocity.
-		z : float or array
-			The vertical position(s) at which to evaluate the velocity.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the velocity.
 
 		Returns
 		-------
-		Array containing the velocity field vector components *u* and *w*.
+		ndarray
+			1D array of `float` data, the vector components *u* and *w*.
 		"""
-		return np.array([0, 0])
+		if isinstance(t, np.ndarray):
+			return np.zeros((2, t.size))
+		else:
+			return np.zeros((2,))
 
 	def partial_t(self, x, z, t):
 		r"""
-		Computes the partial derivative of the fluid with respect to time as,
+		Compute the partial derivative of the fluid with respect to time,
 		$$\frac{\partial \mathbf{u}}{\partial t} = \mathbf{0}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
-		return np.array([0, 0])
+		if isinstance(t, np.ndarray):
+			return np.zeros((2, t.size))
+		else:
+			return np.zeros((2,))
 
 	def partial_x(self, x, z, t):
 		r"""
-		Computes the partial derivative of the fluid with respect to the
-		horizontal position as,
+		Compute the partial derivative of the fluid with respect to the
+		horizontal position,
 		$$\frac{\partial \mathbf{u}}{\partial x} = \mathbf{0}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
-		return np.array([0, 0])
+		if isinstance(t, np.ndarray):
+			return np.zeros((2, t.size))
+		else:
+			return np.zeros((2,))
 
 	def partial_z(self, x, z, t):
 		r"""
-		Computes the partial derivative of the fluid with respect to the
-		vertical position as,
-		$$\frac{\partial \mathbf{u}}{\partial z} = \mathbf{0}.$$
+		Compute the partial derivative of the fluid with respect to the vertical
+		position, $$\frac{\partial \mathbf{u}}{\partial z} = \mathbf{0}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
-		return np.array([0, 0])
+		if isinstance(t, np.ndarray):
+			return np.zeros((2, t.size))
+		else:
+			return np.zeros((2,))
 
 	def material_derivative2(self, x, z, t):
 		r"""
-		Computes the second order material derivative as,
+		Compute the second order material derivative,
 		$$\frac{\mathrm{D}^2 \mathbf{u}}{\mathrm{D} t^2} = \mathbf{0}.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the second order material derivative vector components.
+		ndarray
+			1D array of `float` data, the vector components of the solution.
 		"""
-		return np.array([0, 0])
+		if isinstance(t, np.ndarray):
+			return np.zeros((2, t.size))
+		else:
+			return np.zeros((2,))

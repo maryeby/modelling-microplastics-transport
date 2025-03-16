@@ -1,0 +1,1384 @@
+import warnings
+import itertools
+import pandas as pd
+import numpy as np
+import scipy as scp
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
+from transport_framework import particle as prt
+from models import quiescent_flow as qfl
+from models import rotating_flow as rfl
+from models import deep_water_wave as dfl
+from models import water_wave as wfl
+from models import my_system as ts
+from models import haller_system as hs
+from utils.plot import initialize_figure as fig
+from utils.plot import initialize_subplot as subplot
+from utils.plot import FS
+from utils.data_tools import extract_data, match_data
+from utils.colors import COLORS, print_success, print_failure
+
+IN_FILE1 = 'examples/data/relaxing_particle/prasath_fig4.csv'
+IN_FILE2 = 'examples/data/rigid_body_rotation/daitche_fig3.csv'
+IN_FILE3 = 'examples/data/deep_water_wave/santamaria_fig1.csv'
+IN_FILE4 = 'examples/data/deep_water_wave/cathals_sm_fig1_recreation.csv'
+PLOT_IF_SUCCESSFUL = True
+
+def main():
+	"""Test various aspects of our model for different flows."""
+	# read data
+	relaxing_data = pd.read_csv(IN_FILE1)
+	rotating_data = pd.read_csv(IN_FILE2)
+	sm_data = pd.read_csv(IN_FILE3)
+	cc_data = pd.read_csv(IN_FILE4)
+
+	# relaxing particle tests
+	print('CASE 1: RELAXING PARTICLE')
+	q_flow = qfl.QuiescentFlow()			# quiescent flow object
+	xdots, ts, asymptotics = [], [], []		# empty lists to store results
+	betas = [0.01, 1, 5]
+	success = True
+
+	# run and test a simulation for each beta with and without history effects
+	warnings.filterwarnings('ignore')
+	for beta, history in itertools.product(betas, [True, False]):
+		params = {'beta': beta, 'history': history, 'asymptotic': False}
+		h_str = 'with history' if history else 'without history'
+
+		# run relaxing particle simulation, store results & get extracted data
+		print('Simulating a relaxing particle for beta =', beta, h_str, '...')
+		_, _, xdot, _, t, \
+		   _, _, _, _, _, _, _, _, _, _, _, _ = simulate(q_flow, beta, history)
+		xdots.append(xdot)
+		ts.append(t)
+		ext_xdot, ext_t = extract_data(['xdot', 't'], relaxing_data, params)
+
+		if history:
+			# compute asymptotic results and get extracted asymptotic data
+			print('Computing asymptotic results...', end='')
+			asymptotics.append(relaxing_asymptotics(beta, t[1:]))
+			print('done.')
+			params['asymptotic'] = True
+			ext_asym = extract_data('xdot', relaxing_data, params)
+
+			# compare asymptotic results to the extracted data
+			print('\nComparing solutions to extracted data from Prasath et al.',
+				  '(2019) Figure 4...')
+			if match_data(asymptotics[-1], ext_asym):
+				print_success('Asymptotic solutions match')
+			else:
+				print_failure('Asymptotic solutions do not match')
+				success = False
+		else:
+			print('\nComparing solutions to extracted data from Prasath et al.',
+				  '(2019) Figure 4...')
+
+		# compare the numerical results to the extracted data
+		if match_data(xdot, ext_xdot):
+			print_success(f'Numerical solutions match {h_str}\n')
+		else:
+			print_failure(f'Numerical solutions do not match {h_str}\n')
+			success = False
+	if not success: # plot the data if there were any failures
+		plot_relaxing_case(betas, relaxing_data, xdots, ts, asymptotics)
+		quit()
+
+	# rigid body rotation tests
+	print('\nCASE 2: RIGID BODY ROTATION')
+	r_flow = rfl.RotatingFlow()				# rotating flow object
+	history = True
+	beta = 0.75
+	x_0 = (1, 0)
+
+	# run rigid body rotation simulations
+	print('Simulating first order rigid body rotation...')
+	x, z, _, _, _, _, _, _, _, _, _, _, _, \
+	   _, _, _, _ = simulate(r_flow, beta, history, x_0=x_0, order=1)
+	x1 = np.array((x, z)).T
+	print('\nSimulating second order rigid body rotation...')
+	x, z, _, _, _, _, _, _, _, _, _, _, _, \
+	   _, _, _, _ = simulate(r_flow, beta, history, x_0=x_0, order=2)
+	x2 = np.array((x, z)).T
+	print('\nSimulating third order rigid body rotation...')
+	x, z, _, _, t, _, _, _, _, _, _, _, _, \
+	   _, _, history_x, history_z = simulate(r_flow, beta, history, x_0=x_0)
+	x3 = np.array((x, z)).T
+
+	# variables to help slice data for plotting
+	history_x = history_x[:-3]
+	history_z = history_z[:-3]
+	n = t.size // 5
+	m = n // 100 + 1
+	
+	# compute and store analytical solutions
+	print('\nComputing analytical results...')
+	x, z, x_int, z_int, exact_hx, exact_hz, \
+			analytical, delta_ts = rotating_analytics(t)
+	exact_hx, exact_hz = exact_hx[:-3], exact_hz[:-3]
+	exact = np.array((x, z)).T
+	x_int = np.array((x_int[:m], z_int[:m]))
+
+	# compute relative error
+	print('Computing relative error...', end='')
+	e_rel1 = np.linalg.norm(exact - x1, axis=1) / np.linalg.norm(exact, axis=1)
+	e_rel2 = np.linalg.norm(exact - x2, axis=1) / np.linalg.norm(exact, axis=1)
+	e_rel3 = np.linalg.norm(exact - x3, axis=1) / np.linalg.norm(exact, axis=1)
+	print('done.')
+
+	# get extracted data from Daitche (2013) Fig 3
+	names = ['first_x', 'first_z', 'exact_x', 'exact_z', 'rel_error1',
+			 'rel_error2', 'rel_error3', 't1', 't2', 't3']
+	ext_x, ext_z, ext_x_analytical,	ext_z_analytical, ext_e_rel1, ext_e_rel2, \
+		ext_e_rel3, ext_t1, ext_t2, ext_t3 = extract_data(names, rotating_data)
+
+	# compare our numerical results to the data extracted from Daitche
+	print('\nComparing numerical results to extracted data from Daitche (2013)',
+		  'Figure 3...')
+	if match_data(x1[:, 0], ext_x) and match_data(x1[:, 1], ext_z):
+		print_success('First order numerical solutions match')
+	else:
+		print_failure('First order numerical solutions do not match')
+		success = False
+		plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n])
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+
+	# compare error analysis to the extracted data
+	print('Comparing relative error to extracted data from Daitche (2013)',
+		  'Figure 3...')
+	if match_data(e_rel1, ext_e_rel1):
+		print_success('First order error analysis matches')
+	else:
+		print_failure('First order error analysis does not match')
+		success = False
+		plot_error_analysis(rotating_data, t, e_rel1)
+		plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n])
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+	if match_data(e_rel2, ext_e_rel2):
+		print_success('Second order error analysis matches')
+	else:
+		print_failure('Second order error analysis does not match')
+		success = False
+		plot_error_analysis(rotating_data, t, e_rel1, e_rel2)
+		plot_rotating_trajectory(rotating_data, exact[:n], x_int,
+								 x1[:n], x2[:n])
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+	if match_data(e_rel3, ext_e_rel3):
+		print_success('Third order error analysis matches')
+	else:
+		print_failure('Third order error analysis does not match')
+		success = False
+		plot_error_analysis(rotating_data, t, e_rel1, e_rel2, e_rel3)
+		plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n],
+								 x2[:n], x3[:n])
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+
+	# compare analytical solutions for history force to numerical solutions
+	print('Comparing numerical history to analytical history...')
+	if match_data(exact_hx, history_x):
+		print_success('History force verified in the x direction')
+	else:
+		print_failure('History force not verified in the x direction')
+		success = False
+		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
+		plt.show()
+		quit()
+	if match_data(exact_hz, history_z):
+		print_success('History force verified in the z direction')
+	else:
+		print_failure('History force not verified in the z direction')
+		success = False
+		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
+		plt.show()
+		quit()
+
+	# neutrally buoyant particle in a wavy flow tests
+	print('\n\nCASE 3: NEUTRALLY BUOYANT PARTICLE IN A WAVY FLOW')
+	beta = 1
+	depths, amplitude, wavelength = [10, 1, 0.5], 0.02, 1
+	label_values = (np.array(depths) / wavelength).tolist()
+	label1 = 'h\'/' +  r'$\lambda$' + f'\' = {wavelength / depths[1]:.2f}'
+	label2 = 'h\'/' +  r'$\lambda$' + f'\' = {wavelength / depths[2]:.2f}'
+	u_bar, z_bar, analytical_u, analytical_z = [], [], [], []
+
+	# run and test a simulation for each water depth at 4 different z_0 values
+	m = 1
+	for depth in depths:
+		wave = wfl.WaterWave(depth, amplitude, wavelength)
+		h = wave.wavenum * depth
+		z = np.linspace(0, -h, 100)
+		analytical_z.append(z / h)
+		analytical_u.append(analytical_stokes_drift(wave, z))
+		z_0s = np.linspace(0, -h, 4, endpoint=False)
+		for z_0 in z_0s:
+			print(f'({m}/{len(depths) * len(z_0s):g}) ', end='')
+			drift_vel_success, u, z = test_wave(wave, beta, (0, z_0))
+			u_bar.append(u)
+			z_bar.append(z)
+			success &= drift_vel_success
+			m += 1
+
+	if not success: # plot if any tests failed
+		plot_wavy_drift_velocity(label_values, analytical_u, analytical_z,
+								 u_bar, z_bar)
+		plt.legend(fontsize=FS)
+		plt.show()
+
+	# +/- buoyant particles in a wavy flow of arbitrarily deep water
+	print('\n\nCASE 4: POSITIVELY BUOYANT PARTICLE IN A WAVY FLOW')
+	wave = dfl.DeepWaterWave(depth=5, amplitude=0.026, wavelength=0.5)
+	k = wave.wavenum
+	x_light, z_light = test_wave(wave, beta=1.04, x_0=(k * 0.13, k * -0.4))
+	print('\n\nCASE 5: NEGATIVELY BUOYANT PARTICLE IN A WAVY FLOW')
+	x_heavy, z_heavy = test_wave(wave, beta=0.96)
+
+	# extract data from Santamaria et al. (2013) Figure 1
+	names = ['heavy_x', 'heavy_z', 'light_x', 'light_z']
+	sm_heavy_x, sm_heavy_z, sm_light_x, sm_light_z = extract_data(names,
+																  sm_data)
+	# compare trajectories to extracted data
+	print('\nComparing solutions to extracted data from Santamaria et al.',
+		  '(2013) Figure 1...')
+	if match_data(sm_heavy_x, x_heavy) and match_data(sm_heavy_z, z_heavy) \
+		and match_data(sm_light_x, x_light) and match_data(sm_light_z, z_light):
+		print_success('Numerical solutions match')
+	else:
+		print_failure('Numerical solutions do not match')
+		plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy,
+												 x_light, z_light)
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+
+	if success and PLOT_IF_SUCCESSFUL:
+		plot_relaxing_case(betas, relaxing_data, xdots, ts, asymptotics)
+		plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n],
+								 x2[:n], x3[:n])
+		plot_error_analysis(rotating_data, t, e_rel1, e_rel2, e_rel3)
+		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
+		plot_wavy_drift_velocity(label_values, analytical_u, analytical_z,
+								 u_bar, z_bar)
+		plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy,
+												 x_light, z_light)
+		plt.legend(fontsize=FS)
+		plt.show()
+
+def simulate(flow, beta, include_history, x_0=(0, 0), order=3):
+	"""
+	Simulate a particle moving through the specified `flow`.
+
+	Parameters
+	----------
+	flow : Flow (obj)
+		The flow through which the particle is transported.
+	beta : float
+		The ratio between the particle and fluid densities.
+	include_history : bool
+		Whether to include history effects.
+	x_0 : tuple, default=(0, 0)
+		The initial horizontal and vertical positions of the particle.
+	order : int, default=3
+		The order of the integration scheme  (first, second, or third).
+
+	Returns
+	-------
+	ndarrays
+		The position and velocity of the particle over time, and forces.
+	"""
+	assert order in [1, 2, 3], 'Integration scheme must be' \
+							  + ' 1st, 2nd, or 3rd order'
+	scale = 2 / 3 # scale to use for parameter translation
+	if isinstance(flow, qfl.QuiescentFlow):
+		x_0, z_0 = x_0								# initial particle position
+		xdot_0, zdot_0 = 1, 1						# initial particle velocity
+		stokes_num = scale							# St = 1
+		num_periods, delta_t = 15, 1e-2				# time and timestep
+		density_ratio = scale * 3 / (1 + 2 * beta)	# Prasath param translation
+
+	elif isinstance(flow, rfl.RotatingFlow):
+		x_0, z_0 = x_0								# initial particle position
+		xdot_0, zdot_0 = flow.velocity(x_0, z_0)	# initial particle velocity
+		stokes_num = scale * 0.3					# St
+		num_periods, delta_t = 100, 1e-2			# time and timestep
+		density_ratio = scale * beta				# Daitche param translation
+
+	else:
+		x_0, z_0 = x_0								# initial particle position
+		xdot_0, zdot_0 = flow.velocity(x_0, z_0, t=0) # initial particle vel
+		density_ratio = scale * beta				# Daitche param translation
+		if beta == 1:
+			num_periods, delta_t = 3, 1e-3			# time and timestep
+			stokes_num = 0.1						# St
+		elif beta == 0.96 or beta == 1.04:
+			num_periods, delta_t = 38, 1e-2			# time and timestep
+			stokes_num = scale * np.pi / flow.wavelength * flow.amplitude * beta
+		else:
+			print_failure('Beta not recognized for wavy example')
+			quit()
+
+	# create particle and transport system objects, run simulation
+	t = np.arange(0, num_periods * flow.period, delta_t)
+	y = [x_0, z_0, xdot_0, zdot_0]
+	my_particle = prt.Particle(stokes_num)
+	my_system = ts.MyTransportSystem(my_particle, flow, density_ratio)
+	return my_system.maxey_riley(t, y, include_history, include_H=True,
+								 order=order)
+
+def relaxing_asymptotics(beta, t):
+	r"""
+	Compute the leading order asymptotic behavior[^1] of the particle velocity.
+
+	Parameters
+	----------
+	beta : float
+		The ratio between the particle and fluid densities.
+	t : float or ndarray
+		Float or 1D array containing `float` time series data.
+
+	Returns
+	-------
+	float or ndarray
+		The asymptotic particle velocity.
+
+	Notes
+	-----
+	The computation is based on eq (4.7) from [1],
+	$$q^{(2)}(0, t) \approx c(\alpha, \gamma)
+		- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
+		+ \mathcal{O}(t^{3 / 2}),$$
+	with a sign change on the singular term.
+
+	References
+	----------
+	[^1]: [S. G. Prasath et al. (2019).](https://doi.org/10.1017/jfm.2019.194)
+		  Accurate solution method for the Maxey–Riley equation, and the
+		  effects of Basset history. *Journal of Fluid Mechanics* 868, 428–460.
+	"""
+	density_ratio = 2 / (1 + 2 * beta)	# parameter translation
+	stokes_num = 2 / 3
+	alpha = density_ratio / stokes_num
+	gamma = 3 / 2 * density_ratio * np.sqrt(2 / stokes_num)
+	return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (gamma / (2 * alpha ** 2))
+
+def rotating_analytics(t):
+	"""
+	Return analytical solutions[^2] for rigid body rotation.
+	
+	Parameters
+	----------
+	t : ndarray
+		1D array containing `float` time series data.
+
+	Returns
+	-------
+	x : ndarray
+		1D array of `float` data, the horizontal particle position.
+	z : ndarray
+		1D array of `float` data, the vertical particle position.
+	int_x : ndarray
+		1D array of `float` data, the horizontal particle positions at `int` t.
+	int_z : ndarray
+		1D array of `float` data, the vertical particle positions at `int` t.
+	history_x : ndarray
+		1D array of `float` data, the horizontal history force.
+	history_z : ndarray
+		1D array of `float` data, the vertical history force.
+	results : dict
+		The `x` and `z` solutions for various timestep sizes.
+	timesteps : ndarray
+		An array of `float` timestep sizes used to evaluate the analytics.
+
+	References
+	----------
+	[^2]: [F. Candelier et al. (2004).](https://doi.org/10.1063/1.1689970)
+		  On the effect of the Boussinesq–Basset force on the radial migration
+		  of a Stokes particle in a vortex. *Physics of Fluids* 16(5),
+		  1765–1776.
+	"""
+	# translated parameters
+	scale = 2 / 3
+	density_ratio = scale * 0.75
+	stokes_num = scale * 0.3	# St as defined in Haller & Sapsis (2008)
+	S = stokes_num / 2			# pseudo-Stokes num from Candelier et al. (2004)
+	gamma = 1 / density_ratio - 1 / 2
+
+	flow = rfl.RotatingFlow()
+	x_0, z_0 = 1, 0						# initial particle position
+	u_0, w_0 = flow.velocity(x_0, z_0)	# initial fluid velocity
+	Z_0, U_0 = x_0 + 1j * z_0, u_0 + 1j * w_0
+
+	# initialize coeffs from Candelier et al. (2004) eq (10), compute roots of X
+	A_coeff = 1 / (S * (2 * gamma + 1))
+	B = (3 * S - 1j) / (S * (2 * gamma + 1))
+	C = -3 / ((2 * gamma + 1) * np.sqrt(np.pi * S))
+	X = np.roots([1, -C * np.sqrt(np.pi), A_coeff, 1j * C * np.sqrt(np.pi), B])
+
+	# compute A as in Candelier et al. (2004) eq (A2)
+	A = [0, 0, 0, 0]
+	for i in range(4):
+		numerator = U_0 * (X[i] ** 2 - C * np.sqrt(np.pi) * X[i]) - B * Z_0
+		denominator = 1
+		for j in range(4):
+			if j != i:
+				denominator *= X[i] - X[j]
+		A[i] = numerator / denominator
+	
+	# compute analytical solutions for various delta_t's
+	timesteps = np.linspace(1e-3, 1e-1, 10)
+	results = dict.fromkeys(list(itertools.chain.from_iterable(
+						   ('x_%.2e' % delta_t, 'z_%.2e' % delta_t)
+							for delta_t in timesteps)))
+	for delta_t in tqdm(timesteps):
+		x_label = 'x_%.2e' % delta_t
+		z_label = 'z_%.2e' % delta_t
+		analytical_t = np.arange(0, 10 + delta_t, delta_t)
+		Z = 0
+		for i in range(4):
+			Z += A[i] / X[i] * np.exp(X[i] ** 2 * analytical_t) \
+					  * scp.special.erfc(-X[i] * np.sqrt(analytical_t))
+		x, z = np.real(Z), np.imag(Z)
+		results[x_label] = x
+		results[z_label] = z
+
+	# compute Z, U, and F as in Candelier et al. (2004) eqs (12), (A3), and (14)
+	delta_t = 1e-2
+	Z, U, F = 0, 0, 0
+	for i in range(len(A)):
+		Z += A[i] / X[i] * np.exp(X[i] ** 2 * t) * scp.special.erfc(-X[i]
+																* np.sqrt(t))
+		U += A[i] * X[i] * np.exp(X[i] ** 2 * t) \
+				  * scp.special.erfc(-X[i] * np.sqrt(t))
+		F += np.sqrt(np.pi) * (1j * A[i] / X[i] - A[i] * X[i]) * X[i] \
+							* np.exp(X[i] ** 2 * t) \
+							* scp.special.erfc(-X[i] * np.sqrt(t))
+	F *= -C * density_ratio * (gamma + 1 / 2)
+	x, z = np.real(Z), np.imag(Z)		# particle position
+	v_x, v_z = np.real(U), np.imag(U)   # particle velocity
+	u_x, u_z = flow.velocity(x, z, t)   # fluid velocity
+	w_x, w_z = v_x - u_x, v_z - u_z	 # relative velocity
+	F_x, F_z = np.real(F), np.imag(F)   # history force
+
+	# compute history force using the formula for H from Daitche (2013)
+	H_x, H_z = [0] * t.size, [0] * t.size
+	alpha = ts.compute_alpha(2, hide_progress=False)
+	beta = ts.compute_beta(3, alpha[:, 1], hide_progress=False) 
+	gamma = ts.compute_gamma(t.size, beta[:, 2], hide_progress=False) 
+	xi = np.sqrt((9 * delta_t) / (2 * np.pi)) \
+							   * (density_ratio / np.sqrt(stokes_num))
+
+	for n in tqdm(range(t.size - 1)):
+		for j in range(n + 1): 
+			H_x[n] += gamma[j, n] * w_x[n - j]
+			H_z[n] += gamma[j, n] * w_z[n - j]
+	H_x = np.array(H_x) * -xi 
+	H_z = np.array(H_z) * -xi 
+	history_x, history_z = np.gradient(H_x, t), np.gradient(H_z, t)
+
+	# get integer times and the particle position at each integer time  
+	int_indices = np.where(t == t.astype(int))
+	int_x = np.take(x, int_indices[0])
+	int_z = np.take(z, int_indices[0])
+
+	return x, z, int_x, int_z, history_x, history_z, results, timesteps
+
+def analytical_stokes_drift(wave, z):
+	r"""
+	Compute the analytical horizontal Stokes drift velocity.
+
+	Parameters
+	----------
+	wave : Wave (obj)
+		The wave through which the particle is transported.
+	z : float or ndarray
+		The vertical position(s) of the particle.
+
+	Returns
+	-------
+	u_d : ndarray
+		1D array containing `float` data, the horizontal Stokes drift velocity.
+
+	Notes
+	-----
+	The computation is performed using the expression,
+	$$u_d = \frac{\cosh{(2(z + h))}}{2\sinh^2(h)},$$
+	based on the dimensional equation[^3],
+	$$u'_{SD} = c'(A'k')^2 \frac{\cosh{(2k'(z' + h'))}}{2\sinh^2(k'h')}.$$
+
+	References
+	----------
+	[^3]: [T. S. van den Bremer & Ø. Breivik (2018).](
+		  https://doi.org/10.1098/rsta.2017.0104) Stokes drift.
+		  *Philosophical Transactions of the Royal Society A: Mathematical,
+		  Physical and Engineering Sciences* 376(2111), 20170104.
+	"""
+	k, A = wave.wavenum, wave.amplitude
+	h = k * wave.depth	
+	u_d = np.cosh(2 * (z + h)) / (2 * np.sinh(h) ** 2)
+	return u_d
+
+def test_wave(wave, beta, x_0=(0, 0)):
+	"""
+	Run various tests on a simulated particle in a wavy flow.
+
+	Parameters
+	----------
+	wave : Wave (obj)
+		The wave through which the particle is transported.
+	beta : float
+		The ratio between the particle and fluid densities.
+	x_0 : tuple, default=(0, 0)
+		The horizontal and vertical positions of the particle.
+
+	Returns
+	-------
+	success : bool
+		Whether the verification of the Stokes drift velocity succeeded.
+	u_bar : float
+		The mean horizontal drift velocity of the particle.
+	z_bar : float
+		The mean vertical position of the particle.
+	x : ndarray
+		1D array of `float` data, the horizontal particle position.
+	z : ndarray
+		1D array of `float` data, the vertical particle position.
+
+	Notes
+	-----
+	Returns success, u_bar, z_bar only if the particle is neutrally buoyant,
+	returns x, z without history otherwise.
+	"""
+	# define local variables depending on the value of beta
+	if beta < 1:
+		message = 'Simulating a negatively buoyant particle'
+		num_periods, delta_t = 38, 1e-2
+		stokes_num = 2 / 3 * np.pi / wave.wavelength * wave.amplitude * beta
+	elif beta > 1:
+		message = 'Simulating a positively buoyant particle'
+		num_periods, delta_t = 38, 1e-2
+		stokes_num = 2 / 3 * np.pi / wave.wavelength * wave.amplitude * beta
+	else:
+		message = 'Simulating a neutrally buoyant particle'
+		num_periods, delta_t = 3, 1e-3
+		stokes_num = 0.1
+
+	# run simulation without history
+	print(f'{message} without history...')
+	x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z, \
+		drag_x, drag_z, _, _, history_x, history_z = simulate(wave, beta,
+		include_history=False, x_0=x_0)
+	u_x, u_z = wave.velocity(x, z, t) # compute fluid velocity
+
+	# run numerical integration (Haller system)
+	print('Numerically integrating the Maxey-Riley equation...')
+	my_particle = prt.Particle(stokes_num)
+	haller_system = hs.HallerTransportSystem(my_particle, wave, (2 / 3) * beta)
+	x_h, z_h, xdot_h, zdot_h, t_h = haller_system.run_numerics(haller_system
+												 .maxey_riley, x_0[0], x_0[1],
+												 num_periods, delta_t)
+	# truncate data for comparison if necessary
+	if len(x) < len(x_h):
+		x_h = x_h[:len(x)]
+		z_h = z_h[:len(z)]
+		xdot_h = xdot_h[:len(xdot)]
+		zdot_h = zdot_h[:len(zdot)]
+		t_h = t_h[:len(t)]
+	# compare non-history solutions to numerical integration
+	rtol, atol = 1e-2, 1e-4
+	if np.allclose(x, x_h, rtol, atol) & np.allclose(z, z_h, rtol, atol) \
+	 & np.allclose(xdot, xdot_h, rtol, atol) \
+	 & np.allclose(zdot, zdot_h, rtol, atol) & np.allclose(t, t_h, rtol, atol):
+		print_success('Simulated results match numerical integration')
+	else:
+		print_failure('Simulated results do not match numerical integration')
+		# plot particle trajectory
+		fig('x', 'z')
+		plt.plot(x_h, z_h, c=COLORS[-1], marker='o', linewidth=4,
+				 label='Numerical integration')
+		plt.plot(x, z, c='k', marker='.', label='Simulation')
+
+		# plot horizontal particle velocity over time
+		fig('t', r'$\dot{x}$')
+		plt.plot(t_h, xdot_h, c=COLORS[-1], marker='o', linewidth=4,
+				 label='Numerical integration')
+		plt.plot(t, xdot, c='k', marker='.', label='Simulation')
+
+		# plot vertical particle velocity over time
+		fig('t', r'$\dot{z}$')
+		plt.plot(t_h, zdot_h, c=COLORS[-1], marker='o', linewidth=4,
+				 label='Numerical integration')
+		plt.plot(t, zdot, c='k', marker='.', label='Simulation')
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+
+	# verify computed attributes, velocities, and forces
+	desk_check_attributes(wave, beta)
+	verify_trajectory_range(x, z, wave.depth * wave.wavenum)
+	verify_num_periods(x, z, xdot, t, num_periods)
+	verify_velocities(beta, x, z, t, xdot, zdot, u_x, u_z)
+	verify_forces(wave, beta, stokes_num, u_x, u_z, x[0], z[0], xdot, zdot, t,
+				  fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
+				  drag_x, drag_z, history_x, history_z, include_history=False)
+
+	# save non-history results
+	x_no_history, z_no_history, xdot_no_history, zdot_no_history, \
+		t_no_history = x, z, xdot, zdot, t
+
+	# run simulation with history
+	print(f'\n{message} with history...')
+	x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, \
+		mass_z, drag_x, drag_z, _, _, history_x, history_z = simulate(wave,
+		beta, include_history=True, x_0=x_0)
+
+	if beta == 1:
+		# check that simulation without history = simulation with history
+		if x.size != x_no_history.size:
+			print_failure('Simulation with history ended prematurely')
+			fig('x', 'z')
+			plt.plot(x_no_history, z_no_history, c='k', label='without history')
+			plt.plot(x, z, c='k', ls=':', label='with history')
+			plt.legend(fontsize=FS)
+			plt.show()
+			quit()
+		if np.allclose(x, x_no_history) & np.allclose(z, z_no_history) \
+			& np.allclose(xdot, xdot_no_history) \
+			& np.allclose(zdot, zdot_no_history) & np.allclose(t, t_no_history):
+			print_success('Simulation with history matches simulation without '
+						+ 'history')
+		else:
+			print_failure('Simulation with history does not match simulation '
+						+ 'without history')
+			fig('x', 'z')
+			plt.plot(x_no_history, z_no_history, c='k', label='without history')
+			plt.plot(x, z, c='k', ls=':', label='with history')
+			plt.legend(fontsize=FS)
+			plt.show()
+			quit()
+		# verify Stokes drift velocity
+		success, u_bar, z_bar = verify_drift_velocity(wave, x, z, xdot, t)
+		return success, u_bar, z_bar
+	else:
+		# verify computed attributes, velocities, and forces
+		u_x, u_z = wave.velocity(x, z, t)
+		desk_check_attributes(wave, beta)
+		verify_trajectory_range(x, z, wave.depth * wave.wavenum)
+		verify_num_periods(x, z, xdot, t, num_periods)
+		verify_velocities(beta, x, z, t, xdot, zdot, u_x, u_z)
+		verify_forces(wave, beta, stokes_num, u_x, u_z, x[0], z[0], xdot, zdot, 
+					  t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
+					  drag_x, drag_z, history_x, history_z,
+					  include_history=True)
+		return x_no_history, z_no_history
+
+def desk_check_attributes(wave, beta):
+	"""Desk check computed attributes of the Wave & TransportSystem classes."""
+	print('\nDesk checking computed attributes of the Wave and TransportSystem',
+		  'objects...')
+	my_particle = prt.Particle(stokes_num=0.1)
+	my_system = ts.MyTransportSystem(my_particle, wave, (2 / 3) * beta)
+	k = wave.wavenum
+	omega = wave.angular_freq
+	g = scp.constants.g
+
+	if beta == 1:
+		desk_k = 6.28318531
+		desk_period = 0.78956835
+		if wave.depth == 10:
+			desk_omega = 7.85099025
+			desk_c = 1.24952391
+			desk_Fr = 0.12566371
+			desk_Re = 24990.47812053
+			desk_Re_p = 212.09163260
+		elif wave.depth == 1:
+			desk_omega = 7.85096287
+			desk_c = 1.24951955
+			desk_Fr = 0.12566327
+			desk_Re = 24990.39097033
+			desk_Re_p = 212.09126278
+		elif wave.depth == 0.5:
+			desk_omega = 7.83634264
+			desk_c = 1.24719267
+			desk_Fr = 0.12542926
+			desk_Re = 24943.85332772
+			desk_Re_p = 211.89369030
+	elif beta == 0.96 or beta == 1.04:
+		desk_k = 12.5663706
+		desk_omega = 11.1029769
+		desk_c = 0.8835468
+		desk_period = 2.05287771
+		desk_Fr = 0.3267256
+		desk_Re = 22972.2175074
+		desk_Re_p = 203.3469732
+	else:
+		print_failure('Could not desk check attributes, beta not recognized.')
+		quit()
+
+	assert np.isclose(k, desk_k), f'Wavenumber {k:.4f}m^-1 computed ' \
+								+ f'incorrectly, correct value is {desk_k:.4f}'\
+								+ 'm^-1'
+	print_success('Wavenumber computed correctly')
+	assert np.isclose(omega, desk_omega, rtol=1e-3, atol=1e-5), \
+		f'Angular frequency {omega:.4f}s^-1 computed incorrectly,' \
+		+ f' the correct value is {desk_omega:.4f}s^-1'
+	print_success('Angular frequency computed correctly')
+	assert np.isclose(wave.phase_velocity, desk_c, rtol=1e-3, atol=1e-5), \
+		f'Phase velocity {wave.phase_velocity:.4f}m/s computed incorrectly, ' \
+		+ f'correct value is {desk_c:.4f}m/s'
+	print_success('Phase velocity computed correctly')
+	assert np.isclose(wave.period, desk_period, rtol=1e-3, atol=1e-5), \
+		f'Wave period {wave.period:.4f}s computed incorrectly,' \
+		+ f' the correct value is {desk_period:.4f}s'
+	print_success('Wave period computed correctly')
+	assert np.isclose(wave.froude_num, desk_Fr, rtol=1e-3, atol=1e-5), \
+		f'Froude number {wave.froude_num} computed incorrectly,' \
+		+ f' the correct value is {desk_froude:.4f}'
+	print_success('Froude number computed correctly')
+	assert np.isclose(wave.reynolds_num, desk_Re, rtol=1e-3, atol=1e-5), \
+		f'Reynolds number {wave.reynolds_num} computed incorrectly,' \
+		+ f' the correct value is {desk_Re:.4f}'
+	print_success('Reynolds number computed correctly')
+	assert np.isclose(my_system.reynolds_num, desk_Re_p, rtol=1e-3, atol=1e-5),\
+		f'Particle Reynolds number {my_system.reynolds_num} computed' \
+		+ f' incorrectly, the correct value is {desk_Re_p:.4f}'
+	print_success('General particle Reynolds number computed correctly')
+
+def verify_trajectory_range(x, z, h):
+	"""
+	Verify that vertical particle positions are between the seabed and surface.
+
+	Parameters
+	----------
+	x : ndarray
+		1D array of `float` data, the horizontal particle position.
+	z : ndarray
+		1D array of `float` data, the vertical particle position.
+	h : float
+		The dimensionless water depth.
+	"""
+	if np.min(z) < -h:
+		print_failure('Particle trajectory penetrated the seabed')
+		fig('x', 'z')
+		plt.plot(x, z, c='k')
+		plt.axhline(-h, c=COLORS[-1], ls=':')
+		plt.show()
+		quit()
+	elif 1e-5 < np.max(z):
+		print_failure('Particle trajectory exceeded the water surface')
+		fig('x', 'z')
+		plt.plot(x, z, c='k')
+		plt.axhline(0, c=COLORS[-1], ls=':')
+		plt.show()
+		quit()
+	else:
+		print_success('Particle trajectory is within the surface and seabed')
+
+def verify_velocities(beta, x, z, t, xdot, zdot, u_x=None, u_z=None):
+	"""
+	Verify the particle and fluid velocities numerically.
+
+	Parameters
+	----------
+	beta : float
+		The ratio between the particle and fluid densities.
+	x : ndarray
+		1D array of `float` data, the horizontal particle position.
+	z : ndarray
+		1D array of `float` data, the vertical particle position.
+	t : ndarray
+		1D array containing `float` time series data.
+	xdot : ndarray
+		1D array of `float` data, the horizontal particle velocity.
+	zdot : ndarray
+		1D array of `float` data, the vertical particle velocity.
+	u_x : ndarray, default=None
+		1D array of `float` data, the horizontal fluid velocity.
+	u_z : ndarray, default=None
+		1D array of `float` data, the vertical fluid velocity.
+	"""
+	print('\nChecking the particle and fluid velocities...')
+	rtol, atol = 1e-2, 1e-3
+	if beta == 1:
+		# verify that fluid velocity = particle velocity
+		if np.allclose(xdot, u_x, rtol, atol):
+			print_success('Particle velocity = fluid velocity in the '
+						+ 'x direction')
+		else:
+			print_failure('Particle velocity != fluid velocity in the '
+						+ 'x direction')
+			fig('t', 'horizontal velocity')
+			plt.plot(t, xdot, c='k', marker='.', label=r'$\dot{x}$')
+			plt.plot(t, u_x, c='k', marker='.', ls=':', label=r'$u_x$')
+			plt.legend(fontsize=FS)
+			plt.show()
+			quit()
+		if np.allclose(zdot, u_z, rtol, atol):
+			print_success('Particle velocity = fluid velocity in the '
+						+ 'z direction')
+		else:
+			print_failure('Particle velocity != fluid velocity in the '
+						+ 'z direction')
+			fig('t', 'vertical velocity')
+			plt.plot(t, zdot, c='k', marker='.', label=r'$\dot{z}$')
+			plt.plot(t, u_z, c='k', marker='.', ls=':', label=r'$u_z$')
+			plt.legend(fontsize=FS)
+			plt.show()
+			quit()
+
+	# verify that particle velocity = numerical derivative
+	num_x = np.gradient(x, t)
+	num_z = np.gradient(z, t)
+	if np.allclose(xdot[1:-1], num_x[1:-1], rtol, atol):
+		print_success('Particle velocity matches the numerical derivative '
+					+ 'in the x direction')
+	else:
+		print_failure('Particle velocity does not match the numerical '
+					 + 'derivative in the x direction')
+		fig('t', 'horizontal velocity')
+		plt.plot(t, xdot, c='k', marker='.', label=r'$\dot{x}$')
+		plt.plot(t, num_x, c='k', marker='.', ls=':',
+				 label=r'$\partial{x}/\partial{t}$')
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+	if np.allclose(zdot[1:-1], num_z[1:-1], rtol, atol):
+		print_success('Particle velocity matches the numerical derivative '
+					+ 'in the z direction')
+	else:
+		print_failure('Particle velocity does not match the numerical '
+					+ 'derivative in the z direction')
+		fig('t', 'vertical velocity')
+		plt.plot(t, zdot, c='k', marker='.', label=r'$\dot{z}$')
+		plt.plot(t, num_z, c='k', marker='.', ls=':',
+				 label=r'$\partial{z}/\partial{t}$')
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+
+def verify_forces(wave, beta, stokes_num, u_x, u_z, x_0, z_0, xdot, zdot, t,
+				  fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
+				  drag_x, drag_z, history_x, history_z, include_history):
+	"""
+	Verify the horizontal and vertical components of each force.
+
+	Parameters
+	----------
+	wave : Wave (obj)
+		The wave through which the particle is transported.
+	beta : float
+		The ratio between the particle and fluid densities.
+	stokes_num : float
+			The Stokes number *St*.
+	u_x : ndarray
+		1D array of `float` data, the horizontal fluid velocity.
+	u_z : ndarray
+		1D array of `float` data, the vertical fluid velocity.
+	x_0, z_0 : float
+		The initial horizontal and vertical position of the particle.
+	xdot : ndarray
+		1D array of `float` data, the horizontal particle velocity.
+	zdot : ndarray
+		1D array of `float` data, the vertical particle velocity.
+	t : ndarray
+		1D array containing `float` time series data.
+	fpg_x : ndarray
+		1D array of `float` data, the horizontal fluid pressure gradient.
+	fpg_z : ndarray
+		1D array of `float` data, the vertical fluid pressure gradient.
+	buoyancy_x : ndarray
+		1D array of `float` data, the horizontal buoyancy force.
+	buoyancy_z : ndarray
+		1D array of `float` data, the vertical buoyancy force.
+	mass_x : ndarray
+		1D array of `float` data, the horizontal added mass force.
+	mass_z : ndarray
+		1D array of `float` data, the vertical added mass force.
+	drag_x : ndarray
+		1D array of `float` data, the horizontal Stokes drag.
+	drag_z : ndarray
+		1D array of `float` data, the vertical Stokes drag.
+	history_x : ndarray
+		1D array of `float` data, the horizontal history force.
+	history_z : ndarray
+		1D array of `float` data, the vertical history force.
+	include_history : bool
+		Whether the history force was included in the simulation.
+	"""
+	print('\nVerifying individual forces...')
+	# slightly truncate arrays to avoid numerical errors near t_final
+	n = -5
+	u_x = u_x[:n]
+	u_z = u_z[:n]
+	xdot = xdot[:n]
+	zdot = zdot[:n]
+	t = t[:n]
+	fpg_x = fpg_x[:n]
+	fpg_z = fpg_z[:n]
+	buoyancy_x = buoyancy_x[1:n + 1]
+	buoyancy_z = buoyancy_z[1:n + 1]
+	mass_x = mass_x[:n]
+	mass_z = mass_z[:n]
+	drag_x = drag_x[:n]
+	drag_z = drag_z[:n]
+	history_x = history_x[5:n]
+	history_z = history_z[5:n]
+
+	# define local variables for verification
+	w_x, w_z = xdot - u_x, zdot - u_z			# relative velocity w
+	A_x = np.gradient(w_x, t)[5:]				# dw_x/dt
+	A_z = np.gradient(w_z, t)[5:]				# dw_z/dt
+	G_x = (fpg_x + buoyancy_x + mass_x + drag_x)[5:]
+	G_z = (fpg_z + buoyancy_z + mass_z + drag_z)[5:]
+	success = True
+	rtol, atol = 1e-2, 1e-3
+
+	# verify the fluid pressure gradient at t = 0
+	mdx, mdz = wave.material_derivative(x_0, z_0, t=0)
+	if np.isclose(fpg_x[0], (beta - 1) * mdx, rtol, atol):
+		print_success('Fluid pressure gradient verified at t = 0 in the '
+					+ 'x direction')
+	else:
+		print_failure('Fluid pressure gradient not verified at t = 0 in the '
+					+ 'x direction')
+		success = False
+	if np.isclose(fpg_z[0], (beta - 1) * mdz, rtol, atol):
+		print_success('Fluid pressure gradient verified at t = 0 in the '
+					+ 'z direction')
+	else:
+		print_failure('Fluid pressure gradient not verified at t = 0 in the '
+					+ 'z direction')
+		success = False
+
+	# verify the buoyancy force
+	g = np.array([0, -scp.constants.g]) / (wave.wavenum 
+					 * (wave.angular_freq * wave.amplitude) ** 2)
+	b_x, b_z = (1 - beta) * g
+	if np.allclose(buoyancy_x, b_x, rtol, atol):
+		print_success('Buoyancy force is correct in the x direction')
+	else:
+		print_failure('Buoyancy force is incorrect in the x direction')
+		success = False
+	if np.allclose(buoyancy_z, b_z, rtol, atol):
+		print_success('Buoyancy force is correct in the z direction')
+	else:
+		print_failure('Buoyancy force is incorrect in the z direction')
+		success = False
+
+	# verify the added mass force = 0 at t = 0
+	if np.isclose(mass_x[0], 0, rtol, atol):
+		print_success('Added mass force = 0 at t = 0 in the x direction')
+	else:
+		print_failure('Added mass force != 0 at t = 0 in the x direction')
+		success = False
+	if np.isclose(mass_z[0], 0, rtol, atol):
+		print_success('Added mass force = 0 at t = 0 in the z direction')
+	else:
+		print_failure('Added mass force != 0 at t = 0 in the z direction')
+		success = False
+
+	# verify the Stokes drag
+	drag_coeff = -2 / 3 * beta / stokes_num
+	if np.allclose(drag_x, drag_coeff * w_x, rtol, atol):
+		print_success('Stokes drag verified in the x direction')
+	else:
+		print_failure('Stokes drag not verified in the x direction')
+		success = False
+	if np.allclose(drag_z, drag_coeff * w_z, rtol, atol):
+		print_success('Stokes drag verified in the z direction')
+	else:
+		print_failure('Stokes drag not verified in the z direction')
+		success = False
+
+	# verify the history force
+	if include_history: # A(t) - G(t) = H'(t)
+		if np.allclose((A_x - G_x), history_x, rtol, atol):
+			print_success('dw_x/dt - the sum of non-history forces = history')
+		else:
+			print_failure('dw_x/dt - the sum of non-history forces != history')
+			success = False
+		if np.allclose((A_z - G_z), history_z, rtol, atol):
+			print_success('dw_z/dt - the sum of non-history forces = history')
+		else:
+			print_failure('dw_z/dt - the sum of non-history forces != history')
+			success = False
+	else:
+		# check that history = 0
+		if np.allclose(history_x, 0, rtol, atol):
+			print_success('History force is zero in the x direction')
+		else:
+			print_failure('History force is non-zero in the x direction')
+			success = False
+		if np.allclose(history_z, 0, rtol, atol):
+			print_success('History force is zero in the z direction')
+		else:
+			print_failure('History force is non-zero in the z direction')
+			success = False
+
+		# check that A(t) = G(t)
+		if np.allclose(A_x, G_x, rtol, atol):
+			print_success('dw_x/dt = the sum of non-history forces ')
+		else:
+			print_failure('dw_x/dt != the sum of non-history forces')
+			success = False
+		if np.allclose(A_z, G_z, rtol, atol):
+			print_success('dw_z/dt = the sum of non-history forces ')
+		else:
+			print_failure('dw_z/dt != the sum of non-history forces')
+			success = False
+
+	if not success:
+		# plot verifications for horizontal forces over time
+		fig('t', 'horizontal force')
+		plt.scatter(t[0], (beta - 1) * mdx, marker='.', facecolor='none',
+					edgecolor=COLORS[0])
+		plt.axhline(b_x, c=COLORS[2], ls=':')
+		plt.plot(t, drag_coeff * w_x, c=COLORS[3], ls=':')
+		if include_history:
+			plt.plot(t[5:], (A_x - G_x), c=COLORS[4], ls=':')
+		else:
+			plt.axhline(0, c=COLORS[4], ls=':')
+		# plot horizontal forces over time
+		plt.plot(t, fpg_x, c=COLORS[0], label='fluid pressure gradient')
+		plt.plot(t, mass_x, c=COLORS[1], label='added mass')
+		plt.plot(t, buoyancy_x, c=COLORS[2], label='buoyancy')
+		plt.plot(t, drag_x, c=COLORS[3], label='Stokes drag')
+		plt.plot(t[5:], history_x, c=COLORS[4], label='history force')
+
+		# plot verifications for vertical forces over time
+		fig('t', 'vertical force')
+		plt.scatter(t[0], (beta - 1) * mdz, marker='.', facecolor='none',
+					edgecolor=COLORS[0])
+		plt.axhline(b_z, c=COLORS[2], ls=':')
+		plt.plot(t, drag_coeff * w_z, c=COLORS[3], ls=':')
+		if include_history:
+			plt.plot(t[5:], (A_z - G_z), c=COLORS[4], ls=':')
+		else:
+			plt.axhline(0, c=COLORS[4], ls=':')
+		# plot vertical forces over time
+		plt.plot(t, fpg_z, c=COLORS[0], label='fluid pressure gradient')
+		plt.plot(t, mass_z, c=COLORS[1], label='added mass')
+		plt.plot(t, buoyancy_z, c=COLORS[2], label='buoyancy')
+		plt.plot(t, drag_z, c=COLORS[3], label='Stokes drag')
+		plt.plot(t[5:], history_z, c=COLORS[4], label='history force')
+		plt.legend(fontsize=FS)
+		plt.show()
+		quit()
+
+def verify_drift_velocity(wave, x, z, xdot, t):
+	"""
+	Verify that the analytical and numerical Stokes drift velocity match.
+
+	Parameters
+	----------
+	wave : Wave (obj)
+		The wave through which the particle is transported.
+	x : ndarray
+		1D array of `float` data, the horizontal particle position.
+	z : ndarray
+		1D array of `float` data, the vertical particle position.
+	xdot : ndarray
+		1D array of `float` data, the horizontal particle velocity.
+	t : ndarray
+		1D array containing `float` time series data.
+
+	Returns
+	-------
+	success : bool
+		Whether the verification of the Stokes drift velocity succeeded.
+	u_bar : float
+		The mean horizontal drift velocity of the particle.
+	z_bar : float
+		The mean vertical position of the particle.
+	"""
+	print('\nVerifying the computation of the Stokes drift velocity...')
+	x_crossings, z_crossings, u, w, \
+				 t_crossings = ts.compute_drift_velocity(x, z, xdot, t)
+
+	# check that all z-crossings are equal
+	if np.isclose(np.min(z_crossings), np.max(z_crossings), rtol=1e-3,
+															atol=1e-5):
+		print_success('Trajectory z-crossings are equal')
+	else:
+		print_failure('Trajectory z-crossings are not equal, maximum '
+			+ f'difference is {np.max(z_crossings) - np.min(z_crossings)}')
+		fig('x', 'z')
+		plt.plot(x, z, c='k')
+		plt.axhline(z_crossings[0], c=COLORS[-1], ls=':')
+		plt.scatter(x_crossings, z_crossings, c='k', marker='x')
+		plt.show()
+		quit()
+
+	# compare the horizontal drift velocity to the analytical solution
+	u_bar = np.mean(u) / (wave.wavenum * wave.amplitude)
+	z_bar = np.mean(z_crossings)
+	u_d = analytical_stokes_drift(wave, z_bar)
+	if match_data(np.array([u_d]), np.array([u_bar])):
+		print_success('Horizontal Stokes drift velocity matches the '
+					+ 'analytical solution\n')
+		success = True
+	else:
+		print_failure('Horizontal Stokes drift velocity does not match '
+					+ 'the analytical solution\n')
+		success = False
+	return success, u_bar, z_bar / (wave.wavenum * wave.depth)
+
+def verify_num_periods(x, z, xdot, t, num_periods):
+	"""
+	Verify that the simulation ran for the prescribed number of periods.
+
+	Parameters
+	----------
+	x : ndarray
+		1D array of `float` data, the horizontal particle position.
+	z : ndarray
+		1D array of `float` data, the vertical particle position.
+	xdot : ndarray
+		1D array of `float` data, the horizontal particle velocity.
+	t : ndarray
+		1D array containing `float` time series data.
+	num_periods : int
+		The prescribed number of periods.
+	"""
+	x_crossings, z_crossings, _, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
+	if len(x_crossings) in range(num_periods - 1, num_periods + 2):
+		print_success('Simulation ran for the prescribed number of periods')
+	else:
+		print_failure(f'Prescribed {num_periods} periods, but '
+					+ f'{len(x_crossings)} periods were simulated')
+		fig('x', 'z')
+		plt.plot(x, z, c='k')
+		plt.scatter(x_crossings, z_crossings, c='k', marker='x')
+		plt.show()
+		quit()
+
+def plot_relaxing_case(betas, data, xdots, ts, asymptotics):
+	"""
+	Plot a recreation of Figure 4 from [1].
+
+	Parameters
+	----------
+	betas : list
+		A list of `float` elements, the density ratios.
+	data : DataFrame
+		A `DataFrame` containing extracted data from Figure 4 in [1].
+	xdots : list
+		A list of `ndarray`s, the horizontal particle velocities.
+	ts : list
+		A list of `ndarray`s, the time series data.
+	asymptotics : list
+		A list of `ndarray`s, the asymptotic horizontal particle velocities.
+
+	References
+	----------
+	[^1]: [S. G. Prasath et al. (2019).](https://doi.org/10.1017/jfm.2019.194)
+		  Accurate solution method for the Maxey–Riley equation, and the
+		  effects of Basset history. *Journal of Fluid Mechanics* 868, 428–460.
+	"""
+	fig(r'$t$', r'$\dot{x}$', [0, 14.5, 1e-5, 1e1], y_scale='log')
+	for i in range(len(betas)):
+		# get extracted data
+		names = ['xdot', 't']
+		params = {'beta': betas[i], 'history': True, 'asymptotic': False}
+		ext_xdot_history, ext_t_history = extract_data(names, data, params)
+		params['asymptotic'] = True
+		ext_asym_xdot, ext_asym_t = extract_data(names, data, params)
+		params['history'] = False
+		params['asymptotic'] = False
+		ext_xdot, ext_t = extract_data(names, data, params)
+
+		# plot extracted data
+		plt.plot(ext_t_history, ext_xdot_history, c=COLORS[-1])
+		plt.plot(ext_t, ext_xdot, c=COLORS[-1], ls='--')
+		plt.plot(ext_asym_t, ext_asym_xdot, c=COLORS[-1], ls=':')
+
+		# plot numerical and asymptotic results
+		plt.plot(ts[i * 2], xdots[i * 2], c=COLORS[i],
+				 label=r'$\beta =$' + str(betas[i]))
+		plt.plot(ts[i * 2 + 1], xdots[i * 2 + 1], ls='--', c=COLORS[i])
+		plt.plot(ts[i * 2][1:], asymptotics[i], ls=':', c=COLORS[i])
+
+def plot_rotating_trajectory(data, analytical, x_int, x1, x2=None, x3=None):
+	"""
+	Plot a recreation of Figure 3(a) from [1].
+	
+	Parameters
+	----------
+	data : DataFrame
+		A `DataFrame` containing extracted data from Figure 3(a) in [1].
+	analytical : ndarray
+		2D array containing `float` data, the analytical solutions for x and z.
+	x_int : ndarray
+		1D array of `float` data, the horizontal particle positions at `int` t.
+	x1 : ndarray
+		2D array containing `float` data, the first order solutions for x, z.
+	x2 : ndarray, default=None
+		2D array containing `float` data, the second order solutions for x, z.
+	x3 : ndarray, default=None
+		2D array containing `float` data, the third order solutions for x, z.
+
+	References
+	----------
+	[^4]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
+	"""
+	# extract data
+	names = ['first_x', 'first_z', 'exact_x', 'exact_z']
+	ext_x, ext_z, ext_x_analytical, ext_z_analytical = extract_data(names, data)
+
+	# plot
+	fig('x', 'z', [-2, 2.5, -2.5, 2], make_square=True)
+	plt.scatter(ext_x, ext_z, c=COLORS[-1], marker='x')	# extracted 1st order
+	x, z = analytical.T
+	plt.plot(x, z, c='k', label='analytical')			# exact solution
+	x, z = x_int
+	plt.scatter(x, z, c='k')							# integer times
+	x, z = x1.T
+	plt.plot(x, z, c='k', ls='--', label='first order')			# 1st order
+	if x2 is not None:
+		x, z = x2.T
+		plt.plot(x, z, c='k', ls='-.', label='second order')	# 2nd order
+		if x3 is not None:
+			x, z = x3.T
+			plt.plot(x, z, c='k', ls=':', label='third order')	# 3rd order
+
+def plot_error_analysis(data, t, e_rel1, e_rel2=None, e_rel3=None):
+	"""
+	Plot a recreation of Figure 3(b) from [1].
+	
+	Parameters
+	----------
+	data : DataFrame
+		A `DataFrame` containing extracted data from Figure 3(b) in [1].
+	t : ndarray
+		1D array containing `float` time series data.
+	e_rel1 : ndarray
+		1D array containing `float` data, the first order relative error.
+	e_rel2 : ndarray, default=None
+		1D array containing `float` data, the second order relative error.
+	e_rel3 : ndarray, default=None
+		1D array containing `float` data, the third order relative error.
+
+	References
+	----------
+	[^4]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
+	"""
+	fig('t', r'$E_{rel}$', [0, 100, 1e-7, 1e0], y_scale='log')
+
+	# extract data
+	names = ['rel_error1', 't1', 'rel_error2', 't2', 'rel_error3', 't3']
+	ext_e_rel1, ext_t1, ext_e_rel2, ext_t2, ext_e_rel3, \
+				ext_t3 = extract_data(names, data)
+	# plot
+	plt.plot(ext_t1, ext_e_rel1, c=COLORS[-1])						# 1st order
+	plt.plot(t, e_rel1, c='k', ls='--', label='first order')
+	if e_rel2 is not None:
+		plt.plot(ext_t2, ext_e_rel2, c=COLORS[-1])					# 2nd order	
+		plt.plot(t, e_rel2, c='k', ls='-.', label='second order')
+		if e_rel3 is not None:
+			plt.plot(ext_t3, ext_e_rel3, c=COLORS[-1])				# 3rd order
+			plt.plot(t, e_rel3, c='k', ls=':', label='third order')
+
+def plot_history(t, exact_hx, exact_hz, history_x, history_z):
+	"""
+	Plot the analytical and numerical solutions for the history force.
+
+	Parameters
+	----------
+	t : ndarray
+		1D array containing `float` time series data.
+	exact_hx : ndarray
+		1D array of `float` data, the horizontal analytical history force.
+	exact_hz : ndarray
+		1D array of `float` data, the vertical analytical history force.
+	history_x : ndarray
+		1D array of `float` data, the horizontal numerical history force.
+	history_z : ndarray
+		1D array of `float` data, the vertical numerical history force.
+	"""
+	plt.figure()
+	subplot(211, y_label=r'$H\'(t)_x$')
+	plt.plot(t, exact_hx, c=COLORS[-1])
+	plt.plot(t, history_x, ':k')
+	subplot(212, y_label=r'$H\'(t)_z$')
+	plt.plot(t, exact_hz, c=COLORS[-1])
+	plt.plot(t, history_z, ':k')
+
+def plot_wavy_drift_velocity(labels, analytical_u, analytical_z, u_bar, z_bar):
+	"""
+	Plot the drift velocity of particles vs their average vertical position.
+
+	Only the horizontal Stokes drift velocity is plotted, and both the drift
+	velocity and average vertical position are normalized.
+
+	Parameters
+	----------
+	labels : list
+		A list of `str` elements to use in the plot legend.
+	analytical_u : list
+		A list of `float` elements, the analytical horizontal drift velocities.
+	analytical_z : list
+		A list of `float` elements, the analytical vertical positions.
+	u_bar : list
+		A list of `float` elements, the average horizontal drift velocities.
+	z_bar : list
+		A list of `float` elements, the average vertical positions.
+	"""
+	fig(r'$\bar{u}$', r'$\bar{z}$')
+	label0 = 'h\'/' +  r'$\lambda$' + f'\' = {labels[0]:.2f}'
+	label1 = 'h\'/' +  r'$\lambda$' + f'\' = {labels[1]:.2f}'
+	label2 = 'h\'/' +  r'$\lambda$' + f'\' = {labels[2]:.2f}'
+	plt.plot(analytical_u[0], analytical_z[0], c='k', label=label0)
+	plt.plot(analytical_u[1], analytical_z[1], c='k', label=label1, ls='--')
+	plt.plot(analytical_u[2], analytical_z[2], c='k', label=label2, ls=':')
+	plt.scatter(u_bar, z_bar, edgecolor='k', facecolor='none')
+
+def plot_wavy_trajectories(data1, data2, x_heavy, z_heavy, x_light, z_light):
+	"""
+	Plot a recreation of Figure 1 from [1].
+
+	Parameters
+	----------
+	data1 : DataFrame
+		A `DataFrame` containing extracted data from Figure 1 in [1].
+	data2 : DataFrame
+		A `DataFrame` containing `x`, `z` data from an independent test.
+	x_heavy : ndarray
+		1D array of `float` data, the horizontal position of the heavy particle.
+	z_heavy : ndarray
+		1D array of `float` data, the vertical position of the heavy particle.
+	x_light : ndarray
+		1D array of `float` data, the horizontal position of the light particle.
+	z_light : ndarray
+		1D array of `float` data, the vertical position of the light particle.
+
+	References
+	----------
+	[^5]: [F. Santamaria et al. (2013).](
+		  https://doi.org/10.1209/0295-5075/102/14003)
+		  Stokes drift for inertial particles transported by water waves.
+		  *EPL (Europhysics Letters)* 102(1), 14003.
+	"""
+	fig('x', 'z', lims=[0, 3.2, -4, 0])
+	plt.plot('heavy_x', 'heavy_z', c='grey', data=data1, linewidth=4,
+			 label='extracted data (Santamaria)')
+	plt.plot('heavy_x', 'heavy_z', c=COLORS[-1], data=data2,
+			 label='extracted data (Cathal)')
+	plt.plot(x_heavy, z_heavy, c='k', ls=':', label='simulation')
+	plt.plot('light_x', 'light_z', c='grey', data=data1, linewidth=4, label='')
+	plt.plot('light_x', 'light_z', c=COLORS[-1], data=data2, label='')
+	plt.plot(x_light, z_light, c='k', ls=':', label='')
+
+if __name__ == '__main__':
+	main()

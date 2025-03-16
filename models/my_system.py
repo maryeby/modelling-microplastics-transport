@@ -1,17 +1,12 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 from time import time
 from tqdm import tqdm
 
-from models import water_wave
 from transport_framework import particle, wave, transport_system
+from utils.colors import print_warning
 
 class MyTransportSystem(transport_system.TransportSystem):
-	""" 
-	Represents the transport of an inertial particle in a linear water wave.
-	"""
+	"""Represent the transport of a particle in a linear water wave.[^1]"""
 
 	def __init__(self, particle, flow, density_ratio):
 		r"""
@@ -25,48 +20,102 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The ratio *R* between the particle and fluid densities.
 		reynolds_num : float
 			The particle Reynolds number, computed as,
-			$$Re_p = \frac{U'd'}{\nu'},$$
-			where *U'* and ν' are attributes of the wave, and *d'* is the
-			diameter of the particle.
+			$$Re_p = \frac{2\omega'A'a'}{\nu'},$$
+			where *ω'*, *A'* and ν' are attributes of the wave, and *a'* is the
+			radius of the particle.
+
+		References
+		----------
+		[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+			  Advection of inertial particles in the presence of the history
+			  force: Higher order numerical schemes.
+			  *Journal of Computational Physics* 254, 93–106.
 		"""
 		super().__init__(particle, flow, density_ratio)
 		if isinstance(flow, wave.Wave):
-			self.reynolds_num = (2 * self.flow.max_velocity
+			self.reynolds_num = (2 * self.flow.angular_freq
+								   * self.flow.amplitude
 								   * np.sqrt(9 * self.particle.stokes_num 
 								   / (2 * self.flow.wavenum ** 2
 								   * self.flow.reynolds_num))) \
 								   / self.flow.kinematic_viscosity
+			if 0.1 < self.reynolds_num:
+				print_warning('Particle Reynolds number' 
+						   + f'(Re_p = {self.reynolds_num:.4f}) is not << 1.')
 
-	def maxey_riley(self, include_history, t, y, delta_t, order, hide_progress):
+	def maxey_riley(self, t, y, include_history, hide_progress=False,
+					include_H=False, order=3):
 		r"""
-		Implements the integration scheme for the full Maxey-Riley equation, as
-		outlined in Daitche (2013) Section 3, modified to include the buoyancy
-		force.
+		Evaluate the Maxey-Riley equation.
+
+		This approach is an implementation of the integration scheme outlined in
+		[1] Section 3, modified to include the buoyancy force.
 
 		Parameters
 		----------
-		include_history : boolean
+		t : ndarray
+			1D array containing `float` time series data.
+		y : list
+			A list of `float` data, the initial particle position and velocity.
+		include_history : bool
 			Whether to include history effects.
-		t : array
-			The times when the Maxey-Riley equation should be evaluated.
-		y : list (array-like)
-			A list containing the initial particle position and velocity.
-		delta_t : float
-			The size of the time steps used for integration.
-		order : int
+		hide_progress : bool, default=False
+			Whether to hide progress output (progress bar, print statements).
+		include_H : boolean, default=False
+			Whether to return the values of variable H.
+		order : int, default=3
 			The order of the integration scheme.
-		hide_progress : bool
-			Whether to hide the `tqdm` progress bar.
 
 		Returns
 		-------
-		Array
-			The components of the particle's position and velocity, and the
-			times where the Maxey-Riley equation was evaluated.
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		zdot : ndarray
+			1D array of `float` data, the vertical particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+		fpg_x : ndarray
+			1D array of `float` data, the horizontal fluid pressure gradient.
+		fpg_z : ndarray
+			1D array of `float` data, the vertical fluid pressure gradient.
+		buoyancy_x : ndarray
+			1D array of `float` data, the horizontal buoyancy force.
+		buoyancy_z : ndarray
+			1D array of `float` data, the vertical buoyancy force.
+		mass_x : ndarray
+			1D array of `float` data, the horizontal added mass force.
+		mass_z : ndarray
+			1D array of `float` data, the vertical added mass force.
+		drag_x : ndarray
+			1D array of `float` data, the horizontal Stokes drag.
+		drag_z : ndarray
+			1D array of `float` data, the vertical Stokes drag.
+		H_x : ndarray
+			1D array of `float` data, the horizontal H value.
+		H_z : ndarray
+			1D array of `float` data, the vertical H value.
+		history_x : ndarray
+			1D array of `float` data, the horizontal history force.
+		history_z : ndarray
+			1D array of `float` data, the vertical history force.
+
+		References
+		----------
+		[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+			  Advection of inertial particles in the presence of the history
+			  force: Higher order numerical schemes.
+			  *Journal of Computational Physics* 254, 93–106.
 		"""
 		# initialize local variables
 		R = self.density_ratio
 		St = self.particle.stokes_num
+		delta_t = t[1] - t[0]
+		h = self.flow.wavenum * self.flow.depth if isinstance(self.flow,
+			wave.Wave) else self.flow.depth
 
 		# compute the number of time steps and create arrays to store solutions
 		num_mini_steps = int(np.ceil(2 * np.sqrt(2) / delta_t))
@@ -102,8 +151,8 @@ class MyTransportSystem(transport_system.TransportSystem):
 		mini_u[0] = u[0]
 
 		# immediately return if z_0 is below the depth of the water (z_0 < -h)
-		if x[0, 1] <= -self.flow.depth:
-			print('Error: Initial vertical position is below the seabed.')
+		if x[0, 1] <= -h:
+			print('ERROR: Initial vertical position is below the seabed.')
 			return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0], \
 				   0, 0, 0, 0, 0, 0, 0, 0
 
@@ -134,9 +183,10 @@ class MyTransportSystem(transport_system.TransportSystem):
 		# compute solutions for the first two intervals using finer time steps
 		if not hide_progress:
 			print('Computing the first two intervals using mini steps...')
-		for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
+		for n_prime in tqdm(range(mini_steps.size - 1),
+							disable=hide_progress):
 			# return immediately if the particle reaches the seabed (z < -h)
-			if mini_x[n_prime, 1] <= -self.flow.depth:
+			if mini_x[n_prime, 1] <= -h:
 				if not hide_progress:
 					print('Simulation ended prematurely: particle reached the',
 						  'seabed.')
@@ -248,6 +298,11 @@ class MyTransportSystem(transport_system.TransportSystem):
 											+ mini_u[n_prime + 1]
 
 		# store solutions for the first two intervals
+		fluid_pressure_gradient[0] = mini_fpg[0]
+		buoyancy[0] = mini_buoyancy[0]
+		added_mass[0] = mini_mass[0]
+		stokes_drag[0] = mini_drag[0]
+		history[0] = mini_history[0]
 		x[1] = mini_x[int(mini_steps.size / 2)]
 		v[1] = mini_v[int(mini_steps.size / 2)]
 		u[1] = mini_u[int(mini_steps.size / 2)]
@@ -270,7 +325,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 			print('Computing the remaining intervals...')
 		for n in tqdm(range(2, num_steps), disable=hide_progress):
 			# return immediately if the particle reaches the seabed (z < -h)
-			if x[n, 1] <= -self.flow.depth:
+			if x[n, 1] <= -h:
 				if not hide_progress:
 					print('Simulation ended prematurely: particle reached the',
 						  'seabed.')
@@ -341,99 +396,80 @@ class MyTransportSystem(transport_system.TransportSystem):
 		H = np.copy(history)
 		history[:, 0] = np.gradient(history[:, 0], t, edge_order=2)
 		history[:, 1] = np.gradient(history[:, 1], t, edge_order=2)
-		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
-			   fluid_pressure_gradient[:, 0], fluid_pressure_gradient[:, 1], \
-			   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
-			   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
-			   history[:, 0], history[:, 1]
-#			   H[:, 0], H[:, 1], \
 
-	def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
-					 num_periods, delta_t, hide_progress, include_forces=False,
-					 order=3):
-		"""
-		Computes the position and velocity of the particle over time.
+		# truncate data after the vertical position reaches the surface
+		n = np.where(0 < x[:, 1])[0]
+		if 0 < len(n) and isinstance(self.flow, wave.Wave):
+			n = n[0]
+			print('Data truncated after particle reached the surface.')
+			if include_H:
+				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
+					   fluid_pressure_gradient[:n, 0], \
+					   fluid_pressure_gradient[:n, 1], \
+					   buoyancy[:n, 0], buoyancy[:n, 1], \
+					   added_mass[:n, 0], added_mass[:n, 1], \
+					   stokes_drag[:n, 0], stokes_drag[:n, 1], \
+					   H[:n, 0], H[:n, 1], history[:n, 0], history[:n, 1]
+			else:
+				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
+					   fluid_pressure_gradient[:n, 0], \
+					   fluid_pressure_gradient[:n, 1], \
+					   buoyancy[:n, 0], buoyancy[:n, 1], \
+					   added_mass[:n, 0], added_mass[:n, 1], \
+					   stokes_drag[:n, 0], stokes_drag[:n, 1], \
+					   history[:n, 0], history[:n, 1]
 
-		Parameters
-		----------
-		include_history : boolean
-			Whether to include history effects.
-		x_0 : float
-			The initial horizontal position of the particle.
-		z_0 : float
-			The initial vertical position of the particle.
-		xdot_0 : float
-			The initial horizontal velocity of the particle.
-		zdot_0 : float
-			The initial vertical velocity of the particle.
-		num_periods : int
-			The number of wave periods to integrate over.
-		delta_t : float
-			The size of the time steps used for integration.
-		hide_progress : bool
-			Whether to hide the `tqdm` progress bar.
-		include_forces : bool
-			Whether to include the individual forces in the results.
-		order : int, default=3
-			The order of the integration scheme.
-
-		Returns
-		-------
-		x : array
-			The horizontal positions of the particle.
-		z : array
-			The vertical positions of the particle.
-		xdot : array
-			The horizontal velocities of the particle.
-		zdot : array
-			The vertical velocities of the particle.
-		t : array
-			The times at which the model was evaluated.
-		"""
-		# initialize parameters for the solver
-		t_final = num_periods * self.flow.period
-		t_eval = np.arange(0, t_final, delta_t)
-		if isinstance(self.flow, wave.Wave):
-			t_eval /= (self.flow.wavenum * self.flow.max_velocity)
-		y = [x_0, z_0, xdot_0, zdot_0]
-
-		# run computations
-		if include_forces:
-			return self.maxey_riley(include_history, t_eval, y, delta_t, order,
-									hide_progress)
+		if include_H:
+			return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
+				   fluid_pressure_gradient[:, 0], \
+				   fluid_pressure_gradient[:, 1], \
+				   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
+				   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
+				   H[:, 0], H[:, 1], history[:, 0], history[:, 1]
 		else:
-			x, z, xdot, zdot, t, \
-			_, _, _, _, _, _, _, _, _, _ = self.maxey_riley(include_history,
-												t_eval, y, delta_t, order,
-												hide_progress)
-			return x, z, xdot, zdot, t
+			return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
+				   fluid_pressure_gradient[:, 0], \
+				   fluid_pressure_gradient[:, 1], \
+				   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
+				   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
+				   history[:, 0], history[:, 1]
 
 def compute_alpha(size, hide_progress):
 	r"""
-	Computes a matrix containing the values of alpha as defined in equation (9)
-	from Daitche (2013),
-	$$\alpha_j^n = \frac{4}{3} \begin{cases}
-		1 & j = 0 \\
-		(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
-		(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n,
-		\end{cases}$$
-	so the value of alpha may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of alpha as defined in equation (9) in [1].
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
 	hide_progress : bool
-		Whether to hide the progress print statements.
+		Whether to hide progress output (print statements).
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient alpha.
+	ndarray
+		2D square array of `float` data, the values of the coefficient alpha.
+
+	Notes
+	-----
+	Alpha is computed,
+	$$\alpha_j^n = \frac{4}{3} \begin{cases}
+		1 & j = 0 \\
+		(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
+		(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n.
+		\end{cases}$$
+	The value of alpha may be obtained by indexing the array `arr[j, n]`.
+
+	References
+	----------
+	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history
+		  force: Higher order numerical schemes.
+		  *Journal of Computational Physics* 254, 93–106.
 	"""
 	if not hide_progress:
 		print('Computing matrix of alpha coefficients...', end='', flush=True)
-		start = time()
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape, dtype='float128')
 
@@ -463,27 +499,32 @@ def compute_alpha(size, hide_progress):
 
 def compute_beta(size, alpha, hide_progress):
 	r"""
-	Computes a matrix containing the values of beta as defined in Section 2 of
-	Daitche (2013). The value $$\beta_j^n$$
-	may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of beta as defined in [1] Section 2.
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
-	alpha : array-like
-		The values of the coefficient alpha at n = 1.
+	alpha : ndarray
+		2D array of `float` data, the values of the coefficient alpha at n = 1.
 	hide_progress : bool
-		Whether to hide the progress print statements.
+		Whether to hide progress output (print statements).
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient beta.
+	ndarray
+		2D square array of `float` data, the values of the coefficient beta.
+
+	References
+	----------
+	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history
+		  force: Higher order numerical schemes.
+		  *Journal of Computational Physics* 254, 93–106.
 	"""
 	if not hide_progress:
 		print('Computing matrix of beta coefficients...', end='', flush=True)
-		start = time()
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape, dtype='float128')
 	arr[:, 0] = 0		# n = 0 (should never be called for beta)
@@ -557,27 +598,32 @@ def compute_beta(size, alpha, hide_progress):
 
 def compute_gamma(size, beta, hide_progress):
 	r"""
-	Computes a matrix containing the values of gamma as defined in Section 2 of
-	Daitche (2013). The value $$\gamma_j^n$$
-	may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of gamma as defined in [1] Section 2.
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
-	beta : array-like
-		The values of the coefficient beta at n = 2.
+	beta : ndarray
+		2D array of `float` data, the values of the coefficient beta at n = 1.
 	hide_progress : bool
-		Whether to hide the progress print statements.
+		Whether to hide progress output (print statements).
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient gamma.
+	ndarray
+		2D square array of `float` data, the values of the coefficient gamma.
+
+	References
+	----------
+	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history
+		  force: Higher order numerical schemes.
+		  *Journal of Computational Physics* 254, 93–106.
 	"""
 	if not hide_progress:
 		print('Computing matrix of gamma coefficients...', end='', flush=True)
-		start = time()
+	start = time()
 	arr = np.ones((size, size))
 	j, n = np.indices(arr.shape)
 	arr[:, :2] = 0		# n = 0 and n = 1 (should never be called for gamma)
@@ -729,34 +775,37 @@ def compute_gamma(size, beta, hide_progress):
 
 def compute_drift_velocity(x, z, xdot, t):
 	r"""
-	Computes the Stokes drift velocity
-	$$\mathbf{u}_d = \langle u_d, w_d \rangle$$
-	using the distance travelled by the particle averaged over each wave period,
-	$$\mathbf{u}_d = \frac{\mathbf{x}_{n + 1} - \mathbf{x}_n}{\text{period}}.$$
+	Compute the Stokes drift velocity numerically.
 
 	Parameters
 	----------
-	x : array
-		The horizontal positions used to evaluate the drift velocity.
-	z : array
-		The vertical positions used to evaluate the drift velocity.
-	xdot : array
-		The horizontal velocities used to evaluate the drift velocity.
-	t : array
-		The times when the drift velocity should be evaluated.
+	x : ndarray
+		1D array of `float` data, the horizontal particle position.
+	z : ndarray
+		1D array of `float` data, the vertical particle position.
+	xdot : ndarray
+		1D array of `float` data, the horizontal particle velocity.
+	t : ndarray
+		1D array containing `float` time series data.
 
 	Returns
 	-------
-	x_crossings : array
-		The horizontal position of the particle at the end of each period.
-	z_crossings : array
-		The vertical position of the particle at the end of each period.
-	u_d : array
-		The horizontal Stokes drift velocities.
-	w_d : array
-		The vertical Stokes drift velocities.
-	t : array
-		The times at which the Stokes drift velocity was computed.
+	x_crossings, z_crossings : ndarray
+		The horizontal and vertical particle position at the end of each period.
+	u_d : ndarray
+		1D array of `float` data, the horizontal Stokes drift velocities.
+	w_d : ndarray
+		1D array of `float` data, the vertical Stokes drift velocities.
+	t : ndarray
+		1D array containing `float` time series data for the end of each period.
+
+	Notes
+	-----
+	The drift velocity $$\bar{\mathbf{u}} = \langle \bar{u}, \bar{w} \rangle$$
+	is computed using the distance travelled by the particle averaged over each
+	wave period *p*,
+	$$\bar{\mathbf{u}} = \frac{\mathbf{x}_{p + 1} - \mathbf{x}_p}
+	{t_{p + 1} - t_p}.$$
 	"""
 	# find the estimated endpoints of the periods
 	estimated_endpoints = []
@@ -779,17 +828,17 @@ def compute_drift_velocity(x, z, xdot, t):
 								   [z[previous], z[current]]))
 
 	# compute drift velocity
-	u_d, w_d = [], []
+	u_bar, w_bar = [], []
 	for i in range(1, len(interpd_t)):
-		u_d.append((interpd_x[i] - interpd_x[i - 1])
+		u_bar.append((interpd_x[i] - interpd_x[i - 1])
 				 / (interpd_t[i] - interpd_t[i - 1]))
-		w_d.append((interpd_z[i] - interpd_z[i - 1])
+		w_bar.append((interpd_z[i] - interpd_z[i - 1])
 				 / (interpd_t[i] - interpd_t[i - 1]))
 
 	# return results
 	x_crossings = np.array(interpd_x)
 	z_crossings = np.array(interpd_z)
-	u_d = np.array(u_d)
-	w_d = np.array(w_d)
-	t = np.array(interpd_t[1:])
-	return x_crossings, z_crossings, u_d, w_d, t
+	u_bar = np.array(u_bar)
+	w_bar = np.array(w_bar)
+	t = np.array(interpd_t)
+	return x_crossings, z_crossings, u_bar, w_bar, t

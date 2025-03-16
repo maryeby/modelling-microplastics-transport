@@ -1,20 +1,17 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 from transport_framework import flow
 
 class RotatingFlow(flow.Flow):
-	"""Represents a fluid flow for rigid body rotation."""
+	"""Represent a fluid flow for rigid body rotation."""
 
 	def __init__(self, depth=50):
 		r"""
 		Attributes
 		----------
-		depth : float, default=15
+		depth : float, default=50
 			The depth of the fluid *h*.
-		gravity : array
-			The gravity **g** acting on the fluid.
+		gravity : ndarray
+			1D array of `float` data, the gravity **g'** acting on the fluid.
 		period : float
 			A parameter used in the computation of the timespan over which to
 			integrate.
@@ -24,21 +21,20 @@ class RotatingFlow(flow.Flow):
 
 	def velocity(self, x, z, t=None):
 		r"""
-		Computes the fluid velocity as,
-		$$\textbf{u} = (u, w) = \langle -z, x \rangle.$$
+		Compute the fluid velocity,
+		$$\textbf{u} = \langle u, w \rangle = \langle -z, x \rangle.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the velocity.
-		z : float or array
-			The vertical position(s) at which to evaluate the velocity.
-		t : float or array, default=None
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray, default=None
 			The time(s) at which to evaluate the velocity.
 
 		Returns
 		-------
-		Array containing the velocity field vector components *u* and *w*.
+		ndarray
+			1D array of `float` data, the vector components *u* and *w*.
 		"""
 		return np.array([-z, x])
 
@@ -49,16 +45,15 @@ class RotatingFlow(flow.Flow):
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
 		return np.array([np.zeros(x.shape), np.zeros(z.shape)])
 
@@ -70,36 +65,34 @@ class RotatingFlow(flow.Flow):
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
 		return np.array([np.zeros(x.shape), np.ones(z.shape)])
 
 	def partial_z(self, x, z, t): 
 		r"""
 		Computes the partial derivative of the fluid with respect to the
-		vertical positiona as,
+		vertical position as,
 		$$\frac{\partial \textbf{u}}{\partial z} = \langle -1, 0 \rangle.$$
 
 		Parameters
 		----------
-		x : float or array
-			The horizontal position(s) at which to evaluate the derivative.
-		z : float or array
-			The vertical position(s) at which to evaluate the derivative.
-		t : float or array
+		x, z : float or ndarray
+			The horizontal and vertical position(s).
+		t : float or ndarray
 			The time(s) at which to evaluate the derivative.
 
 		Returns
 		-------
-		Array containing the vector components of the derivative.
+		ndarray
+			1D array of `float` data, the vector components of the derivative.
 		"""
 		return np.array([-np.ones(x.shape), np.zeros(z.shape)])

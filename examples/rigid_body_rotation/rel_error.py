@@ -1,41 +1,49 @@
-import sys 
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import pandas as pd
 import numpy as np
+from utils.data_tools import extract_data, update_results
+
+DELTA_T = 1e-2
+IN_FILE1 = '../data/rigid_body_rotation/numerics.csv'
+IN_FILE2 = '../data/rigid_body_rotation/analytics.csv'
+OUT_FILE = '../data/rigid_body_rotation/rel_error.csv'
 
 def main():
 	"""
-	This program computes the relative error for the numerical solutions of a
-	rotating particle in a flow and saves the results to the
+	Compute the relative error for a rigid rotating body.
+
+	Results reproduce [1] Figure 3, and are saved to the
 	`data/rigid_body_rotation` directory.
+	
+	References
+	----------
+	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
 	"""
-	# read data
-	data_path = '../data/rigid_body_rotation/'
-	numerics = pd.read_csv(data_path + 'numerics.csv')
-	analytics = pd.read_csv(data_path + 'analytics.csv')
+	# read data and create dictionary to store results
+	numerics = pd.read_csv(IN_FILE1)
+	analytics = pd.read_csv(IN_FILE2)
+	results = {'t': [], 'e_abs': [], 'e_rel': [], 'order': []}
 
-	# compute relative error
-	exact = analytics[['x_ana', 'z_ana']].to_numpy()
-	x_num1 = numerics[['first_x', 'first_z']].to_numpy()
-	x_num2 = numerics[['second_x', 'second_z']].to_numpy()
-	x_num3 = numerics[['third_x', 'third_z']].to_numpy()
-	my_dict = dict.fromkeys(['e_rel1', 'e_rel2', 'e_rel3', 'global_error1',
-							 'global_error2', 'global_error3'])
-	my_dict['t'] = numerics['t']
-	my_dict['e_rel1'] = np.linalg.norm(exact - x_num1, axis=1) \
-						/ np.linalg.norm(exact, axis=1)
-	my_dict['e_rel2'] = np.linalg.norm(exact - x_num2, axis=1) \
-						/ np.linalg.norm(exact, axis=1)
-	my_dict['e_rel3'] = np.linalg.norm(exact - x_num3, axis=1) \
-						/ np.linalg.norm(exact, axis=1)
-	my_dict['global_error1'] = np.linalg.norm(exact - x_num1, axis=1).max()
-	my_dict['global_error2'] = np.linalg.norm(exact - x_num2, axis=1).max()
-	my_dict['global_error3'] = np.linalg.norm(exact - x_num3, axis=1).max()
+	# get analytical data
+	n = len(numerics['x']) // 3
+	x, z, t = extract_data(['x', 'z', 't'], analytics, {'delta_t': DELTA_T})
+	x = x[:n]
+	z = z[:n]
+	t = t[:n]
+	exact = np.array([x, z]).T
 
-	# write results to data file
-	rel_error = pd.DataFrame(my_dict)
-	rel_error.to_csv(data_path + 'rel_error.csv', index=False)
+	for order in [1, 2, 3]:
+		# get numerical data
+		x, z = extract_data(['x', 'z'], numerics, {'order': order})
+		numerical = np.array([x, z]).T
+
+		# compute absolute and relative errors, store solutions
+		e_abs = np.linalg.norm(exact - numerical, axis=1)
+		e_rel = e_abs / np.linalg.norm(exact, axis=1)
+		results = update_results(results, [t, e_abs, e_rel], [order])
+	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
 if __name__ == '__main__':
 	main()

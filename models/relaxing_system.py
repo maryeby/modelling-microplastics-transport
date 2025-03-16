@@ -1,17 +1,13 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 import scipy.integrate as integrate
 from time import time
 from tqdm import tqdm
+
 from models import quiescent_flow
 from transport_framework import particle, transport_system
 
 class RelaxingTransportSystem(transport_system.TransportSystem):
-	""" 
-	Represents the transport of a relaxing particle in a quiescent fluid flow.
-	"""
+	"""Represent the transport of a particle in a quiescent flow.[^1]"""
 
 	def __init__(self, particle, flow, density_ratio):
 		r"""
@@ -24,20 +20,28 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		density_ratio : float
 			The ratio between the particle and fluid densities.
 		epsilon : float
-			A relationship between the Stokes number and density ratio,
+			A relationship between the Stokes number and density ratio[^1],
 			$$\epsilon = \frac{St}{R}.$$
 		sigma : float
-			A parameter related to the density ratio,
+			A parameter related to the density ratio[^1],
 			$$\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},$$
 			used to compute the asymptotic behavior of the system.
 		alpha : float
-			A relationship between the density ratio and Stokes number,
+			A relationship between the density ratio and Stokes number[^1],
 			$$\alpha = \frac{R}{St},$$
 			used to compute the asymptotic behavior of the system.
 		gamma : float
-			Another relationship between the density ratio and Stokes number,
+			A relationship between the density ratio and Stokes number[^1],
 			$$\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},$$
 			used to compute the asymptotic behavior of the system.
+
+		References
+		----------
+		[^1]: [S. G. Prasath et al. (2019)](
+			  https://doi.org/10.1017/jfm.2019.194)
+			  Accurate solution method for the Maxey–Riley equation, and the
+			  effects of Basset history. *Journal of Fluid Mechanics*
+			  868, 428–460.
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.epsilon = self.particle.stokes_num / self.density_ratio
@@ -47,49 +51,56 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
 	def asymptotic_velocity(self, t):
 		r"""
-		Computes the leading order asymptotic behavior of the particle velocity
-		based on eq (4.7) from Prasath et al. (2019),
+		Compute the leading order asymptotic behavior of the particle velocity.
+
+		Parameters
+		----------
+		t : float or ndarray
+			Float or 1D array containing `float` time series data.
+
+		Returns
+		-------
+		float or ndarray
+			The asymptotic particle velocity.
+
+		Notes
+		-----
+		The computation is based on eq (4.7) from [1],
 		$$q^{(2)}(0, t) \approx c(\alpha, \gamma)
 			- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
 			+ \mathcal{O}(t^{3 / 2}),$$
 		with a sign change on the singular term.
-
-		Parameters
-		----------
-		t : float or array
-			The time(s) to use in the computations.
-
-		Returns
-		-------
-		float or array
-			The asymptotic particle velocity.
 		"""
 		return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (self.gamma \
 				 / (2 * self.alpha ** 2))
 
 	def maxey_riley(self, t, y):
 		r"""
-		Evaluates the Maxey-Riley equation without history effects,
-		$$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
-		$$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{\textbf{u}
-			- \textbf{v}}{\epsilon}
-			+ \frac{3R}{2} \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-			+ (1 - \frac{3R}{2}) \textbf{g},$$
-		with $$R = \frac{2\rho'_f}{\rho'_f + 2\rho'_p},
-			\quad Re = \frac{U'L'}{\nu'},
-			\quad St = \frac{2}{9} \Bigg(\frac{a'}{L'}\Bigg)^2 Re.$$
+		Evaluate the Maxey-Riley equation without history effects.
 		
 		Parameters
 		----------
-		t : float
-			The time(s) to use in the computations.
-		y : list (array-like)
-			A list containing the initial particle position and velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+		y : list
+			A list of `float` data, the initial particle position and velocity.
 
 		Returns
 		-------
-		Array
-			The components of the particle's velocity and acceleration.
+		ndarray
+			1D array of `float` data, the particle velocity and acceleration.
+
+		Notes
+		-----
+		The Maxey-Riley equation is expressed as,
+		$$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
+		$$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{3R}{2}
+		  \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
+			+ (1 - \frac{3R}{2}) \textbf{g}
+			+ \frac{\textbf{u} - \textbf{v}}{\epsilon},$$
+		with $$R = \frac{2\rho'_f}{\rho'_f + 2\rho'_p},
+			\quad Re = \frac{U'L'}{\nu'},
+			\quad St = \frac{2}{9} \Bigg(\frac{a'}{L'}\Bigg)^2 Re.$$
 		"""
 		# initialize local variables and update the particle and fluid histories
 		R = self.density_ratio
@@ -108,23 +119,36 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
 	def full_maxey_riley(self, t, y, order):
 		r"""
-		Implements the integration scheme for the full Maxey-Riley equation with
-		history effects, as outlined in Daitche (2013) Section 3.
+		Evaluate the Maxey-Riley equation with history effects[^2].
 
 		Parameters
 		----------
-		t : array
-			The times when the Maxey-Riley equation should be evaluated.
-		y : list (array-like)
-			A list containing the initial particle position and velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+		y : list
+			A list of `float` data, the initial particle position and velocity.
 		order : int
 			The order of the integration scheme.
 
 		Returns
 		-------
-		Array
-			The components of the particle's position and velocity, and the
-			times where the Maxey-Riley equation was evaluated.
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		zdot : ndarray
+			1D array of `float` data, the vertical particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+
+		References
+		----------
+		[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+			  Advection of inertial particles in the presence of the history
+			  force: Higher order numerical schemes.
+			  *Journal of Computational Physics* 254, 93–106.
 		"""
 		# initialize local variables
 		R = self.density_ratio
@@ -237,44 +261,38 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 								 / (1 + xi * gamma[0, n + 1])
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-	def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
-					 num_periods, delta_t, order=3, method='BDF'):
+	def run_numerics(self, x_0, z_0, xdot_0, zdot_0, num_periods, delta_t,
+					 include_history, order=3):
 		"""
-		Computes the position and velocity of the particle over time.
+		Compute the position and velocity of the particle over time.
 
 		Parameters
 		----------
-		include_history : boolean
-			Whether to include history effects.
-		x_0 : float
-			The initial horizontal position of the particle.
-		z_0 : float
-			The initial vertical position of the particle.
-		xdot_0 : float
-			The initial horizontal velocity of the particle.
-		zdot_0 : float
-			The initial vertical velocity of the particle.
+		x_0, z_0 : float
+			The initial horizontal and vertical position of the particle.
+		xdot_0, zdot_0 : float
+			The initial horizontal and vertical velocity of the particle.
 		num_periods : int
 			The number of periods to integrate over.
 		delta_t : float
 			The size of the time steps used for integration.
+		include_history : bool
+			Whether to include history effects.
 		order : int, default=3
 			The order of the integration scheme (first, second, or third).
-		method : str, default='BDF'
-			The method of integration to use when neglecting history effects.
 
 		Returns
 		-------
-		x : array
-			The horizontal positions of the particle.
-		z : array
-			The vertical positions of the particle.
-		xdot : array
-			The horizontal velocities of the particle.
-		zdot : array
-			The vertical velocities of the particle.
-		t : array
-			The times at which the model was evaluated.
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		zdot : ndarray
+			1D array of `float` data, the vertical particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
 		"""
 		# initialize parameters for the solver
 		t_final = num_periods * self.flow.period
@@ -287,7 +305,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 			x, z, xdot, zdot, t = self.full_maxey_riley(t_eval, y, order=order)
 		else:
 			sols = integrate.solve_ivp(self.maxey_riley, t_span, y,
-									   method=method, t_eval=t_eval,
+									   method='BDF', t_eval=t_eval,
 									   rtol=1e-8, atol=1e-10)
 			# unpack solutions
 			x, z, xdot, zdot = sols.y
@@ -296,14 +314,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
 def compute_alpha(size):
 	r"""
-	Computes a matrix containing the values of alpha as defined in equation (9)
-	from Daitche (2013),
-	$$\alpha_j^n = \frac{4}{3} \begin{cases}
-		1 & j = 0 \\
-		(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
-		(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n,
-		\end{cases}$$
-	so the value of alpha may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of alpha as defined in equation (9) from [1].
 
 	Parameters
 	----------
@@ -312,8 +323,25 @@ def compute_alpha(size):
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient alpha.
+	ndarray
+		2D square array of `float` data, the values of the coefficient alpha.
+
+	Notes
+	-----
+	Alpha is computed,
+	$$\alpha_j^n = \frac{4}{3} \begin{cases}
+		1 & j = 0 \\
+		(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
+		(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n.
+		\end{cases}$$
+	The value of alpha may be obtained by indexing the array `arr[j, n]`.
+
+	References
+	----------
+	[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
 	"""
 	print('Computing matrix of alpha coefficients...', end='', flush=True)
 	start = time()
@@ -340,21 +368,26 @@ def compute_alpha(size):
 
 def compute_beta(size, alpha):
 	r"""
-	Computes a matrix containing the values of beta as defined in Section 2 of
-	Daitche (2013). The value $$\beta_j^n$$
-	may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of beta as defined in [1] Section 2.
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
-	alpha : array-like
-		The values of the coefficient alpha at n = 1.
+	alpha : ndarray
+		2D array of `float` data, the values of the coefficient alpha at n = 1.
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient beta.
+	ndarray
+		2D square array of `float` data, the values of the coefficient beta.
+
+	References
+	----------
+	[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
 	"""
 	print('Computing matrix of beta coefficients...', end='', flush=True)
 	start = time()
@@ -413,21 +446,26 @@ def compute_beta(size, alpha):
 
 def compute_gamma(size, beta):
 	r"""
-	Computes a matrix containing the values of gamma as defined in Section 2 of
-	Daitche (2013). The value $$\gamma_j^n$$
-	may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of gamma as defined in [1] Section 2.
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
-	beta : array-like
-		The values of the coefficient beta at n = 2.
+	beta : ndarray
+		2D array of `float` data, the values of the coefficient beta at n = 1.
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient gamma.
+	ndarray
+		2D square array of `float` data, the values of the coefficient gamma.
+
+	References
+	----------
+	[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
 	"""
 	print('Computing matrix of gamma coefficients...', end='', flush=True)
 	start = time()

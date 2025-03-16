@@ -1,117 +1,135 @@
-import sys 
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 import pandas as pd
 
+from utils.data_tools import update_results
 from transport_framework import particle as prt
-from models import dim_deep_water_wave as dim_fl
+from models import dim_deep_water_wave as dfl
 from models import deep_water_wave as fl
-from models import santamaria_system as sm
-from models import haller_system as h
-from models import my_system as my
+from models import santamaria_system as sts
+from models import haller_system as hts
+from models import my_system as ts
+
+# wave & particle conditions
+AMPLITUDE = 0.026
+WAVELENGTH = 0.5
+STOKES_NUM = 0.5			# St as specified in Santamaria et al. (2013)
+X_0, Z_0 = 0, 0				# initial particle position
+
+# simulation conditions
+SCALE = 2 / 3			    # scale used for parameter translation
+BETA = 0.98					# density ratio from Santamaria et al. (2013)
+R = SCALE * BETA			# density ratio as defined in Haller & Sapsis (2008)
+NUM_PERIODS = 5
+DELTA_T = 5e-3
+INCLUDE_HISTORY = False
+OUT_FILE = '../data/deep_water_wave/inertial_numerics.csv'
 
 def main():
+	r"""
+	Compute numerical solutions of the inertial and M-R equations[^1][^2].
+
+	The solutions for the inertial equations are computed following the
+	derivations in [1, 2], and a numerical simulation using the Maxey-Riley
+	framework is performed using the TransportSystem objects corresponding to
+	[1-3]. The simulation models a negatively buoyant particle in a linear wave
+	of infinitely deep water without history effects. Results are saved to the
+	`data/deep_water_wave` directory.
+
+	References
+	----------
+	[^1]: [F. Santamaria et al. (2013).](
+		  https://doi.org/10.1209/0295-5075/102/14003)
+		  Stokes drift for inertial particles transported by water waves.
+		  *EPL (Europhysics Letters)* 102(1), 14003.
+	[^2]: [G. Haller & T. Sapsis (2008).](
+		  https://doi.org/10.1016/j.physd.2007.09.027)
+		  Where do inertial particles go in fluid flows?
+		  *Physica D: Nonlinear Phenomena* 237(5), 573–583.
+	[^3]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
 	"""
-	This program compares the inertial equation as derived in Santamaria et al.
-	(2013) and Haller & Sapsis (2008) to the numerical results produced by the
-	method outlined in Section 3 of Daitche (2013), the method outlined in
-	Santamaria et al. (2013), and the method outlined in Haller & Sapsis (2008).
-	The results are saved to the `data/deep_water_wave` directory. 
+	# create dictonary to store solutions and Wave object
+	keys = ['t', 'x', 'z', 'equation', 'order', 'method']
+	results = {key: [] for key in keys}
+
+	# run Santamaria simulations and store solutions
+	particle = prt.Particle(STOKES_NUM)
+	wave = dfl.DimensionalDeepWaterWave(AMPLITUDE, WAVELENGTH)
+	transport_system = sts.SantamariaTransportSystem(particle, wave, BETA)
+	simulate_equations(transport_system, 0, 'Santamaria', results)
+	simulate_equations(transport_system, 1, 'Santamaria', results)
+	simulate_equations(transport_system, 2, 'Santamaria', results)
+
+	# run Haller simulations and store solutions
+	particle = prt.Particle(STOKES_NUM * R * wave.froude_num)
+	wave = fl.DeepWaterWave(AMPLITUDE, WAVELENGTH)
+	transport_system = hts.HallerTransportSystem(particle, wave, R)
+	simulate_equations(transport_system, 0, 'Haller', results)
+	simulate_equations(transport_system, 1, 'Haller', results)
+	simulate_equations(transport_system, 2, 'Haller', results)
+
+	# run Daitche simulation and store solutions
+	transport_system = ts.MyTransportSystem(particle, wave, R)
+	xdot_0, zdot_0 = wave.velocity(X_0, Z_0, t=0)
+	t = np.arange(0, NUM_PERIODS * wave.period, DELTA_T)
+	y = [X_0, Z_0, xdot_0, zdot_0]
+	print('Running Daitche simulation...')
+	x, z, _, _, t, _, _, _, _, _, _, _, _, _, \
+	   _ = transport_system.maxey_riley(t, y, INCLUDE_HISTORY)
+	results = update_results(results, [t, x, z], ['Maxey-Riley', 3, 'Daitche'])
+	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
+
+def simulate_equations(system, order, method, results):
 	"""
-	# initialize variables for the Santamaria system
-	A = 0.026		# amplitude
-	wavelength = 0.5
-	beta = 0.98
-	sm_St = 0.5
-	sm_flow = dim_fl.DimensionalDeepWaterWave(amplitude=A,
-											  wavelength=wavelength)
-	sm_particle = prt.Particle(stokes_num=sm_St)
-	sm_system = sm.SantamariaTransportSystem(sm_particle, sm_flow, beta)
+	Run simulations using the Maxey-Riley and inertial equations.
 
-	# initialize variables for scaling
-	k = sm_flow.wavenum
-	T = k * sm_flow.max_velocity	# time scaling
+	Parameters
+	----------
+	system : TransportSystem (obj)
+		The transport system through which the simulation is run.
+	order : int
+		The order of the inertial equation (0, 1, or 2).
+	method : str
+		The author name indicating which TransportSystem was used.
+	results : dict
+		Dictionary used to store the solutions.
+	"""
+	# create variables for scaling
+	omega = system.flow.angular_freq
+	Fr = system.flow.froude_num
+	k = system.flow.wavenum
 
-	# initialize variables for the Haller and Daitche systems
-	R = 2 / 3 * beta
-	haller_flow = fl.DeepWaterWave(amplitude=A, wavelength=wavelength)
-	haller_St = haller_flow.froude_num * R * sm_St
-	haller_particle = prt.Particle(stokes_num=haller_St)
-	haller_system = h.HallerTransportSystem(haller_particle, haller_flow, R)
-	my_system = my.MyTransportSystem(haller_particle, haller_flow, R)
+	# scale time-related arguments if necessary
+	timestep = DELTA_T / (omega * Fr) if method == 'Santamaria' else DELTA_T
+	
+	# run M-R simulation
+	if order == 0:
+		print(f'Running Maxey-Riley simulation ({method})...', end='')
+		x, z, _, _, t = system.run_numerics(system.maxey_riley, X_0, Z_0,
+										   NUM_PERIODS, timestep)
+		# scale results if necessary
+		if method == 'Santamaria':
+			x *= k
+			z *= k
+			t *= omega
+		results = update_results(results, [t, x, z], ['Maxey-Riley', None,
+													  method])
+		print('done.')
 
-	# initialize variables for numerical simulations
-	my_dict = {}
-	x_0, z_0 = 0, 0
-	xdot_0, zdot_0 = haller_flow.velocity(k * x_0, k * z_0, 0)
-	num_periods = 50
-	delta_t = 5e-3
-
-	# generate numerical results
-	x, z, _, _, t = my_system.run_numerics(include_history=False,
-										   x_0=k * x_0, z_0=k * z_0,
-										   xdot_0=xdot_0, zdot_0=zdot_0,
-										   num_periods=num_periods * T,
-										   delta_t=delta_t * T,
-										   hide_progress=True)
-	my_dict['x_daitche'] = x
-	my_dict['z_daitche'] = z
-	x, z, _, _, t = haller_system.run_numerics(haller_system.maxey_riley,
-											   k * x_0, k * z_0,
-											   num_periods * T,
-											   delta_t * T)
-	my_dict['x_haller'] = x
-	my_dict['z_haller'] = z
-	x, z, _, _, t = sm_system.run_numerics(sm_system.maxey_riley,
-										   x_0, z_0, num_periods / T,
-										   delta_t=delta_t / T)
-	my_dict['x_santamaria'] = x * k
-	my_dict['z_santamaria'] = z * k
-
-	# generate leading order results
-	x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-											   k * x_0, k * z_0,
-											   num_periods * T, delta_t * T,
-											   order=0)
-	my_dict['x0_haller'] = x
-	my_dict['z0_haller'] = z
-	x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation,
-										   x_0, z_0, num_periods / T,
-										   delta_t / T, order=0)
-	my_dict['x0_santamaria'] = x * k
-	my_dict['z0_santamaria'] = z * k
-
-	# generate first order results
-	x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-											   k * x_0, k * z_0,
-											   num_periods * T, delta_t * T,
-											   order=1)
-	my_dict['x1_haller'] = x
-	my_dict['z1_haller'] = z
-	x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation,
-										   x_0, z_0, num_periods / T,
-										   delta_t / T, order=1)
-	my_dict['x1_santamaria'] = x * k
-	my_dict['z1_santamaria'] = z * k
-
-	# generate second order results
-	x, z, _, _, _ = haller_system.run_numerics(haller_system.inertial_equation,
-											   k * x_0, k * z_0,
-											   num_periods * T, delta_t * T,
-											   order=2)
-	my_dict['x2_haller'] = x
-	my_dict['z2_haller'] = z
-	x, z, _, _, _ = sm_system.run_numerics(sm_system.inertial_equation,
-										   x_0, z_0, num_periods / T,
-										   delta_t / T, order=2)
-	my_dict['x2_santamaria'] = x * k
-	my_dict['z2_santamaria'] = z * k
-
-	# write results to data file
-	my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
-	inertial_results = pd.DataFrame(my_dict)
-	inertial_results.to_csv('../data/deep_water_wave/inertial_equations.csv')
+	# run inertial equation simulation
+	print(f'Running order {order} inertial equation simulation',
+		  f'({method})...', end='')
+	x, z, _, _, t = system.run_numerics(system.inertial_equation, X_0, Z_0,
+									   NUM_PERIODS, timestep, order)
+	# scale results if necessary
+	if method == 'Santamaria':
+		x *= k
+		z *= k
+		t *= omega
+	results = update_results(results, [t, x, z], ['inertial', order, method])
+	print('done.')
 
 if __name__ == '__main__':
 	main()

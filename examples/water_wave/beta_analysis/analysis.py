@@ -1,147 +1,89 @@
-import sys
 import warnings
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
-warnings.filterwarnings('ignore')
 import numpy as np
 import pandas as pd
 import itertools
 import scipy.constants as constants
 from scipy.optimize import curve_fit
 
-from models import my_system as ts
+from utils.data_tools import extract_data, update_results
+from models import water_wave as fl
+from examples.water_wave.beta_analysis.numerics import AMPLITUDE as A
+from examples.water_wave.beta_analysis.numerics import DEPTH, WAVELENGTH, BETAS
 
-DATA_PATH = '../../data/water_wave/'
+EXT_RANGE = 100
+IN_FILE = '../../data/water_wave/beta_numerics.csv'
+OUT_FILE = '../../data/water_wave/beta_analysis.csv'
 
 def main():
-	r"""
-	This program computes the Stokes drift velocity for inertial particles of
-	varying buoyancies in linear water waves and saves the results to the
-	`data/water_wave` directory.
 	"""
-	# initialize variables
-	betas = [0.5, 0.8]
-	z_0s = np.linspace(-0.25, -4, 10, endpoint=False)
-	z_0s = np.insert(z_0s, 0, -0.02)
-	St = 0.01
-	h, A, wavelength = 10, 0.02, 1 # wave parameters
-	delta_t = 5e-3
-	z_list, u_d_list, beta_list, history_list, exact_list = [], [], [], [], []
+	Compute the drift velocity of particles in a wave, fit a curve to the data.
 
-	# read data
-	in_file = 'numerics.csv'
-	out_file = 'beta_analysis.csv'
-	numerics = pd.read_csv(DATA_PATH + in_file)
+	The average horizontal Stokes drift velocity is numerically computed for
+	particles of varying buoyancies in linear waves of deep water, and curves
+	are fit to the resulting data points. For neutrally buoyant particles, one
+	data point is produced for each simulation; the drift velocity is averaged
+	over the wave periods, then averaged over the trajectory.
 
-	# analysis for neutrally buoyant particles (beta = 1)
-	for i in itertools.product(z_0s, [True, False]):
-		z_0, history = i
-		beta = 1
+	Since there is an analytical solution[^1] for the Stokes drift velocity of
+	neutrally buoyant particles, the analytical solutions are computed for all
+	neutrally buoyant simulations, rather than fitting a curve to the numerical
+	solutions. For negatively buoyant particles, the drift velocity is averaged
+	over each wave period, and single curve is fit to the numerical solutions of
+	each simulation. Results are saved to the `data/water_wave` directory.
 
-		# create condition and lambdas to help filter through numerical data
-		condition = (numerics['z_0'] == z_0) & (numerics['St'] == St) \
-									& (numerics['beta'] == beta) \
-									& (numerics['history'] == history) \
-									& (numerics['h\''] == h) \
-									& (numerics['A\''] == A) \
-									& (numerics['wavelength\''] == wavelength) \
-									& (numerics['delta_t\''] == delta_t)
-		get_single = lambda name : numerics[name].where(condition).dropna()\
-												 .iloc[0]
-		get_series = lambda name : numerics[name].where(condition).dropna()\
-												  .to_numpy()
-		# retrieve relevant data
-		k = get_single('k\'')
-		A = get_single('A\'')
-		U = get_single('U\'')
-		x = get_series('x')
-		z = get_series('z')
-		xdot = get_series('xdot')
-		t = get_series('t')
+	See Also
+	--------
+	models.my_system.compute_drift_velocity
 
-		# compute and scale drift velocity
-		_, z_crossings, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
-		avg_u_d = np.average(u_d) / (k * A)
-		avg_z = np.average(z_crossings)
-
-		# store solutions
-		u_d_list.append(avg_u_d)
-		z_list.append(avg_z)
-		beta_list.append(beta)
-		history_list.append(history)
-		exact_list.append(True)
+	References
+	----------
+	[^1]: [T. S. van den Bremer & Ø. Breivik (2018)](https://doi.org/10.1098/rsta.2017.0104)
+		  Stokes drift. *Philosophical Transactions of the Royal Society A:
+		  Mathematical, Physical and Engineering Sciences* 376(2111), 20170104.
+	"""
+	keys = ['z', 'u', 'beta', 'history', 'analytical']
+	results = {key: [] for key in keys}
+	numerics = pd.read_csv(IN_FILE)
+	wave = fl.WaterWave(DEPTH, A, WAVELENGTH)
+	k = wave.wavenum
+	omega = wave.angular_freq
+	analytical = False
 
 	# analysis for negatively buoyant particles (beta < 1)
-	for i in itertools.product(betas, [True, False]):
-		beta, history = i
-
-		# create condition and lambdas to help filter through numerical data
-		condition = (numerics['St'] == St) & (numerics['beta'] == beta) \
-								& (numerics['history'] == history) \
-								& (numerics['h\''] == h) \
-								& (numerics['A\''] == A) \
-								& (numerics['wavelength\''] == wavelength) \
-								& (numerics['delta_t\''] == delta_t)
-		get_single = lambda name : numerics[name].where(condition).dropna()\
-												 .iloc[0]
-		get_series = lambda name : numerics[name].where(condition).dropna()\
-												  .to_numpy()
-		# retrieve relevant data
-		k = get_single('k\'')
-		A = get_single('A\'')
-		U = get_single('U\'')
-		x = get_series('x')
-		z = get_series('z')
-		xdot = get_series('xdot')
-		t = get_series('t')
-
-		# compute and scale drift velocity
-		_, z_crossings, u_d, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
-		u_d /= k * A
-
-		# store exact solutions
-		u_d_list += u_d.tolist()
-		z_list += z_crossings[1:].tolist()
-		beta_list += [beta] * len(u_d)
-		history_list += [history] * len(u_d)
-		exact_list += [True] * len(u_d)
-
+	warnings.filterwarnings('ignore')
+	for beta, history in itertools.product(BETAS, [True, False]):
 		# use a power law for data with history effects, exponential otherwise
 		if history:
 			f = lambda x, a, b, c, d : a * b ** (c * x + d)
 		else:
 			f = lambda x, a, b, c, d : a * np.exp(b * x) + c * np.exp(d * x)
 
+		# extract and normalize data
+		z_bar, u_bar = extract_data(['z_crossings', 'u_bar'], numerics,
+									{'beta': beta, 'history': history})
+		z_bar = z_bar.to_numpy()
+		u_bar = u_bar.to_numpy()
+		u_bar /= k * A
+
 		# fit curve to data
-		z = z_crossings[1:]
-		coefficients, covariance = curve_fit(f, z, u_d)
+		coefficients, covariance = curve_fit(f, z_bar, u_bar)
 		a, b, c, d = coefficients
-		extended_range = np.linspace(0, z[-1], 100)
-		u_d = f(extended_range, a, b, c, d)
+		extended_range = np.linspace(0, z_bar[-1], EXT_RANGE)
+		u_bar = f(extended_range, a, b, c, d)
 
 		# store estimated solutions
-		u_d_list += u_d.tolist()
-		z_list += extended_range.tolist()
-		beta_list += [beta] * len(u_d)
-		history_list += [history] * len(u_d)
-		exact_list += [False] * len(u_d)
+		results = update_results(results, [extended_range, u_bar],
+								[beta, history, analytical])
 
-	# compute analytical solutions
-	analytical_z = np.linspace(0, -5, 100) / k
-	analytical_u_d = U * A * k * np.cosh(2 * k * (analytical_z + h)) \
-					   / (2 * np.sinh(k * h) ** 2)
-	analytical_z *= k
-	analytical_u_d /= U * A * k
-
-	# write results to data file
-	results_dict = {'analytical_z': analytical_z,
-					'analytical_u_d': analytical_u_d, 'z': z_list,
-					'u_d': u_d_list, 'beta': beta_list, 'history': history_list,
-					'exact': exact_list}
-	results_dict = dict([(key, pd.Series(value)) for key, value in
-						  results_dict.items()])
-	results = pd.DataFrame(results_dict)
-	results.to_csv(DATA_PATH + out_file, index=False)
+	# compute and store analytical solutions
+	beta, history, analytical = 1, None, True
+	z = np.linspace(0, -DEPTH, EXT_RANGE) / k
+	u_d = omega * A * A * k * np.cosh(2 * k * (z + DEPTH)) \
+					   / (2 * np.sinh(k * DEPTH) ** 2)
+	z *= k
+	u_d /= omega * A * A * k
+	results = update_results(results, [z, u_d], [beta, history, analytical])
+	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
 if __name__ == '__main__':
 	main()

@@ -1,78 +1,59 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import itertools
+from fractions import Fraction
 
-DATA_PATH = '../../data/water_wave/'
+from utils.data_tools import extract_data
+from utils.plot import initialize_figure as fig
+from utils.plot import FS
+from utils.colors import COLORS
+from examples.water_wave.beta_analysis.numerics import AMPLITUDE, WAVELENGTH, \
+													   BETAS, R
+
+IN_FILE1 = '../../data/water_wave/beta_numerics.csv'
+IN_FILE2 = '../../data/water_wave/beta_analysis.csv'
 
 def main():
-	"""
-	This program plots numerical and analytical solutions for the Stokes drift
-	velocity of inertial particles of varying densities in linear water waves.
-	"""
-	analysis = pd.read_csv(DATA_PATH + 'beta_analysis.csv') # read data
-
-	# initialize drift velocity figure & left subplot
-	fs, lfs = 14, 16
-	plt.figure(1)
-#	plt.title(r'Stokes drift velocity vs depth', fontsize=18)
-#	plt.xlabel(r'$\frac{u_d}{UkA}$', fontsize=lfs)
-#	plt.ylabel('kz', fontsize=lfs)
-	plt.xlabel(r'$u_d$', fontsize=lfs)
-	plt.ylabel('z', fontsize=lfs)
-	plt.gca().set_box_aspect(1)
-	plt.axis([0, 1, -4, 0.1])
-	plt.xticks(fontsize=fs)
-	plt.yticks(fontsize=fs)
-	plt.minorticks_on()
-
-	# initialize lists of beta values and history
-	betas = analysis['beta'].drop_duplicates().tolist()
-	history = [True, False]
+	"""Plot the drift velocities of particles of varying densities in a wave."""
+	numerics = pd.read_csv(IN_FILE1)
+	analysis = pd.read_csv(IN_FILE2)
+	fig(r'$\bar{u}$', r'$\bar{z}$', lims=[0, 1, -4, 0.1], make_square=True)
 
 	# position bubble labels
 	text_position_x = [0.6, 0.3, 0.4]
 	text_position_y = [-0.3, -1.75, -0.76]
 	properties = dict(boxstyle='circle', facecolor='w', edgecolor='k')
 
-	for i in itertools.product(betas, history):
-		beta, history = i
-		ls, label = '-', ''
+	for beta, history in itertools.product(BETAS, [True, False]):
+		# plot analytical solution or fitted curve
+		if beta == 1:
+			z, u = extract_data(['z', 'u'], analysis, {'analytical': True})
+			lc, ls = COLORS[3], '-'
+			label = 'analytical solution' if history else ''
+		else:
+			params = {'beta': beta, 'history': history, 'analytical': False}
+			z, u = extract_data(['z', 'u'], analysis, params)
+			lc = 'k'
+			label = 'with history effects' if history else \
+					'without history effects'
+			if beta != BETAS[-1]: label = ''
+		plt.plot(u, z, c=lc, ls=ls, label=label, zorder=0)
 
-		# create conditions to help filter through data
-		exact = (analysis['beta'] == beta) & (analysis['history'] == history) \
-										   & (analysis['exact'] == True)
-		estimated = (analysis['beta'] == beta) \
-						& (analysis['history'] == history) \
-						& (analysis['exact'] == False)
-
-		# retrieve relevant solutions
-		u_d = list(analysis['u_d'].where(exact).dropna())
-		z = list(analysis['z'].where(exact).dropna())
-		estimated_u_d = list(analysis['u_d'].where(estimated).dropna())
-		estimated_z = list(analysis['z'].where(estimated).dropna())
-
-		# determine labels and markers depending on what data is being plotted
-		if history:
-			ls = '--'
-			label = 'with history effects' if beta == betas[-1] else ''
-		elif beta == betas[-1]:
-			label = 'without history effects'
-
-		# plot data
-		i = betas.index(beta)
-		plt.scatter(u_d, z, marker='.', edgecolors='k', facecolors='none',
-					label='', zorder=2)
-		plt.text(text_position_x[i], text_position_y[i], f'{beta:g}',
-				 fontsize=fs, bbox=properties, zorder=3)
-		if beta != 1:
-			plt.plot(estimated_u_d, estimated_z, c='k', ls=ls,
-					 label=label, zorder=0)
-	plt.plot('analytical_u_d', 'analytical_z', c='#018571', data=analysis,
-			 label='analytical solution', zorder=1)
-#	plt.legend(fontsize=fs)
+		# plot numerical solutions
+		params = {'beta': beta, 'history': history}
+		ls = '--' if history else '-'
+		z, u = extract_data(['z_crossings', 'u_bar'], numerics, params)
+		k = 2 * np.pi / WAVELENGTH
+		u /= k * AMPLITUDE
+		plt.scatter(u, z, marker='.', edgecolors='k', facecolors='none',
+					label='')
+		# plot labels
+		i = BETAS.index(beta)
+		plt.text(text_position_x[i], text_position_y[i],
+				 str(Fraction(R[i]).limit_denominator()), fontsize=FS,
+				 bbox=properties)
+	plt.legend(fontsize=FS)
 	plt.show()
 
 if __name__ == '__main__':

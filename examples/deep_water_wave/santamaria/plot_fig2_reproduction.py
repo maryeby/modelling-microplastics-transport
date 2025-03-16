@@ -1,69 +1,67 @@
-import sys 
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from utils.plot import initialize_figure as fig
+from utils.plot import initialize_subplot as subplot
+from utils.plot import FS
+from utils.data_tools import extract_data
+from examples.deep_water_wave.santamaria.fig2_numerics import DELTA_TS
+
+IN_FILE1 = '../../data/deep_water_wave/santamaria_fig2_recreation.csv'
+IN_FILE2 = '../../data/deep_water_wave/santamaria_analytics.csv'
+LABELS = ['Santamaria', 'fine', 'medium', 'coarse']
+MARKERS = ['o', 's', '^', 'v']
+
 def main():
 	"""
-	This program reproduces Figure 2 from Santamaria et al. (2013).
+	Reproduce Figure 2 from [1].
+
+	References
+	----------
+	[^1]: [F. Santamaria et al. (2013).](
+		  https://doi.org/10.1209/0295-5075/102/14003)
+		  Stokes drift for inertial particles transported by water waves.
+		  *EPL (Europhysics Letters)*, 102(1), 14003.
 	"""
 	# read data files
-	numerics = pd.read_csv('../../data/deep_water_wave/'
-						   + 'santamaria_fig2_recreation.csv')
-	analytics = pd.read_csv('../../data/deep_water_wave/'
-							+ 'santamaria_analytics.csv')
+	numerics = pd.read_csv(IN_FILE1)
+	analytics = pd.read_csv(IN_FILE2)
+	methods = numerics['method'].drop_duplicates().tolist()
 
-	# plot results
-	plt.figure(1)
-	plt.suptitle(r'Drift Velocity Comparison with Varying $\Delta t$',
-				 fontsize=18)
-	plt.subplot(121)
-	plt.xlabel(r'$ \omega t $', fontsize=16)
-	plt.ylabel(r'$ u_d / U $', fontsize=16)
-#	plt.axis([0, 80, 0, 0.15])
-#	plt.xticks(ticks=range(0, 80, 10), fontsize=14)
-#	plt.yticks([0, 0.05, 0.1], fontsize=14)
-	plt.xticks(fontsize=14)
-	plt.yticks(fontsize=14)
+	# get timestep sizes
+	sm_delta_t = extract_data('delta_t', numerics, {'method': 'Santamaria'})\
+							 .drop_duplicates().tolist()
+	delta_ts = sm_delta_t + DELTA_TS
 
-	plt.plot('t', 'u_d', c='k', data=analytics, label='analytics')
-	plt.axhline(0, c='k', ls=':', label='settling velocity')
-	plt.scatter('sm_t', 'sm_u_d', c='k', marker='x', data=numerics,
-				label='Santamaria numerics')
-	plt.scatter('fine_t', 'fine_u_d', edgecolors='k', facecolors='none',
-				data=numerics, label=r'Daitche numerics ($\Delta t =$ 1e-3)')
-	plt.scatter('medium_t', 'medium_u_d', marker='s', edgecolors='k',
-				facecolors='none', data=numerics,
-				label=r'Daitche numerics ($\Delta t =$ 5e-3)')
-	plt.scatter('coarse_t', 'coarse_u_d', marker='^', edgecolors='k',
-				facecolors='none', data=numerics,
-				label=r'Daitche numerics ($\Delta t =$ 1e-2)')
-	plt.legend(fontsize=14)
+	# plot horizontal analytical results
+	plt.figure()
+	subplot(121, r'$t$', r'$\bar{u}$', make_square=True)
+	plt.plot('t', 'u_d', c='k', data=analytics)
+	plt.axhline(0, c='k', ls=':')
 
-	plt.subplot(122)
-	plt.xlabel(r'$ \omega t $', fontsize=16)
-	plt.ylabel(r'$ w_d / U $', fontsize=16)
-#	plt.axis([0, 80, -0.128, -0.1245])
-#	plt.xticks(ticks=range(0, 80, 10), fontsize=14)
-#	plt.yticks([-0.128, -0.127, -0.126, -0.125], fontsize=14)
-	plt.xticks(fontsize=14)
-	plt.yticks(fontsize=14)
+	# plot horizontal numerical results
+	for i in range(len(LABELS)):
+		method = methods[i] if i == 0 else methods[1]
+		params = {'method': method, 'delta_t': delta_ts[i]}
+		t, u_bar = extract_data(['t', 'u_bar'], numerics, params)
+		ec, fc, m = 'k', 'none', MARKERS[i]
+		plt.scatter(t, u_bar, edgecolors=ec, facecolors=fc, marker=m)
 
+	# plot vertical analytical results
+	subplot(122, r'$t$', r'$\bar{w}$', make_square=True)
 	plt.plot('t', 'w_d', c='k', data=analytics, label='analytics')
 	plt.axhline(analytics['settling_velocity'].iloc[0], c='k', ls=':',
 				label='settling velocity')
-	plt.scatter('sm_t', 'sm_w_d', marker='x', c='k', data=numerics,
-				label='Santamaria numerics')
-	plt.scatter('fine_t', 'fine_w_d', edgecolors='k', facecolors='none',
-				data=numerics, label=r'Daitche numerics ($\Delta t =$ 1e-3)')
-	plt.scatter('medium_t', 'medium_w_d', marker='s', edgecolors='k',
-				facecolors='none', data=numerics,
-				label=r'Daitche numerics ($\Delta t =$ 5e-3)')
-	plt.scatter('coarse_t', 'coarse_w_d', marker='^', edgecolors='k',
-				facecolors='none', data=numerics,
-				label=r'Daitche numerics ($\Delta t =$ 1e-2)')
-	plt.legend(fontsize=14)
+
+	# plot vertical numerical results
+	for i in range(len(LABELS)):
+		method = methods[i] if i == 0 else methods[1]
+		params = {'method': method, 'delta_t': delta_ts[i]}
+		t, w_bar = extract_data(['t', 'w_bar'], numerics, params)
+		ec, fc, m = 'k', 'none', MARKERS[i]
+		l = LABELS[i] + r' ($\Delta t =$' + f'{delta_ts[i]:.0e})'
+		plt.scatter(t, w_bar, edgecolors=ec, facecolors=fc, marker=m, label=l)
+	plt.legend(fontsize=FS)
 	plt.show()
 
 if __name__ == '__main__':

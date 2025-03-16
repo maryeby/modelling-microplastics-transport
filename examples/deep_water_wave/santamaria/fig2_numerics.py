@@ -1,136 +1,100 @@
-import sys 
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 import pandas as pd
 
+from utils.data_tools import update_results
 from transport_framework import particle as prt
-from models import dim_deep_water_wave as dim_fl
+from models import dim_deep_water_wave as dfl
 from models import deep_water_wave as fl
-from models import santamaria_system as sm
+from models import santamaria_system as sts
 from models import my_system as ts
+
+# wave conditions
+AMPLITUDE = 0.02
+WAVELENGTH = 1
+
+# particle conditions
+X_0, Z_0 = 0, 0
+STOKES_NUM = 0.157
+
+# simulation conditions
+SCALE = 2 / 3
+BETA = 0.9
+R = SCALE * BETA
+NUM_PERIODS = 50
+DELTA_TS = [1e-3, 5e-3, 1e-2]
+INCLUDE_HISTORY = False
+OUT_FILE = '../../data/deep_water_wave/santamaria_fig2_recreation.csv'
 
 def main():
 	"""
-	This program reproduces numerical results from Figure 2 in Santamaria et al.
-	(2013) and saves the results to the `data/deep_water_wave` directory.
+	Reproduce numerical results from Figure 2 in [1].
+
+    Simulations are run for a negatively buoyant particle in a linear wave of
+	infinitely deep water without history effects. Results are saved to the
+	`data/deep_water_wave` directory.
+
+    References
+    ----------
+    [^1]: [F. Santamaria et al. (2013).](
+		  https://doi.org/10.1209/0295-5075/102/14003)
+          Stokes drift for inertial particles transported by water waves.
+          *EPL (Europhysics Letters)*, 102(1), 14003.
 	"""
-	# intialize Santamaria particle, flow, transport system
-	wavelength = 1
-	A = 0.02	# amplitude
-	beta = 0.9	# heavy particle
-	sm_stokes_num = 0.157
-	sm_flow = dim_fl.DimensionalDeepWaterWave(amplitude=A,
-											  wavelength=wavelength)
-	sm_particle = prt.Particle(stokes_num=sm_stokes_num)
-	sm_system = sm.SantamariaTransportSystem(sm_particle, sm_flow, beta)
+	# create dictionary to store solutions and variables for simulation
+	results = {'t': [], 'u_bar': [], 'w_bar': [], 'delta_t': [], 'method': []}
+	particle = prt.Particle(STOKES_NUM)
+	wave = dfl.DimensionalDeepWaterWave(AMPLITUDE, WAVELENGTH)
+	system = sts.SantamariaTransportSystem(particle, wave, BETA)
+	delta_t = DELTA_TS[0] / (wave.angular_freq * wave.froude_num)
 
-	# initialize parameters for scaling
-	U = sm_flow.max_velocity
-	k = sm_flow.wavenum
-	omega = sm_flow.angular_freq
-	Fr = sm_flow.froude_num
-	T = omega * Fr	# time scaling
+	# numerically integrate
+	x, z, xdot, _, t = system.run_numerics(system.maxey_riley, X_0, Z_0,
+										   NUM_PERIODS, delta_t)
+	# scale solutions
+	x *= wave.wavenum
+	z *= wave.wavenum
+	xdot /= wave.max_velocity
+	t *= wave.angular_freq * wave.froude_num
 
-	# initialize the particle, flow, and transport system
-	my_flow = fl.DeepWaterWave(amplitude=A, wavelength=wavelength)
-	R = 2 / 3 * beta
-	my_St = my_flow.froude_num * R * sm_stokes_num
-	my_particle = prt.Particle(stokes_num=my_St)
-	my_system = ts.MyTransportSystem(my_particle, my_flow, R)
+	# compute drift velocity and store solutions
+	_, _, u_bar, w_bar, t = ts.compute_drift_velocity(x, z, xdot, t)
+	results = update_results(results, [t[1:], u_bar, w_bar], [DELTA_TS[0],
+							'Santamaria'])
 
-	# initialize parameters for the numerical simulations
-	my_dict = {}
-	num_periods = 50
-	x_0, z_0 = 0, 0
-	xdot_0, zdot_0 = my_flow.velocity(k * x_0, k * z_0, t=0)
+	# create DeepWaterWave, Particle, and TransportSystem objects
+	wave = fl.DeepWaterWave(AMPLITUDE, WAVELENGTH)
+	particle = prt.Particle(STOKES_NUM * wave.froude_num * R)
+	system = ts.MyTransportSystem(particle, wave, R)
 
-	# run numerical simulations and compute drift velocity for Santamaria
-	x, z, xdot, _, t = sm_system.run_numerics(sm_system.maxey_riley,
-											  x_0, z_0,
-											  num_periods / T, delta_t=1e-3 / T)
-	sm_u_d, sm_w_d, sm_t = compute_drift_velocity(x, z, xdot, t)
-	my_dict['sm_u_d'] = sm_u_d / U
-	my_dict['sm_w_d'] = sm_w_d / U
-	my_dict['sm_t'] = omega * sm_t
+	# compute numerics for various delta_ts and store solutions
+	for delta_t in DELTA_TS: compute_numerics(system, delta_t, results)
+	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
-	# run numerical simulation and compute drift velocity for fine delta_t
-	x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-											  x_0=k * x_0, z_0=k * z_0,
-											  xdot_0=xdot_0, zdot_0=zdot_0,
-											  delta_t=1e-3 * T,
-											  num_periods=num_periods * T,
-											  hide_progress=False)
-	fine_u_d, fine_w_d, fine_t = compute_drift_velocity(x, z, xdot, t)
-	my_dict['fine_u_d'] = fine_u_d
-	my_dict['fine_w_d'] = fine_w_d
-	my_dict['fine_t'] = fine_t / Fr
-
-	# run numerical simulation and compute drift velocity for medium delta_t
-	x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-											  x_0=k * x_0, z_0=k * z_0,
-											  xdot_0=xdot_0, zdot_0=zdot_0,
-											  delta_t=5e-3 * T,
-											  num_periods=num_periods * T,
-											  hide_progress=False)
-	medium_u_d, medium_w_d, medium_t = compute_drift_velocity(x, z, xdot, t)
-	my_dict['medium_u_d'] = medium_u_d
-	my_dict['medium_w_d'] = medium_w_d
-	my_dict['medium_t'] = medium_t / Fr
-
-	# run numerical simulation and compute drift velocity for coarse delta_t
-	x, z, xdot, _, t = my_system.run_numerics(include_history=False,
-											  x_0=k * x_0, z_0=k * z_0,
-											  xdot_0=xdot_0, zdot_0=zdot_0,
-											  delta_t=1e-2 * T,
-											  num_periods=num_periods * T,
-											  hide_progress=False)
-	coarse_u_d, coarse_w_d, coarse_t = compute_drift_velocity(x, z, xdot, t)
-	my_dict['coarse_u_d'] = coarse_u_d
-	my_dict['coarse_w_d'] = coarse_w_d
-	my_dict['coarse_t'] = coarse_t / Fr
-
-	# write results to data file
-	my_dict = dict([(key, pd.Series(value)) for key, value in my_dict.items()])
-	numerics = pd.DataFrame(my_dict)
-	numerics.to_csv('../../data/deep_water_wave/santamaria_fig2_recreation.csv',
-					index=False)
-
-def compute_drift_velocity(x, z, xdot, t):
-	r"""
-	Computes the Stokes drift velocity
-	$$\mathbf{u}_d = \langle u_d, w_d \rangle$$
-	using the distance travelled by the particle averaged over each wave period,
-	$$\mathbf{u}_d = \frac{\mathbf{x}_{n + 1} - \mathbf{x}_n}{\text{period}}.$$
+def compute_numerics(system, delta_t, results):
 	"""
-	# find estimated endpoints of periods
-	estimated_endpoints = []
-	for i in range(1, len(xdot)):
-		if xdot[i - 1] < 0 and 0 <= xdot[i]:
-			estimated_endpoints.append(i)
-	
-	# find exact endpoints of periods using interpolation
-	interpd_x, interpd_z, interpd_t = [], [], []
-	for i in range(1, len(estimated_endpoints)):
-		current = estimated_endpoints[i]
-		previous = current - 1
+	Run simulation and compute the numerical Stokes drift velocity.
 
-		new_t = np.interp(0, [xdot[previous], xdot[current]], [t[previous],
-															   t[current]])
-		interpd_t.append(new_t)
-		interpd_x.append(np.interp(new_t, [t[previous], t[current]],
-								   [x[previous], x[current]]))
-		interpd_z.append(np.interp(new_t, [t[previous], t[current]],
-								   [z[previous], z[current]]))
+	Parameters
+	----------
+	system : TransportSystem (obj)
+		The transport system through which the simulation is run.
+	delta_t : float
+		The timestep size.
+	results : dict
+		The dictionary the solutions are stored in.
 
-	# compute drift velocity
-	u_d, w_d = [], []
-	for i in range(1, len(interpd_t)):
-		u_d.append((interpd_x[i] - interpd_x[i - 1]) 
-				 / (interpd_t[i] - interpd_t[i - 1]))
-		w_d.append((interpd_z[i] - interpd_z[i - 1]) 
-				 / (interpd_t[i] - interpd_t[i - 1]))
-	return np.array(u_d), np.array(w_d), np.array(interpd_t)
+	See Also
+	--------
+	models.my_system.compute_drift_velocity
+	"""
+	xdot_0, zdot_0 = system.flow.velocity(X_0, Z_0, t=0)
+	y = [X_0, Z_0, xdot_0, zdot_0]
+	t = np.arange(0, NUM_PERIODS * system.flow.period, delta_t)
+	x, z, xdot, _, t, _, _, _, _, _, _, _, _, _, \
+	   _ = system.maxey_riley(t, y, INCLUDE_HISTORY)
+	_, _, u_bar, w_bar, t = ts.compute_drift_velocity(x, z, xdot, t)
+	results = update_results(results, [t[1:], u_bar, w_bar],
+							[delta_t, 'Daitche'])
 
 if __name__ == '__main__':
 	main()

@@ -1,107 +1,69 @@
-import sys 
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import pandas as pd
 import numpy as np
 from time import time
-from tqdm import tqdm
-from itertools import chain
 
+from utils.data_tools import extract_data, update_results
 from transport_framework import particle as prt 
 from models import rotating_flow as fl
 from models import rotating_system as ts
+from examples.rigid_body_rotation.numerics import R, STOKES_NUM, X_0, Z_0
+
+T_FINAL = 10
+IN_FILE = '../data/rigid_body_rotation/analytics.csv'
+OUT_FILE = '../data/rigid_body_rotation/global_error.csv'
 
 def main():
 	"""
-	This program computes the global error for the numerical solutions of a
-	rotating particle in a flow and saves the results to the
-	`data/rigid_body_rotation` directory.
-	"""
-	# read analytical data
-	data_path = '../data/rigid_body_rotation/'
-	analytics = pd.read_csv(data_path + 'analytics_varying_timesteps.csv')
+	Compute the global error for a rotating rigid body.
 
-	# initialize delta_t values and dictionaries to store numerical solutions
-	timesteps = np.linspace(1e-3, 1e-1, 10)
-	labels = list(chain.from_iterable(('x_%.2e' % delta_t, 'z_%.2e' % delta_t)
-				  for delta_t in timesteps))
-	dict1 = dict.fromkeys(labels)
-	dict2 = dict.fromkeys(labels)
-	dict3 = dict.fromkeys(labels)
-	time_dict = dict.fromkeys(['delta_t', 'computation_time'])
-	time_dict['delta_t'] = timesteps
-	computation_times = []
+	The global error is computed with varying timestep sizes to reproduce
+	results from [1] Figure 4. Results are saved to the
+	`data/rigid_body_rotation` directory.
+	
+	References
+	----------
+	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
+	"""
+	# read data, initialize delta_ts, and create dictionary to store solutions
+	analytics = pd.read_csv(IN_FILE)
+	timesteps = analytics['delta_t'].drop_duplicates().iloc[:-1]
+	keys = ['global_error', 'delta_t', 'order', 'computation_time']
+	results = {key: [] for key in keys}
 
 	# initialize variables for numerical simulations
-	t_final = 10
-	R = 2 / 3 * 0.75
-	my_particle = prt.Particle(stokes_num=2 / 3 * 0.3)
-	my_flow = fl.RotatingFlow()
-	my_system = ts.RotatingTransportSystem(my_particle, my_flow, R)
-	x_0 = 1 
-	xdot_0, zdot_0 = my_flow.velocity(x_0, 0)
+	particle = prt.Particle(STOKES_NUM)
+	flow = fl.RotatingFlow()
+	system = ts.RotatingTransportSystem(particle, flow, R)
+	xdot_0, zdot_0 = flow.velocity(X_0, Z_0)
+	y = [X_0, Z_0, xdot_0, zdot_0]
 
-	# compute and store first, second, and third order numerical solutions
+	i, total = 1, len(timesteps) * 3
 	for delta_t in timesteps:
-		print(f'Computing numerics for delta_t = %.2e...' % delta_t)
-		start = time()
-		x_label = 'x_%.2e' % delta_t
-		z_label = 'z_%.2e' % delta_t
-		t = np.arange(0, t_final + delta_t, delta_t)
-		x1, z1, _, _, _ = my_system.run_numerics(include_history=True, order=1,
-												 x_0=x_0, z_0=0, xdot_0=xdot_0,
-												 zdot_0=zdot_0, delta_t=delta_t,
-												 num_periods=t_final)
-		x2, z2, _, _, _ = my_system.run_numerics(include_history=True, order=2,
-												 x_0=x_0, z_0=0, xdot_0=xdot_0,
-												 zdot_0=zdot_0, delta_t=delta_t,
-												 num_periods=t_final)
-		x3, z3, _, _, _ = my_system.run_numerics(include_history=True, x_0=x_0,
-												 z_0=0, xdot_0=xdot_0,
-												 zdot_0=zdot_0, delta_t=delta_t,
-												 num_periods=t_final)
-		finish = time()
-		dict1[x_label] = x1
-		dict1[z_label] = z1
-		dict2[x_label] = x2
-		dict2[z_label] = z2
-		dict3[x_label] = x3
-		dict3[z_label] = z3
-		computation_times.append(finish - start)
-		print(f'Computations for delta_t = %.2e complete.\t\t%5.2fs\n'
-			  % (delta_t, finish - start))
+		t = np.arange(0, T_FINAL, delta_t)
+		for order in [1, 2, 3]:
+			# compute numerics
+			print(f'({i}/{total:g}) Computing numerics for delta_t =',
+				  f'{delta_t:.0e}...')
+			start = time()
+			x, z, _, _, _ = system.maxey_riley(t, y, order)
+			finish = time()
+			computation_time = finish - start
+			print(f'Computations for delta_t = {delta_t:.0e} order {order:g}',
+				  f'complete.\t\t{finish - start:5.2f}s\n')
+			i += 1
 
-	# insert NaNs to fix ragged data
-	dict1 = dict([(key, pd.Series(value)) for key, value in dict1.items()])
-	dict2 = dict([(key, pd.Series(value)) for key, value in dict2.items()])
-	dict3 = dict([(key, pd.Series(value)) for key, value in dict3.items()])
-	numerics1 = pd.DataFrame(dict1)
-	numerics2 = pd.DataFrame(dict2)
-	numerics3 = pd.DataFrame(dict3)
-
-	# compute global error
-	print('Computing global error...')
-	global_error1, global_error2, global_error3 = [], [], []
-	for delta_t in tqdm(timesteps):
-		x_label = 'x_%.2e' % delta_t
-		z_label = 'z_%.2e' % delta_t
-		exact = analytics[[x_label, z_label]].dropna().to_numpy()
-		num1 = numerics1[[x_label, z_label]].dropna().to_numpy()
-		num2 = numerics2[[x_label, z_label]].dropna().to_numpy()
-		num3 = numerics3[[x_label, z_label]].dropna().to_numpy()
-		global_error1.append(np.linalg.norm(exact - num1, axis=1).max())
-		global_error2.append(np.linalg.norm(exact - num2, axis=1).max())
-		global_error3.append(np.linalg.norm(exact - num3, axis=1).max())
-
-	# write solutions to data files
-	global_error_dict = {'delta_t': timesteps, 'global_error1': global_error1,
-											   'global_error2': global_error2,
-											   'global_error3': global_error3}
-	global_error = pd.DataFrame(global_error_dict)
-	global_error.to_csv(data_path + 'global_error.csv', index=False)
-	time_dict['computation_time'] = computation_times
-	times = pd.DataFrame(time_dict)
-	times.to_csv(data_path + 'computation_times.csv', index=False)
+			# compute global error and store solutions
+			n = len(x)
+			numerics = np.array([x, z]).T
+			x, z = extract_data(['x', 'z'], analytics, {'delta_t': delta_t})
+			exact = np.array([x.iloc[:n], z.iloc[:n]]).T
+			global_error = np.linalg.norm(exact - numerics, axis=1).max()
+			results = update_results(results, [], [global_error, delta_t, order,
+											   computation_time])
+	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
 if __name__ == '__main__':
 	main()

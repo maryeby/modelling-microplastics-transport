@@ -1,13 +1,10 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 import scipy.constants as constants
 from abc import ABC, abstractmethod
 from transport_framework import flow
 
 class Wave(flow.Flow):
-	"""Represents a fluid wave."""
+	"""Represent a wavy flow."""
 
 	def __init__(self, depth, amplitude, wavelength):
 		r"""
@@ -23,8 +20,8 @@ class Wave(flow.Flow):
 			The kinematic viscosity ν' of seawater.
 		wavenum : float
 			The wavenumber *k'*, computed as $$k' = \frac{2 \pi}{\lambda'}.$$
-		gravity : float
-			The gravity **g'** acting on the fluid.
+		gravity : ndarray
+			1D array of `float` data, the gravity **g'** acting on the fluid.
 		angular_freq : float
 			The angular frequency *ω'*, computed using the dispersion relation.
 		phase_velocity : float
@@ -32,15 +29,12 @@ class Wave(flow.Flow):
 		period : float
 			The period of the wave, computed as
 			$$\text{period}' = \frac{2\pi}{\omega'}.$$
-		max_velocity : float
-			The maximum velocity *U'* at the surface *z'* = 0, computed as
-			$$U' = \omega' A'.$$
 		froude_num : float
 			The Froude number *Fr*, computed as
-			$$Fr = \sqrt{\frac{k'U'^2}{g'}}.$$
+			$$Fr = \sqrt{\frac{k'(\omega'A')^2}{g'}}.$$
 		reynolds_num : float
 			The Reynolds number *Re* of the wave, computed as
-			$$Re = \frac{U'}{k'ν'}.$$
+			$$Re = \frac{\omega'A'}{k'ν'}.$$
 		"""
 		super().__init__(depth)
 		self.amplitude = amplitude
@@ -52,13 +46,13 @@ class Wave(flow.Flow):
 		self.set_angular_freq()
 		self.phase_velocity = self.angular_freq / self.wavenum
 		self.period = 2 * np.pi / self.angular_freq
-		self.max_velocity = self.angular_freq * self.amplitude
-		self.froude_num = np.sqrt(self.wavenum * self.max_velocity ** 2
-											   / constants.g)
-		self.reynolds_num = self.max_velocity / (self.wavenum
+		self.froude_num = np.sqrt(self.wavenum 
+						* (self.angular_freq * self.amplitude) ** 2
+						/ constants.g)
+		self.reynolds_num = self.angular_freq * self.amplitude / (self.wavenum
 											  * self.kinematic_viscosity)
 	
 	@abstractmethod
 	def set_angular_freq(self):
-		"""Defines the angular frequency *ω'*."""
+		"""Define the angular frequency *ω'*."""
 		pass

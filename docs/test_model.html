@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.1">
+<title>modelling-microplastics-transport.test_model API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { inlineMath: [ ['$','$'], ["\\(","\\)"] ], processEscapes: true } });</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>modelling-microplastics-transport.test_model</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="modelling-microplastics-transport.test_model.analytical_stokes_drift"><code class="name flex">
+<span>def <span class="ident">analytical_stokes_drift</span></span>(<span>wave, z)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Compute the analytical horizontal Stokes drift velocity.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
+<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>float</code> or <code>ndarray</code></dt>
+<dd>The vertical position(s) of the particle.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>u_d</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> data, the horizontal Stokes drift velocity.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>The computation is performed using the expression,
+<span><span class="MathJax_Preview">u_d = \frac{\cosh{(2(z + h))}}{2\sinh^2(h)},</span><script type="math/tex; mode=display">u_d = \frac{\cosh{(2(z + h))}}{2\sinh^2(h)},</script></span>
+based on the dimensional equation<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">1</a></sup>,
+<span><span class="MathJax_Preview">u'_{SD} = c'(A'k')^2 \frac{\cosh{(2k'(z' + h'))}}{2\sinh^2(k'h')}.</span><script type="math/tex; mode=display">u'_{SD} = c'(A'k')^2 \frac{\cosh{(2k'(z' + h'))}}{2\sinh^2(k'h')}.</script></span></p>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:3">
+<p><a href="https://doi.org/10.1098/rsta.2017.0104">T. S. van den Bremer &amp; Ø. Breivik (2018).</a> Stokes drift.
+<em>Philosophical Transactions of the Royal Society A: Mathematical,
+Physical and Engineering Sciences</em> 376(2111), 20170104.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.desk_check_attributes"><code class="name flex">
+<span>def <span class="ident">desk_check_attributes</span></span>(<span>wave, beta)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Desk check computed attributes of the Wave &amp; TransportSystem classes.</p></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test various aspects of our model for different flows.</p></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.plot_error_analysis"><code class="name flex">
+<span>def <span class="ident">plot_error_analysis</span></span>(<span>data, t, e_rel1, e_rel2=None, e_rel3=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plot a recreation of Figure 3(b) from [1].</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>A <code>DataFrame</code> containing extracted data from Figure 3(b) in [1].</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+<dt><strong><code>e_rel1</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> data, the first order relative error.</dd>
+<dt><strong><code>e_rel2</code></strong> :&ensp;<code>ndarray</code>, default=<code>None</code></dt>
+<dd>1D array containing <code>float</code> data, the second order relative error.</dd>
+<dt><strong><code>e_rel3</code></strong> :&ensp;<code>ndarray</code>, default=<code>None</code></dt>
+<dd>1D array containing <code>float</code> data, the third order relative error.</dd>
+</dl>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:4">
+<p><a href="https://doi.org/10.1016/j.jcp.2013.07.024">A. Daitche (2013).</a>
+Advection of inertial particles in the presence of the history force:
+Higher order numerical schemes. <em>Journal of Computational Physics</em>
+254, 93–106.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.plot_history"><code class="name flex">
+<span>def <span class="ident">plot_history</span></span>(<span>t, exact_hx, exact_hz, history_x, history_z)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plot the analytical and numerical solutions for the history force.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+<dt><strong><code>exact_hx</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal analytical history force.</dd>
+<dt><strong><code>exact_hz</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical analytical history force.</dd>
+<dt><strong><code>history_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal numerical history force.</dd>
+<dt><strong><code>history_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical numerical history force.</dd>
+</dl></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.plot_relaxing_case"><code class="name flex">
+<span>def <span class="ident">plot_relaxing_case</span></span>(<span>betas, data, xdots, ts, asymptotics)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plot a recreation of Figure 4 from [1].</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>betas</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>float</code> elements, the density ratios.</dd>
+<dt><strong><code>data</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>A <code>DataFrame</code> containing extracted data from Figure 4 in [1].</dd>
+<dt><strong><code>xdots</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>ndarray</code>s, the horizontal particle velocities.</dd>
+<dt><strong><code>ts</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>ndarray</code>s, the time series data.</dd>
+<dt><strong><code>asymptotics</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>ndarray</code>s, the asymptotic horizontal particle velocities.</dd>
+</dl>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:1">
+<p><a href="https://doi.org/10.1017/jfm.2019.194">S. G. Prasath et al. (2019).</a>
+Accurate solution method for the Maxey–Riley equation, and the
+effects of Basset history. <em>Journal of Fluid Mechanics</em> 868, 428–460.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.plot_rotating_trajectory"><code class="name flex">
+<span>def <span class="ident">plot_rotating_trajectory</span></span>(<span>data, analytical, x_int, x1, x2=None, x3=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plot a recreation of Figure 3(a) from [1].</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>A <code>DataFrame</code> containing extracted data from Figure 3(a) in [1].</dd>
+<dt><strong><code>analytical</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>2D array containing <code>float</code> data, the analytical solutions for x and z.</dd>
+<dt><strong><code>x_int</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle positions at <code>int</code> t.</dd>
+<dt><strong><code>x1</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>2D array containing <code>float</code> data, the first order solutions for x, z.</dd>
+<dt><strong><code>x2</code></strong> :&ensp;<code>ndarray</code>, default=<code>None</code></dt>
+<dd>2D array containing <code>float</code> data, the second order solutions for x, z.</dd>
+<dt><strong><code>x3</code></strong> :&ensp;<code>ndarray</code>, default=<code>None</code></dt>
+<dd>2D array containing <code>float</code> data, the third order solutions for x, z.</dd>
+</dl>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:4">
+<p><a href="https://doi.org/10.1016/j.jcp.2013.07.024">A. Daitche (2013).</a>
+Advection of inertial particles in the presence of the history force:
+Higher order numerical schemes. <em>Journal of Computational Physics</em>
+254, 93–106.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.plot_wavy_drift_velocity"><code class="name flex">
+<span>def <span class="ident">plot_wavy_drift_velocity</span></span>(<span>labels, analytical_u, analytical_z, u_bar, z_bar)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plot the drift velocity of particles vs their average vertical position.</p>
+<p>Only the horizontal Stokes drift velocity is plotted, and both the drift
+velocity and average vertical position are normalized.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>labels</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>str</code> elements to use in the plot legend.</dd>
+<dt><strong><code>analytical_u</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>float</code> elements, the analytical horizontal drift velocities.</dd>
+<dt><strong><code>analytical_z</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>float</code> elements, the analytical vertical positions.</dd>
+<dt><strong><code>u_bar</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>float</code> elements, the average horizontal drift velocities.</dd>
+<dt><strong><code>z_bar</code></strong> :&ensp;<code>list</code></dt>
+<dd>A list of <code>float</code> elements, the average vertical positions.</dd>
+</dl></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.plot_wavy_trajectories"><code class="name flex">
+<span>def <span class="ident">plot_wavy_trajectories</span></span>(<span>data1, data2, x_heavy, z_heavy, x_light, z_light)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Plot a recreation of Figure 1 from [1].</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data1</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>A <code>DataFrame</code> containing extracted data from Figure 1 in [1].</dd>
+<dt><strong><code>data2</code></strong> :&ensp;<code>DataFrame</code></dt>
+<dd>A <code>DataFrame</code> containing <code>x</code>, <code>z</code> data from an independent test.</dd>
+<dt><strong><code>x_heavy</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal position of the heavy particle.</dd>
+<dt><strong><code>z_heavy</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical position of the heavy particle.</dd>
+<dt><strong><code>x_light</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal position of the light particle.</dd>
+<dt><strong><code>z_light</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical position of the light particle.</dd>
+</dl>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:5">
+<p><a href="https://doi.org/10.1209/0295-5075/102/14003">F. Santamaria et al. (2013).</a>
+Stokes drift for inertial particles transported by water waves.
+<em>EPL (Europhysics Letters)</em> 102(1), 14003.&#160;<a class="footnote-backref" href="#fnref:5" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.relaxing_asymptotics"><code class="name flex">
+<span>def <span class="ident">relaxing_asymptotics</span></span>(<span>beta, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Compute the leading order asymptotic behavior<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> of the particle velocity.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code> or <code>ndarray</code></dt>
+<dd>Float or 1D array containing <code>float</code> time series data.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code> or <code>ndarray</code></dt>
+<dd>The asymptotic particle velocity.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>The computation is based on eq (4.7) from [1],
+<span><span class="MathJax_Preview">q^{(2)}(0, t) \approx c(\alpha, \gamma)
+- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
++ \mathcal{O}(t^{3 / 2}),</span><script type="math/tex; mode=display">q^{(2)}(0, t) \approx c(\alpha, \gamma)
+- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
++ \mathcal{O}(t^{3 / 2}),</script></span>
+with a sign change on the singular term.</p>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:1">
+<p><a href="https://doi.org/10.1017/jfm.2019.194">S. G. Prasath et al. (2019).</a>
+Accurate solution method for the Maxey–Riley equation, and the
+effects of Basset history. <em>Journal of Fluid Mechanics</em> 868, 428–460.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.rotating_analytics"><code class="name flex">
+<span>def <span class="ident">rotating_analytics</span></span>(<span>t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return analytical solutions<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">1</a></sup> for rigid body rotation.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle position.</dd>
+<dt><strong><code>int_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle positions at <code>int</code> t.</dd>
+<dt><strong><code>int_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle positions at <code>int</code> t.</dd>
+<dt><strong><code>history_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal history force.</dd>
+<dt><strong><code>history_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical history force.</dd>
+<dt><strong><code>results</code></strong> :&ensp;<code>dict</code></dt>
+<dd>The <code>x</code> and <code>z</code> solutions for various timestep sizes.</dd>
+<dt><strong><code>timesteps</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>An array of <code>float</code> timestep sizes used to evaluate the analytics.</dd>
+</dl>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:2">
+<p><a href="https://doi.org/10.1063/1.1689970">F. Candelier et al. (2004).</a>
+On the effect of the Boussinesq–Basset force on the radial migration
+of a Stokes particle in a vortex. <em>Physics of Fluids</em> 16(5),
+1765–1776.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.simulate"><code class="name flex">
+<span>def <span class="ident">simulate</span></span>(<span>flow, beta, include_history, x_0=(0, 0), order=3)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Simulate a particle moving through the specified <code>flow</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>flow</code></strong> :&ensp;<code>Flow (obj)</code></dt>
+<dd>The flow through which the particle is transported.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>include_history</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to include history effects.</dd>
+<dt><strong><code>x_0</code></strong> :&ensp;<code>tuple</code>, default=<code>(0, 0)</code></dt>
+<dd>The initial horizontal and vertical positions of the particle.</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>int</code>, default=<code>3</code></dt>
+<dd>The order of the integration scheme
+(first, second, or third).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>ndarrays</code></dt>
+<dd>The position and velocity of the particle over time, and forces.</dd>
+</dl></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.test_wave"><code class="name flex">
+<span>def <span class="ident">test_wave</span></span>(<span>wave, beta, x_0=(0, 0))</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run various tests on a simulated particle in a wavy flow.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
+<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>x_0</code></strong> :&ensp;<code>tuple</code>, default=<code>(0, 0)</code></dt>
+<dd>The horizontal and vertical positions of the particle.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>success</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether the verification of the Stokes drift velocity succeeded.</dd>
+<dt><strong><code>u_bar</code></strong> :&ensp;<code>float</code></dt>
+<dd>The mean horizontal drift velocity of the particle.</dd>
+<dt><strong><code>z_bar</code></strong> :&ensp;<code>float</code></dt>
+<dd>The mean vertical position of the particle.</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle position.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>Returns success, u_bar, z_bar only if the particle is neutrally buoyant,
+returns x, z without history otherwise.</p></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.verify_drift_velocity"><code class="name flex">
+<span>def <span class="ident">verify_drift_velocity</span></span>(<span>wave, x, z, xdot, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify that the analytical and numerical Stokes drift velocity match.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
+<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle position.</dd>
+<dt><strong><code>xdot</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle velocity.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>success</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether the verification of the Stokes drift velocity succeeded.</dd>
+<dt><strong><code>u_bar</code></strong> :&ensp;<code>float</code></dt>
+<dd>The mean horizontal drift velocity of the particle.</dd>
+<dt><strong><code>z_bar</code></strong> :&ensp;<code>float</code></dt>
+<dd>The mean vertical position of the particle.</dd>
+</dl></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.verify_forces"><code class="name flex">
+<span>def <span class="ident">verify_forces</span></span>(<span>wave, beta, stokes_num, u_x, u_z, x_0, z_0, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z, drag_x, drag_z, history_x, history_z, include_history)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify the horizontal and vertical components of each force.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
+<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The Stokes number <em>St</em>.</dd>
+<dt><strong><code>u_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal fluid velocity.</dd>
+<dt><strong><code>u_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical fluid velocity.</dd>
+<dt><strong><code>x_0</code></strong>, <strong><code>z_0</code></strong> :&ensp;<code>float</code></dt>
+<dd>The initial horizontal and vertical position of the particle.</dd>
+<dt><strong><code>xdot</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle velocity.</dd>
+<dt><strong><code>zdot</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle velocity.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+<dt><strong><code>fpg_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal fluid pressure gradient.</dd>
+<dt><strong><code>fpg_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical fluid pressure gradient.</dd>
+<dt><strong><code>buoyancy_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal buoyancy force.</dd>
+<dt><strong><code>buoyancy_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical buoyancy force.</dd>
+<dt><strong><code>mass_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal added mass force.</dd>
+<dt><strong><code>mass_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical added mass force.</dd>
+<dt><strong><code>drag_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal Stokes drag.</dd>
+<dt><strong><code>drag_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical Stokes drag.</dd>
+<dt><strong><code>history_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal history force.</dd>
+<dt><strong><code>history_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical history force.</dd>
+<dt><strong><code>include_history</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether the history force was included in the simulation.</dd>
+</dl></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.verify_num_periods"><code class="name flex">
+<span>def <span class="ident">verify_num_periods</span></span>(<span>x, z, xdot, t, num_periods)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify that the simulation ran for the prescribed number of periods.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle position.</dd>
+<dt><strong><code>xdot</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle velocity.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+<dt><strong><code>num_periods</code></strong> :&ensp;<code>int</code></dt>
+<dd>The prescribed number of periods.</dd>
+</dl></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.verify_trajectory_range"><code class="name flex">
+<span>def <span class="ident">verify_trajectory_range</span></span>(<span>x, z, h)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify that vertical particle positions are between the seabed and surface.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle position.</dd>
+<dt><strong><code>h</code></strong> :&ensp;<code>float</code></dt>
+<dd>The dimensionless water depth.</dd>
+</dl></div>
+</dd>
+<dt id="modelling-microplastics-transport.test_model.verify_velocities"><code class="name flex">
+<span>def <span class="ident">verify_velocities</span></span>(<span>beta, x, z, t, xdot, zdot, u_x=None, u_z=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify the particle and fluid velocities numerically.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle position.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+<dt><strong><code>xdot</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle velocity.</dd>
+<dt><strong><code>zdot</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle velocity.</dd>
+<dt><strong><code>u_x</code></strong> :&ensp;<code>ndarray</code>, default=<code>None</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal fluid velocity.</dd>
+<dt><strong><code>u_z</code></strong> :&ensp;<code>ndarray</code>, default=<code>None</code></dt>
+<dd>1D array of <code>float</code> data, the vertical fluid velocity.</dd>
+</dl></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="modelling-microplastics-transport" href="index.html">modelling-microplastics-transport</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="modelling-microplastics-transport.test_model.analytical_stokes_drift" href="#modelling-microplastics-transport.test_model.analytical_stokes_drift">analytical_stokes_drift</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.desk_check_attributes" href="#modelling-microplastics-transport.test_model.desk_check_attributes">desk_check_attributes</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.main" href="#modelling-microplastics-transport.test_model.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.plot_error_analysis" href="#modelling-microplastics-transport.test_model.plot_error_analysis">plot_error_analysis</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.plot_history" href="#modelling-microplastics-transport.test_model.plot_history">plot_history</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.plot_relaxing_case" href="#modelling-microplastics-transport.test_model.plot_relaxing_case">plot_relaxing_case</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.plot_rotating_trajectory" href="#modelling-microplastics-transport.test_model.plot_rotating_trajectory">plot_rotating_trajectory</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.plot_wavy_drift_velocity" href="#modelling-microplastics-transport.test_model.plot_wavy_drift_velocity">plot_wavy_drift_velocity</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.plot_wavy_trajectories" href="#modelling-microplastics-transport.test_model.plot_wavy_trajectories">plot_wavy_trajectories</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.relaxing_asymptotics" href="#modelling-microplastics-transport.test_model.relaxing_asymptotics">relaxing_asymptotics</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.rotating_analytics" href="#modelling-microplastics-transport.test_model.rotating_analytics">rotating_analytics</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.simulate" href="#modelling-microplastics-transport.test_model.simulate">simulate</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.test_wave" href="#modelling-microplastics-transport.test_model.test_wave">test_wave</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.verify_drift_velocity" href="#modelling-microplastics-transport.test_model.verify_drift_velocity">verify_drift_velocity</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.verify_forces" href="#modelling-microplastics-transport.test_model.verify_forces">verify_forces</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.verify_num_periods" href="#modelling-microplastics-transport.test_model.verify_num_periods">verify_num_periods</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.verify_trajectory_range" href="#modelling-microplastics-transport.test_model.verify_trajectory_range">verify_trajectory_range</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.verify_velocities" href="#modelling-microplastics-transport.test_model.verify_velocities">verify_velocities</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+</footer>
+</body>
+</html>

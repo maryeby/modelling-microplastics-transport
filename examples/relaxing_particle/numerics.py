@@ -1,109 +1,54 @@
-import sys 
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import pandas as pd
+import itertools
 
+from utils.data_tools import update_results
 from transport_framework import particle as prt
 from models import quiescent_flow as fl
 from models import relaxing_system as ts
 
+# particle conditions
+STOKES_NUM = 2 / 3		# translated Stokes number from [1] Figure 4
+X_0, Z_0 = 0, 0			# initial particle position
+XDOT_0, ZDOT_0 = 1, 1	# initial particle velocity
+
+# simulation conditions
+BETAS = [0.01, 1, 5]	# values of beta from [1] Figure 4
+T_FINAL = 15			# total time
+DELTA_T = 1e-2			# timestep
+OUT_FILE = '../data/relaxing_particle/numerics.csv'
+
 def main():
 	"""
-	This program runs numerical simulations for a relaxing particle in a
-	quiescent flow, and saves the results to the `data/relaxing_particle`
-	directory.
+	Run numerical simulations for a relaxing particle in a quiescent flow.
+
+	This program reproduces the results from [1] Figure 4, and saves the results
+	to the `data/relaxing_particle` directory.
+
+	References
+	----------
+	[^1]: [S. G. Prasath et al. (2019).](https://doi.org/10.1017/jfm.2019.194)
+		  Accurate solution method for the Maxey–Riley equation, and the
+		  effects of Basset history. *Journal of Fluid Mechanics* 868, 428–460.
 	"""
-	# initialize variables for the transport system
-	R_light = 2 / (1 + 2 * 0.01)
-	R_neutral = 2 / (1 + 2 * 1)
-	R_heavy = 2 / (1 + 2 * 5)
-	my_particle = prt.Particle(stokes_num=0.66)
-	my_flow = fl.QuiescentFlow()
-	light_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_light)
-	neutral_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_neutral)
-	heavy_system = ts.RelaxingTransportSystem(my_particle, my_flow, R_heavy)
+	# initialize Particle and Flow objects, create dictionary to store sols
+	particle = prt.Particle(STOKES_NUM)
+	flow = fl.QuiescentFlow()
+	results = {'t': [], 'xdot': [], 'beta': [], 'history': []}
 
-	# initialize variables for numerical simulations
-	x_0, z_0, xdot_0, zdot_0 = 0, 0, 1, 1
-	t_final = 15
-	delta_t = 1e-2 
-	my_dict = dict.fromkeys(['t', 'light_x_history', 'light_z_history',
-							 'light_xdot_history', 'light_zdot_history',
-							 'neutral_x_history', 'neutral_z_history',
-							 'neutral_xdot_history', 'neutral_zdot_history',
-							 'heavy_x_history', 'heavy_z_history',
-							 'heavy_xdot_history', 'heavy_zdot_history',
-							 'light_x', 'light_z', 'light_xdot', 'light_zdot',
-							 'neutral_x', 'neutral_z', 'neutral_xdot',
-							 'neutral_zdot', 'heavy_x', 'heavy_z',
-							 'heavy_xdot', 'heavy_zdot'])
+	for beta, include_history in itertools.product(BETAS, [False, True]):
+		# compute R and initialize TransportSystem object
+		density_ratio = scale(beta)
+		system = ts.RelaxingTransportSystem(particle, flow, density_ratio)
 
-	# compute results for the light particle
-	x, z, xdot, zdot, t = light_system.run_numerics(include_history=True,
-													x_0=x_0, z_0=z_0,
-													xdot_0=xdot_0,
-													zdot_0=zdot_0,
-													num_periods=t_final,
-													delta_t=delta_t)
-	my_dict['t'] = t
-	my_dict['light_x_history'] = x
-	my_dict['light_z_history'] = z
-	my_dict['light_xdot_history'] = xdot
-	my_dict['light_zdot_history'] = zdot
-	x, z, xdot, zdot, t = light_system.run_numerics(include_history=False,
-													x_0=x_0, z_0=z_0,
-													xdot_0=xdot_0,
-													zdot_0=zdot_0,
-													num_periods=t_final,
-													delta_t=delta_t)
-	my_dict['light_x'] = x
-	my_dict['light_z'] = z
-	my_dict['light_xdot'] = xdot
-	my_dict['light_zdot'] = zdot
-	x, z, xdot, zdot, t = neutral_system.run_numerics(include_history=True,
-													  x_0=x_0, z_0=z_0,
-													  xdot_0=xdot_0,
-													  zdot_0=zdot_0,
-													  num_periods=t_final,
-													  delta_t=delta_t)
-	my_dict['neutral_x_history'] = x
-	my_dict['neutral_z_history'] = z
-	my_dict['neutral_xdot_history'] = xdot
-	my_dict['neutral_zdot_history'] = zdot
-	x, z, xdot, zdot, t = neutral_system.run_numerics(include_history=False,
-													  x_0=x_0, z_0=z_0,
-													  xdot_0=xdot_0,
-													  zdot_0=zdot_0,
-													  num_periods=t_final,
-													  delta_t=delta_t)
-	my_dict['neutral_x'] = x
-	my_dict['neutral_z'] = z
-	my_dict['neutral_xdot'] = xdot
-	my_dict['neutral_zdot'] = zdot
-	x, z, xdot, zdot, t = heavy_system.run_numerics(include_history=True,
-													x_0=x_0, z_0=z_0,
-													xdot_0=xdot_0,
-													zdot_0=zdot_0,
-													num_periods=t_final,
-													delta_t=delta_t)
-	my_dict['heavy_x_history'] = x
-	my_dict['heavy_z_history'] = z
-	my_dict['heavy_xdot_history'] = xdot
-	my_dict['heavy_zdot_history'] = zdot
-	x, z, xdot, zdot, t = heavy_system.run_numerics(include_history=False,
-													x_0=x_0, z_0=z_0,
-													xdot_0=xdot_0,
-													zdot_0=zdot_0,
-													num_periods=t_final,
-													delta_t=delta_t)
-	my_dict['heavy_x'] = x
-	my_dict['heavy_z'] = z
-	my_dict['heavy_xdot'] = xdot
-	my_dict['heavy_zdot'] = zdot
+		# compute results
+		_, _, xdot, _, t = system.run_numerics(X_0, Z_0, XDOT_0, ZDOT_0,
+											   T_FINAL, DELTA_T,
+											   include_history)
+		# store results
+		results = update_results(results, [t, xdot], [beta, include_history])
+	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
-	# write results to data file
-	numerics = pd.DataFrame(my_dict)
-	numerics.to_csv('../data/relaxing_particle/numerics.csv', index=False)
+def scale(beta): return 2 / (1 + 2 * beta) # translate beta from [1] to R
 		
 if __name__ == '__main__':
 	main()

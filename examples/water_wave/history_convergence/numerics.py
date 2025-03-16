@@ -1,42 +1,59 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-			  + 'modelling-microplastics-transport')
+import warnings
 import numpy as np
 import pandas as pd
-from examples.water_wave.numerics import single_simulation as run
+from tqdm import tqdm
+
+from utils.data_tools import update_results
+from transport_framework import particle as prt
+from models import water_wave as fl
+from models import my_system as ts
+
+# particle conditions
+STOKES_NUM = 0.01
+X_0, Z_0 = 0, 0
+
+# wave conditions
+DEPTH = 10
+AMPLITUDE = 0.02
+WAVELENGTH = 1
+
+# simulation conditions
+SCALE = 2 / 3
+BETA = 0.9
+R = BETA * SCALE
+DELTA_TS = np.linspace(5e-3, 3e-4, 10)
+INCLUDE_HISTORY = True
+HIDE_PROGRESS = True
+OUT_FILE = '../../data/water_wave/history_convergence.csv'
 
 def main():
 	"""
-	This program computes numerical solutions for the history force at various
-	time step sizes and saves the results to the `data/water_wave` directory.
+	Compute numerical solutions for the history force at time *t* = 0.
+
+	The value of the history force is recorded from simulations run with various
+	time step sizes. Results are saved to the `data/water_wave` directory.
 	"""
-	filepath = '../../data/water_wave/history_convergence.csv'
+	# create Particle, Wave, and TransportSystem objects
+	particle = prt.Particle(STOKES_NUM)
+	wave = fl.WaterWave(DEPTH, AMPLITUDE, WAVELENGTH)
+	system = ts.MyTransportSystem(particle, wave, R)
 
-	# initialize variables for the simulations and to store results
-	position, St, beta = (0, 0), 0.01, 0.9
-	h, A, wavelength = 10, 0.02, 1
-	delta_ts = np.linspace(5e-3, 3e-4, 10)
-	initial_history_x, initial_history_z = [], []
+	results = {'initial_history_x': [], 'initial_history_z': [], 'delta_t': []}
+	xdot_0, zdot_0 = wave.velocity(X_0, Z_0, t=0)
+	y = [X_0, Z_0, xdot_0, zdot_0]
+	warnings.filterwarnings('ignore')
 
-	# run simulations with various time step sizes
-	for delta_t in delta_ts:
-		num_periods = delta_t * 8
-		print(f'delta_t = {delta_t:.2e}')
-		_, history = run(position, St, h, A, wavelength, beta, num_periods, 
-						 delta_t, filepath, mode='r',
-						 crop=['history_force_x', 'history_force_z'])
-
-		# store results to appropriate lists
-		history_x, history_z = history
-		initial_history_x.append(history_x[0])
-		initial_history_z.append(history_z[0])
-		print()
-
-	# store results in a DataFrame and write to the data file
-	results = pd.DataFrame({'delta_t\'': delta_ts,
-							'H\'(0)_x': initial_history_x,
-							'H\'(0)_z': initial_history_z})
-	results.to_csv(filepath, index=False)
+	for delta_t in tqdm(DELTA_TS):
+		# initialize time series and run simulation
+		t_final = delta_t * 8
+		t = np.arange(0, t_final, delta_t)
+		_, _, _, _, _, _, _, _, _, _, _, _, _, \
+		   history_x, history_z = system.maxey_riley(t, y, INCLUDE_HISTORY,
+													 HIDE_PROGRESS)
+		# store only initial values of history
+		results = update_results(results, [], [history_x[0], history_z[0],
+											   delta_t])
+	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
 if __name__ == '__main__':
 	main()

@@ -1,16 +1,12 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 from time import time
 from tqdm import tqdm
+
 from models import rotating_flow
 from transport_framework import particle, transport_system
 
 class RotatingTransportSystem(transport_system.TransportSystem):
-	""" 
-	Represents the transport of a rigid particle in a rotating fluid flow.
-	"""
+	"""Represent the transport of a particle in a rotating fluid flow.[^1]"""
 
 	def __init__(self, particle, flow, density_ratio):
 		r"""
@@ -21,31 +17,51 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle's density and the fluid's density.
+			The ratio between the particle and fluid densities.
+
+		References
+		----------
+		[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+			  Advection of inertial particles in the presence of the history
+			  force: Higher order numerical schemes.
+			  *Journal of Computational Physics* 254, 93–106.
 		"""
 		super().__init__(particle, flow, density_ratio)
 
-	def maxey_riley(self, include_history, t, y, order):
+	def maxey_riley(self, t, y, order, include_history=True):
 		r"""
-		Implements the integration scheme for the full Maxey-Riley equation as
-		outlined in Daitche (2013) Section 3.
+		Evaluate the Maxey-Riley equation.[^1]
 
 		Parameters
 		----------
-		include_history : boolean
-			Whether to include history effects.
-		t : array
-			The times when the Maxey-Riley equation should be evaluated.
-		y : list (array-like)
-			A list containing the initial particle position and velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+		y : list
+			A list of `float` data, the initial particle position and velocity.
 		order : int
-			The order of the integration scheme  (first, second, or third).
+			The order of the integration scheme.
+		include_history : bool, default=True
+			Whether to include history effects.
 
 		Returns
 		-------
-		Array
-			The components of the particle's position and velocity, and the
-			times where the Maxey-Riley equation was evaluated.
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		zdot : ndarray
+			1D array of `float` data, the vertical particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+
+		References
+		----------
+		[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+			  Advection of inertial particles in the presence of the history
+			  force: Higher order numerical schemes.
+			  *Journal of Computational Physics* 254, 93–106.
 		"""
 		# initialize local variables
 		R = self.density_ratio
@@ -232,61 +248,9 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 									+ 5 * G[n - 2]) + u[n + 1]
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
-	def run_numerics(self, include_history, x_0, z_0, xdot_0, zdot_0,
-					 num_periods, delta_t, order=3):
-		"""
-		Computes the position and velocity of the particle over time.
-
-		Parameters
-		----------
-		include_history : boolean
-			Whether to include history effects.
-		x_0 : float
-			The initial horizontal position of the particle.
-		z_0 : float
-			The initial vertical position of the particle.
-		xdot_0 : float
-			The initial horizontal velocity of the particle.
-		zdot_0 : float
-			The initial vertical velocity of the particle.
-		num_periods : int
-			The number of periods to integrate over.
-		delta_t : float
-			The size of the time steps used for integration.
-		order : int, default=3
-			The order of the integration scheme (first, second, or third).
-
-		Returns
-		-------
-		x : array
-			The horizontal positions of the particle.
-		z : array
-			The vertical positions of the particle.
-		xdot : array
-			The horizontal velocities of the particle.
-		zdot : array
-			The vertical velocities of the particle.
-		t : array
-			The times at which the model was evaluated.
-		"""
-		# initialize parameters for the solver
-		t_final = num_periods * self.flow.period
-		t_eval = np.arange(0, t_final + delta_t, delta_t)
-		y = [x_0, z_0, xdot_0, zdot_0]
-
-		# run computations
-		return self.maxey_riley(include_history, t_eval, y, order)
-
 def compute_alpha(size):
 	r"""
-	Computes a matrix containing the values of alpha as defined in equation (9)
-	from Daitche (2013),
-	$$\alpha_j^n = \frac{4}{3} \begin{cases}
-		1 & j = 0 \\
-		(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
-		(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n,
-		\end{cases}$$
-	so the value of alpha may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of alpha as defined in equation (9) from [1].
 
 	Parameters
 	----------
@@ -295,8 +259,25 @@ def compute_alpha(size):
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient alpha.
+	ndarray
+		2D square array of `float` data, the values of the coefficient alpha.
+
+	Notes
+	-----
+	Alpha is computed,
+	$$\alpha_j^n = \frac{4}{3} \begin{cases}
+		1 & j = 0 \\
+		(j - 1)^{3 / 2} + (j + 1)^{3 / 2} - 2j^{3 / 2} & 0 < j < n \\
+		(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n.
+		\end{cases}$$
+	The value of alpha may be obtained by indexing the array `arr[j, n]`.
+
+	References
+	----------
+	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
 	"""
 	print('Computing matrix of alpha coefficients...', end='', flush=True)
 	start = time()
@@ -330,21 +311,26 @@ def compute_alpha(size):
 
 def compute_beta(size, alpha):
 	r"""
-	Computes a matrix containing the values of beta as defined in Section 2 of
-	Daitche (2013). The value $$\beta_j^n$$
-	may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of beta as defined in [1] Section 2.
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
-	alpha : array-like
-		The values of the coefficient alpha at n = 1.
+	alpha : ndarray
+		2D array of `float` data, the values of the coefficient alpha at n = 1.
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient beta.
+	ndarray
+		2D square array of `float` data, the values of the coefficient beta.
+
+	References
+	----------
+	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
 	"""
 	print('Computing matrix of beta coefficients...', end='', flush=True)
 	start = time()
@@ -420,21 +406,26 @@ def compute_beta(size, alpha):
 
 def compute_gamma(size, beta):
 	r"""
-	Computes a matrix containing the values of gamma as defined in Section 2 of
-	Daitche (2013). The value $$\gamma_j^n$$
-	may be obtained by indexing the array as `arr[j, n]`.
+	Create an array of the values of gamma as defined in [1] Section 2.
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
-	beta : array-like
-		The values of the coefficient beta at n = 2.
+	beta : ndarray
+		2D array of `float` data, the values of the coefficient beta at n = 1.
 
 	Returns
 	-------
-	Array
-		The matrix containing the values of the coefficient gamma.
+	ndarray
+		2D square array of `float` data, the values of the coefficient gamma.
+
+	References
+	----------
+	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+		  Advection of inertial particles in the presence of the history force:
+		  Higher order numerical schemes. *Journal of Computational Physics*
+		  254, 93–106.
 	"""
 	print('Computing matrix of gamma coefficients...', end='', flush=True)
 	start = time()

@@ -1,16 +1,11 @@
-import sys
-sys.path.append('/home/s2182576/Documents/academia/thesis/'
-				+ 'modelling-microplastics-transport')
 import numpy as np
 import scipy.integrate as integrate
+
 from models import deep_water_wave
 from transport_framework import particle, transport_system
 
 class HallerTransportSystem(transport_system.TransportSystem):
-	""" 
-	Represents the transport of an inertial particle in a linear water wave as
-	described by Haller and Sapsis (2008).
-	"""
+	"""Represent the transport of a particle in a linear water wave.[^1]"""
 
 	def __init__(self, particle, flow, density_ratio):
 		r"""
@@ -24,15 +19,22 @@ class HallerTransportSystem(transport_system.TransportSystem):
 			The ratio *R* between the particle and fluid densities.
 		reynolds_num : float
 			The particle Reynolds number, computed as,
-			$$Re_p = \frac{U'd'}{\nu'},$$
-			where *U'* and ν' are attributes of the wave, and *d'* is the
-			diameter of the particle.
+			$$Re_p = \frac{2\omega'A'a'}{\nu'},$$
+			where *ω'*, *A'* and ν' are attributes of the wave, and *a'* is the
+			radius of the particle.
 		epsilon : float
 			A relationship between the Stokes number *St* and density ratio *R*,
 			$$\epsilon = \frac{St}{R}.$$
+
+		References
+		----------
+		[^1]: [G. Haller & T. Sapsis (2008).](
+			  https://doi.org/10.1016/j.physd.2007.09.027)
+			  Where do inertial particles go in fluid flows?
+			  *Physica D: Nonlinear Phenomena* 237(5), 573–583.
 		"""
 		super().__init__(particle, flow, density_ratio)
-		self.reynolds_num = (2 * self.flow.max_velocity
+		self.reynolds_num = (2 * self.flow.angular_freq * self.flow.amplitude
 							   * np.sqrt(9 * self.particle.stokes_num 
 							   / (2 * self.flow.wavenum ** 2
 							   * self.flow.reynolds_num))) \
@@ -41,8 +43,23 @@ class HallerTransportSystem(transport_system.TransportSystem):
 
 	def maxey_riley(self, t, y):
 		r"""
-		Evaluates the Maxey-Riley equation without history effects,
-		corresponding to equation (3) in Haller and Sapsis (2008),
+		Evaluate the Maxey-Riley equation without history effects.
+
+		Parameters
+		----------
+		t : ndarray
+			1D array containing `float` time series data.
+		y : list
+			A list of `float` data, the initial particle position and velocity.
+
+		Returns
+		-------
+		ndarray
+			1D array of `float` data, the particle velocity and acceleration.
+
+		Notes
+		-----
+		Computations correspond to equation (3) in [1],
 		$$\frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{v},$$
 		$$\frac{\mathrm{d}\mathbf{v}}{\mathrm{d}t} = \frac{\mathbf{u}
 			- \mathbf{v}}{\epsilon}
@@ -55,18 +72,13 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		where *a'* is the particle radius, *ν'* is the kinematic viscosity, *U'*
 		and *L'* are the characteristic velocity and length scales respectively,
 		and *ρ'* is the density of the particle or the fluid.
-		
-		Parameters
-		----------
-		t : float or array
-			The time(s) when the Maxey-Riley equation should be evaluated.
-		y : list (array-like)
-			A list containing the initial particle position and velocity.
 
-		Returns
-		-------
-		Array
-			The components of the particle's velocity and acceleration.
+		References
+		----------
+		[^1]: [G. Haller & T. Sapsis (2008).](
+			  https://doi.org/10.1016/j.physd.2007.09.027)
+			  Where do inertial particles go in fluid flows?
+			  *Physica D: Nonlinear Phenomena* 237(5), 573–583.
 		"""
 		R = self.density_ratio
 		x, z = y[:2]
@@ -83,8 +95,33 @@ class HallerTransportSystem(transport_system.TransportSystem):
 
 	def inertial_equation(self, t, y, order):
 		r"""
-		Evalutes the inertial equation, corresponding to equation (10) in
-		Haller and Sapsis (2008),
+		Evaluate the inertial equation.[^1]
+
+		Parameters
+		----------
+		t : ndarray
+			1D array containing `float` time series data.
+		y : list
+			A list of `float` data, the initial particle position and velocity.
+		order : int
+			The order of the inertial equation (leading, first, or second).
+
+		Returns
+		-------
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		zdot : ndarray
+			1D array of `float` data, the vertical particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+
+		Notes
+		-----
+		Computations correspond to equation (10) in [1],
 		$$\mathbf{v} = \mathbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
 		\Bigg[\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t} - \mathbf{g}\Bigg]
 		+ \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
@@ -100,19 +137,12 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		and *L'* are the characteristic velocity and length scales respectively,
 		and *ρ'* is the density of the particle or the fluid.
 
-		Parameters
+		References
 		----------
-		t : float
-			The time(s) when the inertial equation should be evaluated.
-		y : list (array-like)
-			A list containing the x and z values to use in the computations.
-		order : int
-			The order of the inertial equation (leading, first, or second).
-
-		Returns
-		-------
-		Array
-			The components of the particle's velocity and acceleration.
+		[^1]: [G. Haller & T. Sapsis (2008).](
+			  https://doi.org/10.1016/j.physd.2007.09.027)
+			  Where do inertial particles go in fluid flows?
+			  *Physica D: Nonlinear Phenomena* 237(5), 573–583.
 		"""
 		g = self.flow.gravity
 		R = self.density_ratio
@@ -142,63 +172,57 @@ class HallerTransportSystem(transport_system.TransportSystem):
 
 		return np.concatenate((particle_velocity, particle_accel))
 
-	def run_numerics(self, equation, x_0, z_0, num_periods, delta_t, order=2,
-					 method='BDF'):
+	def run_numerics(self, equation, x_0, z_0, num_periods, delta_t, order=2):
 		"""
-		Computes the position and velocity of the particle over time.
+		Compute the position and velocity of the particle over time.
 
 		Parameters
 		----------
-		equation : fun
+		equation : function
 			The equation to evaluate, either M-R or the inertial equation.
-		x_0 : float
-			The initial horizontal position of the particle.
-		z_0 : float
-			The initial vertical position of the particle.
+		x_0, z_0 : float
+			The initial horizontal and vertical position of the particle.
 		num_periods : int
 			The number of wave periods to integrate over.
 		delta_t : float
 			The size of the timesteps used for integration.
 		order : int, default=2
 			The order of the inertial equation (leading, first, or second).
-		method : str, default='BDF'
-			The method of integration to use.
 
 		Returns
 		-------
-		x : array
-			The horizontal positions of the particle.
-		z : array
-			The vertical positions of the particle.
-		xdot : array
-			The horizontal velocities of the particle.
-		zdot : array
-			The vertical velocities of the particle.
-		t : array
-			The times at which the model was evaluated.
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		zdot : ndarray
+			1D array of `float` data, the vertical particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
 
 		Notes
 		-----
-		The velocity of the particle is set to the initial velocity of the
-		fluid.
+		The initial velocity of the particle is set to the initial velocity of
+		the fluid.
 		"""
 		# initialize local parameters
-		t_final = num_periods * self.flow.period
+		t_final = num_periods * self.flow.period + delta_t
 		t_span = (0, t_final)
-		t_eval = np.arange(0, t_final, delta_t) \
-					/ (self.flow.wavenum * self.flow.max_velocity)
+		t_eval = np.arange(0, t_final, delta_t)
 		xdot_0, zdot_0 = self.flow.velocity(x_0, z_0, 0)
 
 		# run computations
 		if 'maxey_riley' in str(equation):
 			sols = integrate.solve_ivp(equation, t_span,
 									   [x_0, z_0, xdot_0, zdot_0],
-									   method=method, t_eval=t_eval,
+									   method='BDF', t_eval=t_eval,
 									   rtol=1e-10, atol=1e-12)
 		elif 'inertial' in str(equation):
 			sols = integrate.solve_ivp(equation, t_span,
 									   [x_0, z_0, xdot_0, zdot_0],
-									   method=method, t_eval=t_eval,
+									   method='BDF', t_eval=t_eval,
 									   rtol=1e-8, atol=1e-10, args=(order,))
 		else:
 			print('Could not recognize equation.')
