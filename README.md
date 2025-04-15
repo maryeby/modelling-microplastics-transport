@@ -45,4 +45,4 @@ The source code for this project is contained in the `transport_framework`, `mod
 Included separately from these directories are the [`add_path`](add_path.sh) shell script and [`test_model`](test_model.py) program. The shell script should be
 modified and run before executing any other source code, in order to properly set the path of the code library. The [`test_model`](test_model.py) program will test
 various aspects of our model for different `Particle`, `Flow`, and `TransportSystem` objects. This test program can be run after making changes to the model to ensure
-its accuracy has not been compromised. Documentation for the source code can be found in the [`docs`](docs) directory. For a visual representation of the code structure, see the [UML diagram](figures/UML_diagram.png).
+its accuracy has not been compromised. Documentation for the source code can be found in the [`docs`](docs) directory. For a visual representation of the code structure, see the [UML diagram](figures/UML_diagram.pdf).
