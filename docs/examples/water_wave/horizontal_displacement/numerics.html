@@ -35,25 +35,73 @@ hljs.highlightAll();
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.check_boundary"><code class="name flex">
+<span>def <span class="ident">check_boundary</span></span>(<span>stokes_num, beta, include_history, z_f, k)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Print failure message if the particle has not reached the seabed or surface.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The Stokes number to use for the initialization of the particle.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>include_history</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether history effects are included.</dd>
+<dt><strong><code>z_f</code></strong> :&ensp;<code>float</code></dt>
+<dd>The final vertical position of the particle.</dd>
+<dt><strong><code>k</code></strong> :&ensp;<code>float</code></dt>
+<dd>The wavenumber <em>k'</em> associated with the flow.</dd>
+</dl></div>
+</dd>
+<dt id="modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.estimate_num_periods"><code class="name flex">
+<span>def <span class="ident">estimate_num_periods</span></span>(<span>k, g, period, stokes_num, beta)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Estimate the number of periods required for particles to reach the seabed.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>k</code></strong> :&ensp;<code>float</code></dt>
+<dd>The wavenumber <em>k'</em> associated with the flow.</dd>
+<dt><strong><code>g</code></strong> :&ensp;<code>float</code></dt>
+<dd>The dimensionless gravity <em>g</em> acting on the particle.</dd>
+<dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
+<dd>The dimensionless wave period.</dd>
+</dl></div>
+</dd>
 <dt id="modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.main"><code class="name flex">
 <span>def <span class="ident">main</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Run numerical simulations for a negatively buoyant particle in a wave.</p>
-<p>Simulations are run with and without history effects for a negatively
-buoyant particle transported through a linear wave of arbitrarily deep
-water. Conditions for the simulations were chosen based on [1] Figure 8.</p>
-<h2 id="references">References</h2>
-<div class="footnote">
-<hr>
-<ol>
-<li id="fn:1">
-<p><a href="https://doi.org/10.1017/jfm.2022.95">M. H. DiBenedetto et al. (2022).</a> Enhanced settling and dispersion
-of inertial particles in surface waves. <em>Journal of Fluid Mechanics</em>
-936, A38.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
-</li>
-</ol>
-</div></div>
+<div class="desc"><p>Run numerical simulations for particles of varying densities and sizes.</p>
+<p>Simulations are run with and without history effects for particles of
+varying sizes (Stokes numbers) and densities as they are transported through
+a linear wave of arbitrarily deep water.</p></div>
+</dd>
+<dt id="modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.run_numerics"><code class="name flex">
+<span>def <span class="ident">run_numerics</span></span>(<span>x_0, stokes_num, beta, include_history)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run a numerical simulation with the specified <em>St</em> and density ratio <em>R</em>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x_0</code></strong> :&ensp;<code>float</code></dt>
+<dd>The initial horizontal position of the particle.</dd>
+<dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The Stokes number to use for the initialization of the particle.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>include_history</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether history effects are included.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>A list containing the particle positions, <em>St</em>, and <em>R</em>.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>A failure message is printed and the trajectory is plotted if the particle
+does not reach the seabed.</p></div>
 </dd>
 </dl>
 </section>
@@ -72,7 +120,10 @@ of inertial particles in surface waves. <em>Journal of Fluid Mechanics</em>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.check_boundary" href="#modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.check_boundary">check_boundary</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.estimate_num_periods" href="#modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.estimate_num_periods">estimate_num_periods</a></code></li>
 <li><code><a title="modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.main" href="#modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.run_numerics" href="#modelling-microplastics-transport.examples.water_wave.horizontal_displacement.numerics.run_numerics">run_numerics</a></code></li>
 </ul>
 </li>
 </ul>

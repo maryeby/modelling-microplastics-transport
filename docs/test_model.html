@@ -70,10 +70,19 @@ Physical and Engineering Sciences</em> 376(2111), 20170104.&#160;<a class="footn
 </div></div>
 </dd>
 <dt id="modelling-microplastics-transport.test_model.desk_check_attributes"><code class="name flex">
-<span>def <span class="ident">desk_check_attributes</span></span>(<span>wave, beta)</span>
+<span>def <span class="ident">desk_check_attributes</span></span>(<span>wave, stokes_num, beta)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Desk check computed attributes of the Wave &amp; TransportSystem classes.</p></div>
+<div class="desc"><p>Desk check computed attributes of the Wave and TransportSystem classes.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
+<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The Stokes number <em>St</em>.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+</dl></div>
 </dd>
 <dt id="modelling-microplastics-transport.test_model.main"><code class="name flex">
 <span>def <span class="ident">main</span></span>(<span>)</span>
@@ -459,6 +468,12 @@ returns x, z without history otherwise.</p></div>
 <dd>Whether the history force was included in the simulation.</dd>
 </dl></div>
 </dd>
+<dt id="modelling-microplastics-transport.test_model.verify_lengths"><code class="name flex">
+<span>def <span class="ident">verify_lengths</span></span>(<span>sols)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify that all <code>ndarray</code> elements in <code>sols</code> list are the same length.</p></div>
+</dd>
 <dt id="modelling-microplastics-transport.test_model.verify_num_periods"><code class="name flex">
 <span>def <span class="ident">verify_num_periods</span></span>(<span>x, z, xdot, t, num_periods)</span>
 </code></dt>
@@ -550,6 +565,7 @@ returns x, z without history otherwise.</p></div>
 <li><code><a title="modelling-microplastics-transport.test_model.test_wave" href="#modelling-microplastics-transport.test_model.test_wave">test_wave</a></code></li>
 <li><code><a title="modelling-microplastics-transport.test_model.verify_drift_velocity" href="#modelling-microplastics-transport.test_model.verify_drift_velocity">verify_drift_velocity</a></code></li>
 <li><code><a title="modelling-microplastics-transport.test_model.verify_forces" href="#modelling-microplastics-transport.test_model.verify_forces">verify_forces</a></code></li>
+<li><code><a title="modelling-microplastics-transport.test_model.verify_lengths" href="#modelling-microplastics-transport.test_model.verify_lengths">verify_lengths</a></code></li>
 <li><code><a title="modelling-microplastics-transport.test_model.verify_num_periods" href="#modelling-microplastics-transport.test_model.verify_num_periods">verify_num_periods</a></code></li>
 <li><code><a title="modelling-microplastics-transport.test_model.verify_trajectory_range" href="#modelling-microplastics-transport.test_model.verify_trajectory_range">verify_trajectory_range</a></code></li>
 <li><code><a title="modelling-microplastics-transport.test_model.verify_velocities" href="#modelling-microplastics-transport.test_model.verify_velocities">verify_velocities</a></code></li>

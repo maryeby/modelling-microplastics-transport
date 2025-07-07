@@ -40,9 +40,37 @@ hljs.highlightAll();
 </code></dt>
 <dd>
 <div class="desc"><p>Run numerical simulations for particles of varying buoyancy in a wave.</p>
-<p>Simulations are performed for neutrally and negatively buoyant particles in
-linear waves of deep water, with and without history effects. Results are
-saved to the <code>data/water_wave</code> directory.</p></div>
+<p>Simulations are performed for particles of varying buoyancy in linear waves
+of deep water, with and without history effects. Results are saved to the
+<code>data/water_wave</code> directory.</p></div>
+</dd>
+<dt id="modelling-microplastics-transport.examples.water_wave.beta_analysis.numerics.run_numerics"><code class="name flex">
+<span>def <span class="ident">run_numerics</span></span>(<span>particle, wave, t, z_0, beta, include_history)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Run a numerical simulation and compute the horizontal drift velocity.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>particle</code></strong> :&ensp;<code>Particle (obj)</code></dt>
+<dd>The particle transported through the wave.</dd>
+<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
+<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+<dt><strong><code>z_0</code></strong> :&ensp;<code>float</code></dt>
+<dd>The initial vertical particle position.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>include_history</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to include history effects.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>A list containing the vertical particle positions at each period, the
+horizontal drift velocity, the density ratio, and whether history
+effects were included.</dd>
+</dl></div>
 </dd>
 </dl>
 </section>
@@ -62,6 +90,7 @@ saved to the <code>data/water_wave</code> directory.</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="modelling-microplastics-transport.examples.water_wave.beta_analysis.numerics.main" href="#modelling-microplastics-transport.examples.water_wave.beta_analysis.numerics.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.beta_analysis.numerics.run_numerics" href="#modelling-microplastics-transport.examples.water_wave.beta_analysis.numerics.run_numerics">run_numerics</a></code></li>
 </ul>
 </li>
 </ul>

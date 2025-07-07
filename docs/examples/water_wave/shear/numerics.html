@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.1">
-<title>modelling-microplastics-transport.examples API documentation</title>
+<title>modelling-microplastics-transport.examples.water_wave.shear.numerics API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
@@ -24,38 +24,64 @@ hljs.highlightAll();
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>modelling-microplastics-transport.examples</code></h1>
+<h1 class="title">Module <code>modelling-microplastics-transport.examples.water_wave.shear.numerics</code></h1>
 </header>
 <section id="section-intro">
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt><code class="name"><a title="modelling-microplastics-transport.examples.deep_water_wave" href="deep_water_wave/index.html">modelling-microplastics-transport.examples.deep_water_wave</a></code></dt>
+<dt id="modelling-microplastics-transport.examples.water_wave.shear.numerics.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Simulate particles in a wave and periodically record their positions.</p>
+<p>The particles simulated are transported through a linear wave of arbitrarily
+deep water. The initial positions of the particles vary, as does their
+density and size. Conditions for the simulations were chosen in accordance
+with [1] Figure 5. Results are saved to the <code>data/water_wave</code> directory.</p>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:1">
+<p><a href="https://doi.org/10.1017/jfm.2022.95">M. H. DiBenedetto et al. (2022).</a> Enhanced settling and dispersion
+of inertial particles in surface waves. <em>Journal of Fluid Mechanics</em>
+936, A38.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
 </dd>
-<dt><code class="name"><a title="modelling-microplastics-transport.examples.fifth_order_stokes_wave" href="fifth_order_stokes_wave/index.html">modelling-microplastics-transport.examples.fifth_order_stokes_wave</a></code></dt>
+<dt id="modelling-microplastics-transport.examples.water_wave.shear.numerics.run_numerics"><code class="name flex">
+<span>def <span class="ident">run_numerics</span></span>(<span>stokes_num, beta, wave, i, include_history)</span>
+</code></dt>
 <dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="modelling-microplastics-transport.examples.relaxing_particle" href="relaxing_particle/index.html">modelling-microplastics-transport.examples.relaxing_particle</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="modelling-microplastics-transport.examples.rigid_body_rotation" href="rigid_body_rotation/index.html">modelling-microplastics-transport.examples.rigid_body_rotation</a></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt><code class="name"><a title="modelling-microplastics-transport.examples.water_wave" href="water_wave/index.html">modelling-microplastics-transport.examples.water_wave</a></code></dt>
-<dd>
-<div class="desc"></div>
+<div class="desc"><p>Run a numerical simulation with the specified initial position.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>stokes_num</code></strong> :&ensp;<code>float</code></dt>
+<dd>The Stokes number to use for the initialization of the particle.</dd>
+<dt><strong><code>beta</code></strong> :&ensp;<code>float</code></dt>
+<dd>The ratio between the particle and fluid densities.</dd>
+<dt><strong><code>wave</code></strong> :&ensp;<code>Wave (obj)</code></dt>
+<dd>The wave through which the particle is transported.</dd>
+<dt><strong><code>i</code></strong> :&ensp;<code>int</code></dt>
+<dd>The index of the initial particle position elements.</dd>
+<dt><strong><code>include_history</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to include history effects.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>A list containing the particle positions at each period, the initial
+position, and whether history effects were included.</dd>
+</dl></div>
 </dd>
 </dl>
-</section>
-<section>
-</section>
-<section>
 </section>
 <section>
 </section>
@@ -67,16 +93,13 @@ hljs.highlightAll();
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="modelling-microplastics-transport" href="../index.html">modelling-microplastics-transport</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.shear" href="index.html">modelling-microplastics-transport.examples.water_wave.shear</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="modelling-microplastics-transport.examples.deep_water_wave" href="deep_water_wave/index.html">modelling-microplastics-transport.examples.deep_water_wave</a></code></li>
-<li><code><a title="modelling-microplastics-transport.examples.fifth_order_stokes_wave" href="fifth_order_stokes_wave/index.html">modelling-microplastics-transport.examples.fifth_order_stokes_wave</a></code></li>
-<li><code><a title="modelling-microplastics-transport.examples.relaxing_particle" href="relaxing_particle/index.html">modelling-microplastics-transport.examples.relaxing_particle</a></code></li>
-<li><code><a title="modelling-microplastics-transport.examples.rigid_body_rotation" href="rigid_body_rotation/index.html">modelling-microplastics-transport.examples.rigid_body_rotation</a></code></li>
-<li><code><a title="modelling-microplastics-transport.examples.water_wave" href="water_wave/index.html">modelling-microplastics-transport.examples.water_wave</a></code></li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.shear.numerics.main" href="#modelling-microplastics-transport.examples.water_wave.shear.numerics.main">main</a></code></li>
+<li><code><a title="modelling-microplastics-transport.examples.water_wave.shear.numerics.run_numerics" href="#modelling-microplastics-transport.examples.water_wave.shear.numerics.run_numerics">run_numerics</a></code></li>
 </ul>
 </li>
 </ul>

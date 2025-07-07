@@ -197,9 +197,11 @@ force: Higher order numerical schemes.
 <dd>The ratio <em>R</em> between the particle and fluid densities.</dd>
 <dt><strong><code>reynolds_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The particle Reynolds number, computed as,
-<span><span class="MathJax_Preview">Re_p = \frac{2\omega'A'a'}{\nu'},</span><script type="math/tex; mode=display">Re_p = \frac{2\omega'A'a'}{\nu'},</script></span>
-where <em>ω'</em>, <em>A'</em> and ν' are attributes of the wave, and <em>a'</em> is the
-radius of the particle.</dd>
+<span><span class="MathJax_Preview">Re_p = \frac{2a' v_s \omega' A'}{\nu'},</span><script type="math/tex; mode=display">Re_p = \frac{2a' v_s \omega' A'}{\nu'},</script></span>
+where $a'$ is the particle radius, $\omega'$ is the angular
+frequency, $A'$ is the wave amplitude, and $\nu'$ is the kinematic
+viscosity. The particle settling velocity $v_s$ is computed using
+the expression for $v_{s, lin}$ from [2].</dd>
 </dl>
 <h2 id="references">References</h2>
 <div class="footnote">
@@ -210,6 +212,11 @@ radius of the particle.</dd>
 Advection of inertial particles in the presence of the history
 force: Higher order numerical schemes.
 <em>Journal of Computational Physics</em> 254, 93–106.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p><a href="https://doi.org/10.1017/jfm.2022.95">M. H. DiBenedetto et al. (2022).</a> Enhanced settling and
+dispersion of inertial particles in surface waves.
+<em>Journal of Fluid Mechanics</em> 936, A38.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div></div>
@@ -232,9 +239,11 @@ force: Higher order numerical schemes.
                         The ratio *R* between the particle and fluid densities.
                 reynolds_num : float
                         The particle Reynolds number, computed as,
-                        $$Re_p = \frac{2\omega&#39;A&#39;a&#39;}{\nu&#39;},$$
-                        where *ω&#39;*, *A&#39;* and ν&#39; are attributes of the wave, and *a&#39;* is the
-                        radius of the particle.
+                        $$Re_p = \frac{2a&#39; v_s \omega&#39; A&#39;}{\nu&#39;},$$
+                        where $a&#39;$ is the particle radius, $\omega&#39;$ is the angular
+                        frequency, $A&#39;$ is the wave amplitude, and $\nu&#39;$ is the kinematic
+                        viscosity. The particle settling velocity $v_s$ is computed using
+                        the expression for $v_{s, lin}$ from [2].
 
                 References
                 ----------
@@ -242,18 +251,77 @@ force: Higher order numerical schemes.
                           Advection of inertial particles in the presence of the history
                           force: Higher order numerical schemes.
                           *Journal of Computational Physics* 254, 93–106.
+                [^2]: [M. H. DiBenedetto et al. (2022).](
+                          https://doi.org/10.1017/jfm.2022.95) Enhanced settling and
+                          dispersion of inertial particles in surface waves.
+                          *Journal of Fluid Mechanics* 936, A38.
                 &#34;&#34;&#34;
                 super().__init__(particle, flow, density_ratio)
                 if isinstance(flow, wave.Wave):
-                        self.reynolds_num = (2 * self.flow.angular_freq
-                                                                   * self.flow.amplitude
-                                                                   * np.sqrt(9 * self.particle.stokes_num 
-                                                                   / (2 * self.flow.wavenum ** 2
-                                                                   * self.flow.reynolds_num))) \
-                                                                   / self.flow.kinematic_viscosity
-                        if 0.1 &lt; self.reynolds_num:
-                                print_warning(&#39;Particle Reynolds number&#39; 
-                                                   + f&#39;(Re_p = {self.reynolds_num:.4f}) is not &lt;&lt; 1.&#39;)
+                        # compute particle Reynolds number
+                        a = np.sqrt(9 * self.particle.stokes_num
+                                                  * self.flow.kinematic_viscosity 
+                                                  / (2 * self.flow.angular_freq * self.flow.wavenum
+                                                  * self.flow.amplitude))
+                        self.reynolds_num = a * np.abs(2 - 3 * density_ratio) \
+                                                                  * self.particle.stokes_num \
+                                                                  * self.flow.angular_freq \
+                                                                  / (np.tanh(self.flow.wavenum 
+                                                                  * self.flow.depth)
+                                                                  * density_ratio * self.flow.wavenum \
+                                                                  * self.flow.kinematic_viscosity)
+                        # print warning if the particle Reynolds number is too large
+#                       if isinstance(flow, water_wave.WaterWave) \
+#                               or isinstance(flow, deep_water_wave.DeepWaterWave) \
+#                               or isinstance(flow,
+#                                                         dim_deep_water_wave.DimensionalDeepWaterWave):
+#                               if 0.1 &lt; self.reynolds_num:
+#                                       print_warning(&#39;Particle Reynolds number (Re_p = &#39; \
+#                                                          + f&#39;{self.reynolds_num:.4f}) is not &lt;&lt; 1.&#39;)
+
+        def max_particle_reynolds_num(self, x, z, xdot, t):
+                r&#34;&#34;&#34;
+                Compute the maximum value of the particle Reynolds number $Re_p$.
+
+                Parameters
+                ----------
+                x : ndarray
+                        1D array of `float` data, the horizontal particle position.
+                z : ndarray
+                        1D array of `float` data, the vertical particle position.
+                xdot : ndarray
+                        1D array of `float` data, the horizontal particle velocity.
+                t : ndarray
+                        1D array containing `float` time series data.
+
+                Notes
+                -----
+                The particle Reynolds number $Re_p$ is determined using equation (2.6)
+                from [1],
+                $$Re_p = \frac{2a&#39;|\mathbf{v}&#39; - \mathbf{u}&#39;|}{\nu&#39;},$$
+                where **v**&#39; and **u**&#39; are the particle and fluid velocities, $a&#39;$ is
+                the particle radius, and $\nu&#39;$ is the kinematic viscosity.
+
+                References
+                ----------
+                [^1]: [M. H. DiBenedetto et al. (2022).](
+                          https://doi.org/10.1017/jfm.2022.95) Enhanced settling and
+                          dispersion of inertial particles in surface waves.
+                          *Journal of Fluid Mechanics* 936, A38.
+                &#34;&#34;&#34;
+                nu = self.flow.kinematic_viscosity
+                a = np.sqrt(9 * self.particle.stokes_num * nu
+                                          / (2 * self.flow.angular_freq * self.flow.wavenum
+                                          * self.flow.amplitude))
+                u, _ = self.flow.velocity(x, z, t)
+                max_reynolds_num = np.max(2 * a * self.flow.angular_freq 
+                                                                        * self.flow.amplitude 
+                                                                        * (np.abs(xdot - u)) / nu)
+
+                # print warning if particle Reynolds number is too large
+                if 0.1 &lt; max_reynolds_num:
+                        print_warning(&#39;Max particle Reynolds number &#39; 
+                                           + f&#39;(Re_p = {max_reynolds_num:.4f}) is not &lt;&lt; 1.&#39;)
 
         def maxey_riley(self, t, y, include_history, hide_progress=False,
                                         include_H=False, order=3):
@@ -280,6 +348,11 @@ force: Higher order numerical schemes.
 
                 Returns
                 -------
+                list
+                        A list of 1D `ndarray` elements, including the time, horizontal and
+                        vertical components of the particle position, velocity, and the
+                        forces. The elements of the list are as follows:
+
                 x : ndarray
                         1D array of `float` data, the horizontal particle position.
                 z : ndarray
@@ -306,9 +379,9 @@ force: Higher order numerical schemes.
                         1D array of `float` data, the horizontal Stokes drag.
                 drag_z : ndarray
                         1D array of `float` data, the vertical Stokes drag.
-                H_x : ndarray
+                H_x : ndarray, optional
                         1D array of `float` data, the horizontal H value.
-                H_z : ndarray
+                H_z : ndarray, optional
                         1D array of `float` data, the vertical H value.
                 history_x : ndarray
                         1D array of `float` data, the horizontal history force.
@@ -334,39 +407,45 @@ force: Higher order numerical schemes.
                 mini_step = 2 * delta_t / num_mini_steps
                 mini_steps = np.arange(0, num_mini_steps * mini_step + mini_step,
                                                            mini_step)
-                mini_x = np.empty((mini_steps.size, 2)) 
-                mini_v = np.empty((mini_steps.size, 2))
-                mini_u = np.empty((mini_steps.size, 2))
-                mini_fpg = np.empty((mini_steps.size, 2))          # fluid pressure gradient
-                mini_buoyancy = np.empty((mini_steps.size, 2)) # buoyancy force
-                mini_mass = np.empty((mini_steps.size, 2))         # added mass force
-                mini_drag = np.empty((mini_steps.size, 2))         # Stokes drag
-                mini_history = np.empty((mini_steps.size, 2)) if include_history else \
-                                           np.zeros((mini_steps.size, 2))  # history force
+                mini_x = np.zeros((mini_steps.size, 2)) 
+                mini_v = np.zeros((mini_steps.size, 2))
+                mini_u = np.zeros((mini_steps.size, 2))
+                mini_fpg = np.zeros((mini_steps.size, 2))          # fluid pressure gradient
+                mini_buoyancy = np.zeros((mini_steps.size, 2)) # buoyancy force
+                mini_mass = np.zeros((mini_steps.size, 2))         # added mass force
+                mini_drag = np.zeros((mini_steps.size, 2))         # Stokes drag
+                mini_history = np.zeros((mini_steps.size, 2))  # history force
                 num_steps = t.size - 1
-                x = np.empty((t.size, 2))
-                v = np.empty((t.size, 2))
-                u = np.empty((t.size, 2))
-                fluid_pressure_gradient = np.empty((t.size, 2))
-                buoyancy = np.empty((t.size, 2))
-                added_mass = np.empty((t.size, 2))
-                stokes_drag = np.empty((t.size, 2))
-                history = np.empty((t.size, 2)) if include_history else \
-                                  np.zeros((t.size, 2))
+                x = np.zeros((t.size, 2))
+                v = np.zeros((t.size, 2))
+                u = np.zeros((t.size, 2))
+                fluid_pressure_gradient = np.zeros((t.size, 2))
+                buoyancy = np.zeros((t.size, 2))
+                added_mass = np.zeros((t.size, 2))
+                stokes_drag = np.zeros((t.size, 2))
+                history = np.zeros((t.size, 2))
 
                 # set initial conditions
                 x[0] = y[:2]
                 v[0] = y[2:]
                 u[0] = self.flow.velocity(x[0, 0], x[0, 1], t[0])
+                results = [x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0],
+                                   fluid_pressure_gradient[0, 0], fluid_pressure_gradient[0, 1],
+                                   buoyancy[0, 0], buoyancy[0, 1], added_mass[0, 0],
+                                   added_mass[0, 1], stokes_drag[0, 0], stokes_drag[0, 1],
+                                   history[0, 0], history[0, 1]]
                 mini_x[0] = x[0]
                 mini_v[0] = v[0]
                 mini_u[0] = u[0]
+                mini_results = results
 
                 # immediately return if z_0 is below the depth of the water (z_0 &lt; -h)
                 if x[0, 1] &lt;= -h:
-                        print(&#39;ERROR: Initial vertical position is below the seabed.&#39;)
-                        return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0], \
-                                   0, 0, 0, 0, 0, 0, 0, 0
+                        print_failure(&#39;Initial vertical position is below the seabed.&#39;)
+                        if include_H:
+                                results.insert(-2, np.zeros(t.size))
+                                results.insert(-2, np.zeros(t.size))
+                        return results
 
                 # only compute alpha, beta, gamma, xi if we&#39;re including history effects
                 if include_history:
@@ -395,21 +474,33 @@ force: Higher order numerical schemes.
                 # compute solutions for the first two intervals using finer time steps
                 if not hide_progress:
                         print(&#39;Computing the first two intervals using mini steps...&#39;)
-                for n_prime in tqdm(range(mini_steps.size - 1),
-                                                        disable=hide_progress):
+                for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
                         # return immediately if the particle reaches the seabed (z &lt; -h)
                         if mini_x[n_prime, 1] &lt;= -h:
                                 if not hide_progress:
                                         print(&#39;Simulation ended prematurely: particle reached the&#39;,
                                                   &#39;seabed.&#39;)
-                                return mini_x[:n_prime, 0], mini_x[:n_prime, 1], \
-                                           mini_v[:n_prime, 0], mini_v[:n_prime, 1], \
-                                           mini_steps[:n_prime], \
-                                           mini_fpg[:n_prime, 0], mini_fpg[:n_prime, 1], \
-                                           mini_buoyancy[:n_prime, 0], mini_buoyancy[:n_prime, 1],\
-                                           mini_mass[:n_prime, 0], mini_mass[:n_prime, 1], \
-                                           mini_drag[:n_prime, 0], mini_drag[:n_prime, 1], \
-                                           mini_history[:n_prime, 0], mini_history[:n_prime, 1]
+
+                                # compute mini_H and mini_history
+                                mini_H = np.copy(mini_history)
+                                mini_history[:, 0] = np.gradient(mini_history[:, 0], mini_steps,
+                                                                                                 edge_order=2)
+                                mini_history[:, 1] = np.gradient(mini_history[:, 1], mini_steps,
+                                                                                                 edge_order=2)
+                                mini_results[-2] = mini_history[:n_prime + 1, 0]
+                                mini_results[-1] = mini_history[:n_prime + 1, 1]
+
+                                if include_H: # add mini_H to mini_results
+                                        mini_results.insert(-2, mini_H[:n_prime + 1, 0])
+                                        mini_results.insert(-2, mini_H[:n_prime + 1, 1])
+
+                                # truncate data after the vertical position reaches the surface
+                                m = np.where(0 &lt; mini_x[:, 1])[0]
+                                if 0 &lt; len(m) and isinstance(self.flow, wave.Wave):
+                                        m = m[0]
+                                        print(&#39;Data truncated after particle reached the surface.&#39;)
+                                        return [r[:m] for r in mini_results]
+                                return mini_results
 
                         mini_w = mini_v - mini_u
                         mini_fpg = (3 / 2 * R - 1) \
@@ -508,13 +599,21 @@ force: Higher order numerical schemes.
                                                                                         - 16 * G[n_prime - 1]
                                                                                         + 5 * G[n_prime - 2]) \
                                                                                         + mini_u[n_prime + 1]
+                        # store results
+                        mini_results = [mini_x[:n_prime + 2, 0], mini_x[:n_prime + 2, 1],
+                                                        mini_v[:n_prime + 2, 0], mini_v[:n_prime + 2, 1],
+                                                        mini_steps[:n_prime + 2], mini_fpg[:n_prime + 2, 0],
+                                                        mini_fpg[:n_prime + 2, 1],
+                                                        mini_buoyancy[:n_prime + 2, 0],
+                                                        mini_buoyancy[:n_prime + 2, 1],
+                                                        mini_mass[:n_prime + 2, 0],
+                                                        mini_mass[:n_prime + 2, 1],
+                                                        mini_drag[:n_prime + 2, 0],
+                                                        mini_drag[:n_prime + 2, 1],
+                                                        mini_history[:n_prime + 2, 0],
+                                                        mini_history[:n_prime + 2, 1]]
 
                 # store solutions for the first two intervals
-                fluid_pressure_gradient[0] = mini_fpg[0]
-                buoyancy[0] = mini_buoyancy[0]
-                added_mass[0] = mini_mass[0]
-                stokes_drag[0] = mini_drag[0]
-                history[0] = mini_history[0]
                 x[1] = mini_x[int(mini_steps.size / 2)]
                 v[1] = mini_v[int(mini_steps.size / 2)]
                 u[1] = mini_u[int(mini_steps.size / 2)]
@@ -531,6 +630,12 @@ force: Higher order numerical schemes.
                 added_mass[2] = mini_mass[-1]
                 stokes_drag[2] = mini_drag[-1]
                 history[2] = mini_history[-1]
+                results = [x[:3, 0], x[:3, 1], v[:3, 0], v[:3, 1], t[:3], \
+                                   fluid_pressure_gradient[:3, 0], \
+                                   fluid_pressure_gradient[:3, 1], \
+                                   buoyancy[:3, 0], buoyancy[:3, 1], added_mass[:3, 0], \
+                                   added_mass[:3, 1], stokes_drag[:3, 0], stokes_drag[:3, 1], \
+                                   history[:3, 0], history[:3, 1]]
 
                 # compute solutions for the remaining intervals
                 if not hide_progress:
@@ -541,13 +646,32 @@ force: Higher order numerical schemes.
                                 if not hide_progress:
                                         print(&#39;Simulation ended prematurely: particle reached the&#39;,
                                                   &#39;seabed.&#39;)
-                                return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
-                                           fluid_pressure_gradient[:n, 0], \
-                                           fluid_pressure_gradient[:n, 1], \
-                                           buoyancy[:n, 0], buoyancy[:n, 1], \
-                                           added_mass[:n, 0], added_mass[:n, 1], \
-                                           stokes_drag[:n, 0], stokes_drag[:n, 1], \
-                                           history[:n, 0], history[:n, 1]
+                                # compute H and history
+                                H = np.copy(history)
+                                history[:, 0] = np.gradient(history[:, 0], t, edge_order=2)
+                                history[:, 1] = np.gradient(history[:, 1], t, edge_order=2)
+
+                                # add history (and H if included) to results
+                                if n &gt; 2:
+                                        results[-2] = history[:n + 1, 0]
+                                        results[-1] = history[:n + 1, 1]
+                                        if include_H:
+                                                results.insert(-2, H[:n + 1, 0])
+                                                results.insert(-2, H[:n + 1, 1])
+                                else:
+                                        results[-2] = history[:2, 0]
+                                        results[-1] = history[:2, 1]
+                                        if include_H:
+                                                results.insert(-2, H[:2, 0])
+                                                results.insert(-2, H[:2, 1])
+
+                                # truncate data after the vertical position reaches the surface
+                                m = np.where(0 &lt; x[:, 1])[0]
+                                if 0 &lt; len(m) and isinstance(self.flow, wave.Wave):
+                                        m = m[0]
+                                        print(&#39;Data truncated after particle reached the surface.&#39;)
+                                        return [r[:m] for r in results]
+                                return results
                         w = v - u
                         fluid_pressure_gradient = (3 / 2 * R - 1) \
                                         * self.flow.derivative_along_trajectory(x[:, 0].T,
@@ -605,46 +729,32 @@ force: Higher order numerical schemes.
                                 else:
                                         v[n + 1] = w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
                                                                         + 5 * G[n - 2]) + u[n + 1]
+                        results = [x[:n + 2, 0], x[:n + 2, 1], v[:n + 2, 0], v[:n + 2, 1],
+                                           t[:n + 2], fluid_pressure_gradient[:n + 2, 0], \
+                                           fluid_pressure_gradient[:n + 2, 1], \
+                                           buoyancy[:n + 2, 0], buoyancy[:n + 2, 1], \
+                                           added_mass[:n + 2, 0], added_mass[:n + 2, 1], \
+                                           stokes_drag[:n + 2, 0], stokes_drag[:n + 2, 1], \
+                                           history[:n + 2, 0], history[:n + 2, 1]]
+                        
+                # compute H and history
                 H = np.copy(history)
                 history[:, 0] = np.gradient(history[:, 0], t, edge_order=2)
                 history[:, 1] = np.gradient(history[:, 1], t, edge_order=2)
+                results[-2] = history[:, 0]
+                results[-1] = history[:, 1]
+
+                if include_H: # add H to results
+                        results.insert(-2, H[:, 0])
+                        results.insert(-2, H[:, 1])
 
                 # truncate data after the vertical position reaches the surface
-                n = np.where(0 &lt; x[:, 1])[0]
-                if 0 &lt; len(n) and isinstance(self.flow, wave.Wave):
-                        n = n[0]
+                m = np.where(0 &lt; x[:, 1])[0]
+                if 0 &lt; len(m) and isinstance(self.flow, wave.Wave):
+                        m = m[0]
                         print(&#39;Data truncated after particle reached the surface.&#39;)
-                        if include_H:
-                                return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
-                                           fluid_pressure_gradient[:n, 0], \
-                                           fluid_pressure_gradient[:n, 1], \
-                                           buoyancy[:n, 0], buoyancy[:n, 1], \
-                                           added_mass[:n, 0], added_mass[:n, 1], \
-                                           stokes_drag[:n, 0], stokes_drag[:n, 1], \
-                                           H[:n, 0], H[:n, 1], history[:n, 0], history[:n, 1]
-                        else:
-                                return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
-                                           fluid_pressure_gradient[:n, 0], \
-                                           fluid_pressure_gradient[:n, 1], \
-                                           buoyancy[:n, 0], buoyancy[:n, 1], \
-                                           added_mass[:n, 0], added_mass[:n, 1], \
-                                           stokes_drag[:n, 0], stokes_drag[:n, 1], \
-                                           history[:n, 0], history[:n, 1]
-
-                if include_H:
-                        return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
-                                   fluid_pressure_gradient[:, 0], \
-                                   fluid_pressure_gradient[:, 1], \
-                                   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
-                                   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
-                                   H[:, 0], H[:, 1], history[:, 0], history[:, 1]
-                else:
-                        return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
-                                   fluid_pressure_gradient[:, 0], \
-                                   fluid_pressure_gradient[:, 1], \
-                                   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
-                                   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
-                                   history[:, 0], history[:, 1]</code></pre>
+                        return [r[:m] for r in results]
+                return results</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -652,6 +762,40 @@ force: Higher order numerical schemes.
 </ul>
 <h3>Methods</h3>
 <dl>
+<dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.max_particle_reynolds_num"><code class="name flex">
+<span>def <span class="ident">max_particle_reynolds_num</span></span>(<span>self, x, z, xdot, t)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Compute the maximum value of the particle Reynolds number $Re_p$.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle position.</dd>
+<dt><strong><code>z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the vertical particle position.</dd>
+<dt><strong><code>xdot</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array of <code>float</code> data, the horizontal particle velocity.</dd>
+<dt><strong><code>t</code></strong> :&ensp;<code>ndarray</code></dt>
+<dd>1D array containing <code>float</code> time series data.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>The particle Reynolds number $Re_p$ is determined using equation (2.6)
+from [1],
+<span><span class="MathJax_Preview">Re_p = \frac{2a'|\mathbf{v}' - \mathbf{u}'|}{\nu'},</span><script type="math/tex; mode=display">Re_p = \frac{2a'|\mathbf{v}' - \mathbf{u}'|}{\nu'},</script></span>
+where <strong>v</strong>' and <strong>u</strong>' are the particle and fluid velocities, $a'$ is
+the particle radius, and $\nu'$ is the kinematic viscosity.</p>
+<h2 id="references">References</h2>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn:1">
+<p><a href="https://doi.org/10.1017/jfm.2022.95">M. H. DiBenedetto et al. (2022).</a> Enhanced settling and
+dispersion of inertial particles in surface waves.
+<em>Journal of Fluid Mechanics</em> 936, A38.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div></div>
+</dd>
 <dt id="modelling-microplastics-transport.models.my_system.MyTransportSystem.maxey_riley"><code class="name flex">
 <span>def <span class="ident">maxey_riley</span></span>(<span>self, t, y, include_history, hide_progress=False, include_H=False, order=3)</span>
 </code></dt>
@@ -676,6 +820,10 @@ force: Higher order numerical schemes.
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
+<dt><code>list</code></dt>
+<dd>A list of 1D <code>ndarray</code> elements, including the time, horizontal and
+vertical components of the particle position, velocity, and the
+forces. The elements of the list are as follows:</dd>
 <dt><strong><code>x</code></strong> :&ensp;<code>ndarray</code></dt>
 <dd>1D array of <code>float</code> data, the horizontal particle position.</dd>
 <dt><strong><code>z</code></strong> :&ensp;<code>ndarray</code></dt>
@@ -702,9 +850,9 @@ force: Higher order numerical schemes.
 <dd>1D array of <code>float</code> data, the horizontal Stokes drag.</dd>
 <dt><strong><code>drag_z</code></strong> :&ensp;<code>ndarray</code></dt>
 <dd>1D array of <code>float</code> data, the vertical Stokes drag.</dd>
-<dt><strong><code>H_x</code></strong> :&ensp;<code>ndarray</code></dt>
+<dt><strong><code>H_x</code></strong> :&ensp;<code>ndarray</code>, optional</dt>
 <dd>1D array of <code>float</code> data, the horizontal H value.</dd>
-<dt><strong><code>H_z</code></strong> :&ensp;<code>ndarray</code></dt>
+<dt><strong><code>H_z</code></strong> :&ensp;<code>ndarray</code>, optional</dt>
 <dd>1D array of <code>float</code> data, the vertical H value.</dd>
 <dt><strong><code>history_x</code></strong> :&ensp;<code>ndarray</code></dt>
 <dd>1D array of <code>float</code> data, the horizontal history force.</dd>
@@ -752,6 +900,7 @@ force: Higher order numerical schemes.
 <li>
 <h4><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem">MyTransportSystem</a></code></h4>
 <ul class="">
+<li><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem.max_particle_reynolds_num" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem.max_particle_reynolds_num">max_particle_reynolds_num</a></code></li>
 <li><code><a title="modelling-microplastics-transport.models.my_system.MyTransportSystem.maxey_riley" href="#modelling-microplastics-transport.models.my_system.MyTransportSystem.maxey_riley">maxey_riley</a></code></li>
 </ul>
 </li>

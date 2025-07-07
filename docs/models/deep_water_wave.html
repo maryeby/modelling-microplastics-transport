@@ -65,7 +65,9 @@ hljs.highlightAll();
 <dd>The phase velocity <em>c'</em>, computed as <span><span class="MathJax_Preview">c' = \frac{\omega'}{k'}.</span><script type="math/tex; mode=display">c' = \frac{\omega'}{k'}.</script></span></dd>
 <dt><strong><code>period</code></strong> :&ensp;<code>float</code></dt>
 <dd>The period of the wave, computed as
-<span><span class="MathJax_Preview">\text{period}' = \frac{2\pi}{\omega'}.</span><script type="math/tex; mode=display">\text{period}' = \frac{2\pi}{\omega'}.</script></span></dd>
+<span><span class="MathJax_Preview">\text{period}' = \frac{2\pi}{\omega'}</span><script type="math/tex; mode=display">\text{period}' = \frac{2\pi}{\omega'}</script></span>
+and non-dimensionalized as
+<span><span class="MathJax_Preview">\text{period} = \text{period}' * k'U'.</span><script type="math/tex; mode=display">\text{period} = \text{period}' * k'U'.</script></span></dd>
 <dt><strong><code>froude_num</code></strong> :&ensp;<code>float</code></dt>
 <dd>The Froude number <em>Fr</em>, computed as
 <span><span class="MathJax_Preview">Fr = \sqrt{\frac{k'U'^2}{g'}}.</span><script type="math/tex; mode=display">Fr = \sqrt{\frac{k'U'^2}{g'}}.</script></span></dd>
@@ -118,7 +120,9 @@ Stokes drift for inertial particles transported by water waves.
                         The phase velocity *c&#39;*, computed as $$c&#39; = \frac{\omega&#39;}{k&#39;}.$$
                 period : float
                         The period of the wave, computed as
-                        $$\text{period}&#39; = \frac{2\pi}{\omega&#39;}.$$
+                        $$\text{period}&#39; = \frac{2\pi}{\omega&#39;}$$
+                        and non-dimensionalized as
+                        $$\text{period} = \text{period}&#39; * k&#39;U&#39;.$$
                 froude_num : float
                         The Froude number *Fr*, computed as
                         $$Fr = \sqrt{\frac{k&#39;U&#39;^2}{g&#39;}}.$$
@@ -139,7 +143,7 @@ Stokes drift for inertial particles transported by water waves.
                 super().__init__(depth, amplitude, wavelength)
                 self.gravity /= constants.g * self.froude_num ** 2
                 self.max_velocity = self.angular_freq * self.amplitude
-                self.period *= self.angular_freq * self.wavenum * self.amplitude
+                self.period *= self.wavenum * self.max_velocity
 
         def set_angular_freq(self):
                 r&#34;&#34;&#34;
