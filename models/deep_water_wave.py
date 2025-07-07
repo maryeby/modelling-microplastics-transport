@@ -29,7 +29,9 @@ class DeepWaterWave(wave.Wave):
 			The phase velocity *c'*, computed as $$c' = \frac{\omega'}{k'}.$$
 		period : float
 			The period of the wave, computed as
-			$$\text{period}' = \frac{2\pi}{\omega'}.$$
+			$$\text{period}' = \frac{2\pi}{\omega'}$$
+			and non-dimensionalized as
+			$$\text{period} = \text{period}' * k'U'.$$
 		froude_num : float
 			The Froude number *Fr*, computed as
 			$$Fr = \sqrt{\frac{k'U'^2}{g'}}.$$
@@ -50,7 +52,7 @@ class DeepWaterWave(wave.Wave):
 		super().__init__(depth, amplitude, wavelength)
 		self.gravity /= constants.g * self.froude_num ** 2
 		self.max_velocity = self.angular_freq * self.amplitude
-		self.period *= self.angular_freq * self.wavenum * self.amplitude
+		self.period *= self.wavenum * self.max_velocity
 
 	def set_angular_freq(self):
 		r"""

@@ -3,8 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
-from utils.plot import initialize_subplot as subplot
-from utils.plot import FS
 from utils.data_tools import extract_data
 
 IN_FILE1 = '../data/rigid_body_rotation/numerics.csv'
@@ -53,7 +51,7 @@ def main():
 	x, z = extract_data(['x', 'z'], analytics, {'delta_t': 1e-2})
 	x, z = crop([x, z], 2000)
 	plt.plot(x, z, c='k', label='exact')
-	plt.legend(fontsize=FS, loc='center', frameon=False)
+	plt.legend(loc='center', frameon=False)
 
 	# plot extracted first order data and integer time points
 	plt.scatter('first_x', 'first_z', c='silver', marker='x', data=daitche)
@@ -70,7 +68,7 @@ def main():
 		plt.plot('t' + str(i + 1), 'rel_error' + str(i + 1), c='silver',
 				 data=daitche, label='')
 		plt.plot(t, e_rel, fmt, label=LABELS[i])
-	plt.legend(fontsize=FS)
+	plt.legend()
 
 	# plot global error (recreation of Daitche (2013) Figure 4)
 	fig(r'$\Delta t$', r'$\mathcal{\epsilon}$', x_scale='log', y_scale='log',
@@ -84,7 +82,7 @@ def main():
 		plt.plot(h_scale, h_scale ** (i + 1), c='grey', ls=STYLES[i],
 				 label=h_labels[i])
 		plt.plot(delta_t, e_global, fmt, label=LABELS[i])
-	plt.legend(fontsize=FS)
+	plt.legend()
 
 	# plot absolute error
 	fig(r'$t$', r'$E_{abs}$', y_scale='log', lims=[-1, 10, 1e-8, 1e-5])
@@ -92,10 +90,10 @@ def main():
 		fmt = STYLES[i] + 'k'
 		e_abs = extract_data('e_abs', rel_error, {'order': i + 1})
 		plt.plot(t, e_rel, fmt, label=LABELS[i])
-	plt.legend(fontsize=FS)
+	plt.legend()
 
 	# plot vertical history force values at t = 0
-	fig(r'$\Delta t$', r'$H\'(0)_z$')
+	fig(r'$\Delta t$', r"$H'(0)_z$")
 	delta_t, history_z = extract_data(['delta_t', 'history_z'], history,
 									  {'t': 0})
 	plt.plot(delta_t, history_z, '-k.')
@@ -113,12 +111,11 @@ def main():
 	history_x, history_z = crop([history_x, history_z], -2)
 
 	# plot analytical and numerical solutions for the history force
-	plt.figure()
-	subplot(211, y_label=r'$H\'(t)_x$')
+	fig(y_label=r"$H'(t)_x$", num=211, hide_xticks=True)
 	plt.plot(t, exact_x, c='silver')
 	plt.plot(t, history_x, ':k')
 
-	subplot(212, r'$t$', r'$H\'(t)_z$')
+	fig(r'$t$', r"$H'(t)_z$", 212)
 	plt.plot(t, exact_z, c='silver')
 	plt.plot(t, history_z, ':k')
 
@@ -129,7 +126,7 @@ def main():
 		delta_t, comp_time = extract_data(['delta_t', 'computation_time'],
 										  global_error, {'order': i + 1})
 		plt.plot(delta_t, comp_time, fmt, label=LABELS[i])
-	plt.legend(fontsize=FS)
+	plt.legend()
 	plt.show()
 
 def crop(lst, n, reverse=False):

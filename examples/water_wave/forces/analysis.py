@@ -1,122 +1,174 @@
 import warnings
 import numpy as np
 import pandas as pd
-import itertools
-import csv
-import scipy.constants as constants
+import scipy as scp
+from matplotlib import pyplot as plt
+from tqdm.contrib.itertools import product
 
-from scipy.optimize import curve_fit
-from scipy.stats import linregress
-from tqdm import tqdm
-
-from utils.data_tools import extract_data, update_results
+from utils.data_tools import extract_data
+from utils.plot import initialize_figure as fig
 from models import water_wave as fl
-from models.my_system import compute_drift_velocity as find_crossings
-from examples.water_wave.forces.numerics import STOKES_NUMS, X_0, Z_0, DEPTH, \
-	 AMPLITUDE, WAVELENGTH, BETA, DELTA_T, INCLUDE_HISTORY
+from examples.water_wave.forces.numerics import STOKES_NUMS, DEPTH, AMPLITUDE, \
+	 WAVELENGTH, DELTA_T, NUM_PERIODS
+from examples.water_wave.forces.numerics import OUT_FILE as IN_FILE
 
-ST_TO_SAVE = 0.1
-NAMES = ['t', 'x', 'z', 'xdot', 'fluid_pressure_gradient_x',
-		 'added_mass_force_x', 'stokes_drag_x', 'history_force_x']
-KEYS = ['t', 'inertial', 'stokes_drag', 'history', 'velocity', 'R^2']
-ROW_LABELS = KEYS[1:5]
-COL_LABELS = ['A', 'delta', 'omega', 'phi', 'offset', 'R^2', 'St']
-IN_FILE = '../../data/water_wave/forces_numerics.csv'
-OUT_FILE1 = '../../data/water_wave/forces_coeffs.csv'
-OUT_FILE2 = '../../data/water_wave/forces_curve_fit.csv'
+# labels for plotting and storing solutions
+FORCES = ['inertial_force', 'stokes_drag', 'history_force', 'xdot']
+LABELS = ['inertial force', 'Stokes drag', 'history force', r'$\dot{x}$']
+COEFFS = ['A', 'delta', 'phi', 'offset', 'R^2']
+COLUMNS = ['force'] + COEFFS + ['St', 'method']
+METHODS = ['curve_fit', 'hilbert_tf']
+ST_TO_SHOW = 0.1
+MAXFEV = 500000
+
+OUT_FILE = '../../data/water_wave/forces_coeffs.csv'
+#OUT_FILE = '../../data/water_wave/st_star/coeffs20.csv'
 
 def main():
 	r"""
 	Fit curves to numerical forces data and save the associated coefficients.
 
 	For particles of different sizes (Stokes numbers) in a linear wave of
-	deep water, a curve is fit to each of the forces over time. The coefficents
-	resulting from the curve fitting are saved, and the curve data is saved for
-	the particle with Stokes number `ST_TO_SAVE`. Results are saved to the
-	`data/water_wave` directory.
+	deep water, a curve is fit to each of the forces over time. Additionally,
+	the coefficients are computed using a curve fitting to the envelope of the
+	signal, obtained using the Hilbert transform. The coefficents resulting from
+	the curve fittings are saved, and the curves are plotted for the particle
+	with Stokes number `ST_TO_SHOW`. Results are saved to the `data/water_wave`
+	directory.
 
 	Notes
 	-----
 	The equation used to fit a curve to the data is,
-	$$f = A * \exp(-\delta t) * \sin{(\omega t + \phi)}
-					   + \text{offset},$$
-	and the coefficients saved are the amplitude *A*, angular frequency *ω*,
-	*δ*, phase shift *ϕ*, and offset.
+	$$f = A \exp(-\delta t) \sin{(\omega t + \phi)} + \text{offset},$$
+	and the coefficients saved are the amplitude *A*, angular frequency
+	$\omega$, decay rate $\delta$, phase shift $\phi$, and offset. To fit a
+	curve to the envelope of the signal, the equation,
+	$$f = A \exp(-xb) + \text{offset}$$ is used.
 	"""
-	# read numerical data and write headers to OUT_FILE
+	# read data and suppress warnings
 	numerics = pd.read_csv(IN_FILE)
-	file = open(OUT_FILE1, 'w')
-	writer = csv.writer(file)
-	writer.writerow([''] + COL_LABELS)
-	file.close()
-
-	# create variables for the curve fitting
-	wave = fl.WaterWave(DEPTH, AMPLITUDE, WAVELENGTH)
-	omega = wave.angular_freq
-	coefficients = [0.06, omega, 0.7, 2, -0.037]
-	fitted_forces = []
-
 	warnings.filterwarnings('ignore')
-	for stokes_num in STOKES_NUMS:
-		# retrieve relevant numerical data
-		data = extract_data(NAMES, numerics, {'St': stokes_num})
-		data = [s.to_numpy() for s in data]
-		t, x, z, xdot, fpg, mass, drag, history = data
-		inertial = fpg + mass
 
-		# initialize local variables for curve fitting
-		forces = [xdot, inertial, drag, history]
-		initial_guess = coefficients
-		results_array = [[0] * len(COL_LABELS)] * len(ROW_LABELS)
-		phi_u = None
+	# create Wave object and set variables for curve fitting
+	wave = fl.WaterWave(DEPTH, AMPLITUDE, WAVELENGTH)
+	epsilon = wave.wavenum * AMPLITUDE
+	initial_guess1 = [0.07, 0.01, epsilon, 5e-3, 2e-4]
+#	initial_guess1 = [2.8, 1.39, epsilon, 0.4, 0]
+#	initial_guess1 = [0,  0.22,  epsilon,  np.pi,  0]
+	coeff_results = []
 
-		for i in range(len(forces)):
-			# fit a curve to the force data
-			force = forces[i]
-			coefficients, covariance = curve_fit(f, t, force, p0=coefficients,
-												 maxfev=100000)
-			A, delta, _, phi, offset = coefficients
-			coefficients[2] = omega
-			curve = f(t, A, delta, omega, phi, offset)
+	for stokes_num, name in product(STOKES_NUMS, FORCES):
+		# extract numerical data
+		if name == 'inertial_force':
+			fpg, mass = extract_data(['fluid_pressure_gradient_x',
+									  'added_mass_force_x'], numerics,
+									 {'St': stokes_num})
+			force = fpg.to_numpy() + mass.to_numpy()
+		elif name != 'xdot':
+			name += '_x'
+			force = extract_data(name, numerics, {'St': stokes_num}).to_numpy()
+			name = name[:-2]
+		else:
+			force = extract_data(name, numerics, {'St': stokes_num}).to_numpy()
 
-			# compute phi relative to the velocity phase shift
-			if i == 0: phi_u = phi
-			phi -= phi_u
+		# compute coefficients using SciPy curve fit
+		t = np.arange(0, wave.period * NUM_PERIODS, DELTA_T)
+		if len(t) != len(force): t = t[:len(force)]
+#		if stokes_num == STOKES_NUMS[0] and name != 'inertial_force':
+		if name != 'inertial_force':
+			coefficients, _ = scp.optimize.curve_fit(f, t, force,
+								  p0=[0, 0.22, epsilon, 0 ,0], maxfev=MAXFEV)
+		else:
+			coefficients, _ = scp.optimize.curve_fit(f, t, force,
+										   p0=initial_guess1, maxfev=MAXFEV)
+		a, delta, _, phi, offset = coefficients
+		coefficients[2] = epsilon
+		coefficients = coefficients.tolist()
+#		initial_guess1 = coefficients
+		initial_guess2 = coefficients[:2] + [coefficients[-1]]
+		del coefficients[2]
 
-			# save the results if necessary and compute the R-value
-			if stokes_num == ST_TO_SAVE: fitted_forces.append(curve)
-			stats = linregress(force, curve)
+		# fit curve, compute R^2 value, and store results
+		fitted_curve = f(t, a, delta, epsilon, phi, offset)
+		stats = scp.stats.linregress(force, fitted_curve)
+		rsq = stats.rvalue * stats.rvalue
+		coefficients.append(rsq)
+		coeff_results.append([name] + coefficients + [stokes_num, METHODS[0]])
 
-			# restrict A to be positive
-			if A < 0:
-				phi += np.pi
-				A = np.abs(A)
-				coefficients[0] = A
+		# compute Hilbert transform
+#		analytical_curve = scp.signal.hilbert(force)
+#		hilbert_tf = np.abs(analytical_curve)
 
-			# map phi to [0, 2pi]
-			if phi < 0: phi += 2 * np.pi
-			if phi > 2 * np.pi: phi -= 2 * np.pi
+		# truncate Hilbert transform and compute phi
+#		cate = int(len(t) * 0.9)
+#		peaks = scp.signal.find_peaks(hilbert_tf[:cate])[0]
+#		trun = np.where(np.isclose(hilbert_tf, np.max(hilbert_tf[peaks])))[0][0]
+#		phase = np.unwrap(np.angle(hilbert_tf[trun:cate]))
+#		phi = np.mean(phase)
 
-			# store coefficients, R^2 value, and Stokes num in results array
-			result_list = [A, delta, omega, phi, offset,
-						   stats.rvalue * stats.rvalue, stokes_num]
-			results_array[i] = result_list
+		# compute A, delta, and offset by fitting a decay curve to the envelope
+#		coefficients, _ = scp.optimize.curve_fit(exp_decay, t[trun:cate],
+#												 hilbert_tf[trun:cate],
+#												 p0=initial_guess2,
+#												 maxfev=MAXFEV)
+#		a, delta, offset = coefficients
 
-		# save estimated solutions for specified Stokes nums
-		if stokes_num == ST_TO_SAVE:
-			results_dict = {key: [] for key in KEYS}
-			results_dict = update_results(results_dict, [t, fitted_forces[1],
-										  fitted_forces[2], fitted_forces[3],
-										  fitted_forces[0]],
-										 [stats.rvalue * stats.rvalue])
+		# compute curves, R^2 value, and store results
+#		decay_curve = exp_decay(t[trun:cate], a, delta, offset)
+#		ht_curve = f(t, a, delta, epsilon, phi, offset)
+#		stats = scp.stats.linregress(force, ht_curve)
+#		rsq = stats.rvalue * stats.rvalue
+#		coefficients = coefficients.tolist()
+#		coefficients.insert(2, phi)
+#		coefficients.append(rsq)
+#		coeff_results.append([name] + coefficients + [stokes_num, METHODS[1]])
 
-		# once results array is full, convert to dataframe and write to file
-		pd.DataFrame(results_array, index=ROW_LABELS, columns=COL_LABELS)\
-		  .to_csv(OUT_FILE1, header=False, mode='a')
-	pd.DataFrame(results_dict).to_csv(OUT_FILE2, index=False)
+		# plot ST_TO_SHOW
+		if stokes_num == ST_TO_SHOW:
+			i = FORCES.index(name)
+			x_label = 't' if name == 'xdot' else None
+			fig(x_label, LABELS[i], 411 + i)
+			plt.scatter(t, force, marker='.', edgecolors='k', facecolors='none',
+						label='numerical data')
+			plt.plot(t, fitted_curve, '--k', label='fitted curve')
+#			plt.plot(t, ht_curve, ':k', label='Hilbert transform curve')
+			if i == 0: plt.suptitle(f'St = {ST_TO_SHOW:.3f}')
+			if i == 3: plt.legend()
 
-def f(t, A, delta, omega, phi, offset):
-	return A * np.exp(-delta * t) * np.sin(omega * t + phi) + offset
+	# restrict coefficients and write to data file
+	coeffs = pd.DataFrame(coeff_results, columns=COLUMNS)
+	coeffs = restrict_coeffs(coeffs)
+	coeffs.to_csv(OUT_FILE, index=False)
+	plt.show()
+
+def f(t, a, delta, epsilon, phi, offset):
+	return a * np.exp(delta * t) * np.sin(t / epsilon + phi) + offset
+
+def exp_decay(x, a, b, offset): return a * np.exp(-x * b) + offset
+
+def restrict_coeffs(df):
+	r"""Restrict *A* to be positive and map $\phi$ to $[0, 2\pi]$ in `df`."""
+	# force A to be positive and shift the phase by pi where necessary
+	a, phi = df['A'].to_numpy(), df['phi'].to_numpy()
+	phi[a < 0] += np.pi
+	a = np.abs(a)
+	df.replace(df['A'].tolist(), a.tolist(), inplace=True)
+	df.replace(df['phi'].tolist(), phi, inplace=True)
+
+	# map velocity phase to [0, 2pi]
+	phi_xdot = extract_data('phi', df, {'force': 'xdot'}).to_numpy()
+	phi_xdot %= 2 * np.pi
+
+	# ensure phi is relative to the velocity phase, map to the range [0, 2pi]
+	vel_phi = []
+	for i in range(0, len(phi_xdot), 2):
+		vel_phi += [phi_xdot[i], phi_xdot[i + 1]] * len(FORCES)
+	phi -= np.array(vel_phi)
+	phi %= 2 * np.pi
+
+	# organize and return results
+	df.replace(df['phi'].tolist(), phi, inplace=True)
+	return df
 
 if __name__ == '__main__':
 	main()

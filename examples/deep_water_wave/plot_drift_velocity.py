@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
-from utils.plot import FS
 from utils.data_tools import extract_data
 from examples.deep_water_wave.drift_velocity_numerics import STOKES_NUMS
 
@@ -38,7 +37,7 @@ def main():
 									{'St': STOKES_NUMS[i]})
 		plt.scatter(u_bar, z_bar, marker=markers[i], edgecolors='k',
 					facecolors='none', label=f'St = {STOKES_NUMS[i]:g}')
-	plt.legend(fontsize=FS)
+	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':

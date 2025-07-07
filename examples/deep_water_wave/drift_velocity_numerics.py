@@ -23,6 +23,8 @@ NUM_TASKS = len(STOKES_NUMS) * NUM_POINTS
 R = 2 / 3		# denisty ratio
 DELTA_T = 1e-3  # timestep
 NUM_PERIODS = 3
+NUM_CPUS = None
+TIMEOUT = 20
 INCLUDE_HISTORY = False
 HIDE_PROGRESS = True
 OUT_FILE = '../data/deep_water_wave/drift_velocity_numerics.csv'
@@ -50,7 +52,8 @@ def main():
 	paired_St, paired_z_0 = zip(*itertools.product(STOKES_NUMS, z_0s))
 	params = zip(itertools.repeat(wave), paired_St, paired_z_0,
 				 itertools.repeat(t))
-	results = progress_starmap(run_numerics, params, n_cpu=4, total=NUM_TASKS)
+	results = progress_starmap(run_numerics, params, n_cpu=NUM_CPUS,
+							   total=NUM_TASKS, process_timeout=TIMEOUT)
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
 def run_numerics(wave, stokes_num, z_0, t):

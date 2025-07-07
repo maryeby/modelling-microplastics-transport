@@ -2,7 +2,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from parallelbar import progress_starmap
-from tqdm.contrib.itertools import product
+from itertools import product
 
 from utils.data_tools import update_results
 from transport_framework import particle as prt
@@ -11,19 +11,21 @@ from models import my_system as ts
 
 # wave conditions
 AMPLITUDE = 0.02
-WAVELENGTH = 1 
-DEPTHS = [10, 1, 0.4]
+WAVELENGTH = 1.5
+DEPTHS = [10, 1.5, 0.5]
 
 # particle conditions
 STOKES_NUMS = [0.01, 0.1, 1, 10]
 NUM_POINTS = 4  # number of different initial vertical particle positions (z_0s)
-X_0 = 0		 # initial horizontal particle position
+X_0 = 0			# initial horizontal particle position
 
 # simulation conditions
-NUM_TASKS = len(DEPTHS) * len(STOKES_NUMS) * NUM_POINTS
+NUM_TASKS = len(DEPTHS) * len(STOKES_NUMS) * NUM_POINTS * 2
 R = 2 / 3		# denisty ratio
 DELTA_T = 1e-3  # timestep
 NUM_PERIODS = 3
+NUM_CPUS = None
+TIMEOUT = 600
 HIDE_PROGRESS = True
 OUT_FILE = '../../../data/water_wave/st_neutral_numerics.csv'
 
@@ -40,32 +42,26 @@ def main():
 	--------
 	models.my_system.compute_drift_velocity
 	"""
-	repeated_wave, repeated_St, repeated_z0 = [], [], []
-	repeated_history = [False] * NUM_TASKS
+	waves, repeated_stokes_nums, repeated_z0s = [], [], []
+	history = [True] * (NUM_TASKS // 2) + [False] * (NUM_TASKS // 2)
 	results = {'z_bar/h': [], 'u_bar': [], 'St': [], 'history': []}
 	warnings.filterwarnings('ignore')
-	n = 1
 
 	for depth in DEPTHS:
 		# create Wave object and compute initial vertical particle positions
 		wave = fl.WaterWave(depth, AMPLITUDE, WAVELENGTH)
 		z_0s = np.linspace(0, -wave.wavenum * depth, NUM_POINTS, endpoint=False)
-		repeated_wave += [wave] * (len(STOKES_NUMS) * NUM_POINTS)
 
-		for i in product(STOKES_NUMS, z_0s):
-			# store St and z_0 values to be used in parallel processing
-			stokes_num, z_0 = i
-			repeated_St.append(stokes_num)
-			repeated_z0.append(z_0)
+		# store St values, z_0 values, and Wave objects for parallel processing
+		st, z = zip(*product(STOKES_NUMS, z_0s))
+		repeated_stokes_nums += list(st)
+		repeated_z0s += list(z)
+		waves += [wave] * (len(STOKES_NUMS) * NUM_POINTS)
 
-			# run simulations with history and store solutions in results dict
-			sols = run_numerics(wave, stokes_num, z_0, include_history=True)
-			results = update_results(results, [], sols)
-			n += 1
-
-	# run numerics in parallel for simulations without history effects
-	params = zip(repeated_wave, repeated_St, repeated_z0, repeated_history)
-	sols = progress_starmap(run_numerics, params, n_cpu=4, total=NUM_TASKS)
+	# run simulations in parallel 
+	params = zip(waves, repeated_stokes_nums, repeated_z0s, history)
+	sols = progress_starmap(run_numerics, params, n_cpu=NUM_CPUS,
+							total=NUM_TASKS, process_timeout=TIMEOUT)
 	for sol in sols: results = update_results(results, [], sol)
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 

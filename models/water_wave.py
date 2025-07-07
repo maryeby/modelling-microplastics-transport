@@ -30,7 +30,9 @@ class WaterWave(wave.Wave):
 			The phase velocity *c'*, computed as $$c' = \frac{\omega'}{k'}.$$
 		period : float
 			The period of the wave, computed as
-			$$\text{period}' = \frac{2\pi}{\omega'}.$$
+			$$\text{period}' = \frac{2\pi}{\omega'},$$
+			and non-dimensionalized as
+			$$\text{period} = \text{period}' * k'\omega'A'.$$
 		froude_num : float
 			The Froude number *Fr*, computed as
 			$$Fr = \sqrt{\frac{k'(\omega'A')^2}{g'}}.$$

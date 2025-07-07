@@ -51,7 +51,7 @@ def main():
 
 	for history in [False, True]:
 		# run simulation and store results
-		t = np.arange(0, NUM_PERIODS, DELTA_T)
+		t = np.arange(0, wave.period * NUM_PERIODS, DELTA_T)
 		x, z, xdot, _, t, _, _, _, _, _, _, _, _, _, \
 		   _ = system.maxey_riley(t, y, include_history=history)
 		results = update_results(results, [t, x, z], [None, None, history])

@@ -2,8 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
-from utils.plot import initialize_subplot as subplot
-from utils.plot import FS
 from utils.data_tools import extract_data
 from examples.deep_water_wave.santamaria.fig2_numerics import DELTA_TS
 
@@ -34,8 +32,7 @@ def main():
 	delta_ts = sm_delta_t + DELTA_TS
 
 	# plot horizontal analytical results
-	plt.figure()
-	subplot(121, r'$t$', r'$\bar{u}$', make_square=True)
+	fig(r'$t$', r'$\bar{u}$', 121, make_square=True)
 	plt.plot('t', 'u_d', c='k', data=analytics)
 	plt.axhline(0, c='k', ls=':')
 
@@ -48,7 +45,7 @@ def main():
 		plt.scatter(t, u_bar, edgecolors=ec, facecolors=fc, marker=m)
 
 	# plot vertical analytical results
-	subplot(122, r'$t$', r'$\bar{w}$', make_square=True)
+	fig(r'$t$', r'$\bar{w}$', 122, make_square=True)
 	plt.plot('t', 'w_d', c='k', data=analytics, label='analytics')
 	plt.axhline(analytics['settling_velocity'].iloc[0], c='k', ls=':',
 				label='settling velocity')
@@ -61,7 +58,7 @@ def main():
 		ec, fc, m = 'k', 'none', MARKERS[i]
 		l = LABELS[i] + r' ($\Delta t =$' + f'{delta_ts[i]:.0e})'
 		plt.scatter(t, w_bar, edgecolors=ec, facecolors=fc, marker=m, label=l)
-	plt.legend(fontsize=FS)
+	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':

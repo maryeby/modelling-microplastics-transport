@@ -8,18 +8,18 @@ from models import my_system as ts				# TransportSystem class
 
 # wave conditions
 DEPTH = 10
-AMPLITUDE = 0.01
-WAVELENGTH = 1
+AMPLITUDE = 0.02
+WAVELENGTH = 1.5
 
 # particle conditions
-STOKES_NUM = 0.1
+STOKES_NUM = 0.01
 X_0, Z_0 = 0, 0			# initial particle position
 
 # simulation conditions
 SCALE = 2 / 3			# to translate beta to R
-BETA = 0.99				# density ratio
+BETA = 0.95				# density ratio
 R = SCALE * BETA		# density ratio
-NUM_PERIODS = 5
+NUM_PERIODS = 10
 DELTA_T = 5e-3			# timestep size (recommended <= 5e-3)
 INCLUDE_HISTORY = True
 OUT_FILE = '../../data/water_wave/basic_numerics.csv'
@@ -37,14 +37,16 @@ def main():
 	y = [X_0, Z_0, xdot_0, zdot_0]	# initial particle position and velocity
 	warnings.filterwarnings('ignore')
 
-	# run simulation
+	# run simulation and compute drift velocity
 	x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, added_mass_x, \
 	   added_mass_z, stokes_drag_x, stokes_drag_z, history_x, \
 	   history_z = system.maxey_riley(t, y, INCLUDE_HISTORY)
-	system.max_particle_reynolds_num(x, z, xdot, t)
+	x_cross, z_cross, _, _, _ = ts.compute_drift_velocity(x, z, xdot, t)
 
 	# store results in a dictionary and write the dictionary to a csv file
-	results = {'t': t, 'x': x, 'z': z, 'xdot': xdot, 'zdot': zdot}
-	pd.DataFrame(results).to_csv(OUT_FILE, index=False)
+	results = {'t': t, 'x': x, 'z': z, 'xdot': xdot, 'zdot': zdot,
+			   'x_crossings': x_cross, 'z_crossings': z_cross}
+	pd.DataFrame(dict([(key, pd.Series(value)) for key, value 
+				 in results.items()])).to_csv(OUT_FILE, index=False)
 
 if __name__ == '__main__': main()

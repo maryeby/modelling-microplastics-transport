@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
-from utils.plot import initialize_subplot as subplot
 from examples.water_wave.basic_example.numerics import OUT_FILE as IN_FILE
 
 def main():
@@ -10,14 +9,14 @@ def main():
 	numerics = pd.read_csv(IN_FILE)
 
 	# plot particle trajectory
-	fig('x', 'z', make_square=True, equal_aspect=True)
+	fig(r'$x$', r'$z$', make_square=True, equal_aspect=True)
 	plt.plot('x', 'z', '-k', data=numerics)
+	plt.scatter('x_crossings', 'z_crossings', ec='k', fc='none', data=numerics)
 	
 	# plot particle velocity over time
-	plt.figure(2)
-	subplot(211, y_label=r'$\dot{x}$')
+	fig(y_label=r'$\dot{x}$', num=211)
 	plt.plot('t', 'xdot', '-k', data=numerics)
-	subplot(212, r'$t$', r'$\dot{z}$')
+	fig(r'$t$', r'$\dot{z}$', 212)
 	plt.plot('t', 'zdot', '-k', data=numerics)
 	plt.show()
 

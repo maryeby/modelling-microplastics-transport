@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from fractions import Fraction
 
 from utils.plot import initialize_figure as fig
-from utils.plot import FS
 from utils.data_tools import extract_data
 from examples.water_wave.st_analysis.neutrally_buoyant.numerics import DEPTHS, \
 	 WAVELENGTH
@@ -24,14 +24,15 @@ def main():
 	# read data files and initilize figure
 	numerics = pd.read_csv(IN_FILE1)
 	analytics = pd.read_csv(IN_FILE2)
-	fig(r'$\bar{u}$', r'$\bar{z}$', equal_aspect=True)
+	fig(r'$\bar{u}$', r'$\bar{\bar{z}}$', equal_aspect=True, make_square=True)
 
 	# plot analytical solutions
 	for i in range(len(DEPTHS)):
-		label = r'$ h / \lambda = $' + f'{DEPTHS[i] / WAVELENGTH:g}'
+		label = r'$ h / \lambda = $' \
+			  + f'{str(Fraction(DEPTHS[i] / WAVELENGTH).limit_denominator())}'
 		z, u = extract_data(['z/h', 'u_d'], analytics, {'depth': DEPTHS[i]})
 		plt.plot(u, z, c='k', ls=STYLES[i], label=label)
-	plt.legend(fontsize=FS)
+	plt.legend()
 
 	# plot numerical solutions
 	plt.scatter('u_bar', 'z_bar/h', data=numerics, edgecolors='k',

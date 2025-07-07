@@ -1,33 +1,75 @@
 import matplotlib.pyplot as plt
-FS, LFS = 14, 16 # font sizes
 
-def initialize_figure(x_label, y_label, lims=None, x_scale=None, y_scale=None,
-					  make_square=False, equal_aspect=False):
-	"""Initialize a pyplot figure according to the provided specifications."""
-	plt.figure()
-	set_figure_specs(x_label, y_label, lims, x_scale, y_scale, make_square,
-					 equal_aspect)
+PTS_PER_INCH = 72.27			# used to compute figure size
+THESIS_WIDTH = 426.79135		# textwidth for thesis LaTeX template
+JFM_WIDTH = 384					# textwidth for JFM LaTeX template
+RATIO = (5 ** (1 / 2) - 1) / 2	# ratio of figure width to height
 
-def initialize_subplot(num, x_label=None, y_label=None, lims=None, x_scale=None,
-					   y_scale=None, make_square=False, equal_aspect=False):
-	"""Initialize a pyplot subplot according to the provided specifications."""
-	plt.subplot(num)
-	set_figure_specs(x_label, y_label, lims, x_scale, y_scale, make_square,
-					 equal_aspect)
+# formatting for subplot (a), (b) labels
+LABEL_AX = 0.02
+LABEL_BX = 0.525
+LABEL_Y = 0.9
 
-def set_figure_specs(x_label, y_label, lims, x_scale, y_scale, make_square,
-					 equal_aspect):
-	"""Add the provided specifications to a pyplot plot."""
-	if x_label: plt.xlabel(x_label, fontsize=LFS)
-	if y_label: plt.ylabel(y_label, fontsize=LFS)
-	plt.xticks(fontsize=FS)
-	plt.yticks(fontsize=FS)
-	plt.minorticks_on()
-	if not x_label: plt.xticks([])
-	if not y_label: plt.yticks([])
+def initialize_figure(x_label=None, y_label=None, num=None, make_square=False,
+					  equal_aspect=False, width=THESIS_WIDTH, lims=None,
+					  x_scale=None, y_scale=None, hide_xticks=False,
+					  hide_yticks=False, add_subplot_labels=False):
+	"""
+	Initialize a pyplot figure according to the provided specifications.
+
+	Parameters
+	----------
+	x_label, y_label : str, default=None
+		The horizontal and vertical axis labels.
+	num : int, default=None
+		The 3-digit integer used to initialize subplots.
+	make_square : bool, default=False
+		Whether to make the plot square.
+	equal_aspect : bool, default=False
+		Whether to make the aspect ratio of the pyplot Axes scaling equal.
+	width : str or float, default=THESIS_WIDTH
+		The width of the figure in pts, or 'jfm' to use the JFM template width.
+	lims : list, default=None
+		A list containing the axis limits `[xmin, xmax, ymin, ymax]`.
+	x_scale, y_scale : str, default=None
+		The axis scale, such as `log`.
+	hide_xticks, hide_yticks : bool, default=False
+		Whether to hide tick labels on the horizontal or vertical axis.
+	add_subplot_labels : bool, default=False
+		Whether to include *(a)* and *(b)* labels on subplots.
+	"""
+	rows, cols = 1, 1
+	plt.style.use('tex')
+
+	# skip initialization of the figure for subplots (except the first subplot)
+	if num:
+		if num % 10 == 1:
+			plt.figure(layout='constrained')
+			if add_subplot_labels:
+				plt.suptitle(' ') # add space for labels
+				plt.gcf().text(LABEL_AX, LABEL_Y, r'$(a)$')
+				plt.gcf().text(LABEL_BX, LABEL_Y, r'$(b)$')
+		plt.subplot(num)
+		rows, cols = num // 100, num % 100 // 10
+	else:
+		plt.figure(layout='constrained')
+	
+	# set aspect ratios, scalings, and axis limits
+	if make_square: plt.gca().set_box_aspect(1)
+	if equal_aspect: plt.gca().set_aspect('equal')
 	if x_scale: plt.xscale(x_scale)
 	if y_scale: plt.yscale(y_scale)
 	if lims: plt.axis(lims)
-	if make_square: plt.gca().set_box_aspect(1)
-	if equal_aspect: plt.gca().set_aspect('equal')
-	plt.tight_layout()
+
+	# set axis labels and ticks labels
+	if x_label: plt.xlabel(x_label)
+	if y_label: plt.ylabel(y_label)
+	if hide_xticks: plt.xticks([])
+	if hide_yticks: plt.yticks([])
+	plt.minorticks_on()
+
+	# set figure size
+	width_pts = JFM_WIDTH if width == 'jfm' else width
+	width /= PTS_PER_INCH
+	height = width * RATIO * (rows / cols)
+	plt.gcf().set_size_inches(width, height)

@@ -4,7 +4,7 @@ import numpy as np
 from tqdm.contrib.itertools import product
 
 from utils.data_tools import update_results
-from utils.colors import print_failure
+from utils.colors import print_success, print_failure
 from transport_framework import particle as prt
 from models.my_system import compute_drift_velocity as find_crossings
 from models import water_wave as fl
@@ -12,15 +12,16 @@ from models import my_system as ts
 
 # wave conditions
 DEPTH = 10
-AMPLITUDE = 0.01
-WAVELENGTH = 1
+AMPLITUDE = 0.02
+WAVELENGTH = 1.5
 
-X_0, Z_0 = 0, 0
+X_0 = 0
 SCALE = 2 / 3
-BETAS = np.arange(0.15, 1.01, 0.01)
+BETAS = np.round(np.delete(np.arange(0.75, 1.23, 0.01), 25), 3)
 NUM_PERIODS = 5
 DELTA_T = 5e-3
 TOL = 1e-5
+CRITICAL_NPE = 1
 HIDE_PROGRESS = True
 OUT_FILE = '../../data/water_wave/critical_nums.csv'
 
@@ -38,14 +39,14 @@ def main():
 	results = {'beta_c': [], 'St_c': [], 'history': [], 'z_crossing_f': []}
 	for beta, history in product(BETAS, [False, True]):
 		h_str = 'with history effects' if history else 'without history effects'
-		print(f'\nBeginning analysis for beta = {beta:g} {h_str}')
 
 		# create lists to store results
 		npe_list = []	# number of period endpoints
 		St_list = [0.01, 0.1, 1, 10, 100]
 
 		# run initial simulations
-		print('Computing the num of period endpoints for provided Stokes nums:')
+		print('Computing the number of period endpoints for each',
+			  'Stokes number...')
 		for St in St_list:
 			sols = run(St, beta, history)
 			npe = compute_npe(sols)
@@ -59,11 +60,8 @@ def main():
 		if St_a is not None:
 			print(f'Performing bisection method for sims {h_str}...')
 			St_c, z_crossing_f = bisection_method(St_a, St_b, beta, history)
-			print('done.\n')
-			print('Storing results...', end='')
 			results = update_results(results, [], [beta, St_c, history,
 												   z_crossing_f])
-			print('done.\n')
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
 def run(St, beta, history):
@@ -89,11 +87,11 @@ def run(St, beta, history):
 	particle = prt.Particle(St)
 	wave = fl.WaterWave(DEPTH, AMPLITUDE, WAVELENGTH)
 	system = ts.MyTransportSystem(particle, wave, density_ratio)
-	xdot_0, zdot_0 = wave.velocity(X_0, Z_0, t=0)
-	t = t = np.arange(0, NUM_PERIODS, DELTA_T)
-	y = [X_0, Z_0, xdot_0, zdot_0]
-	x, z, xdot, _, t, _, _, _, _, _, _, _, _, _, \
-	   _ = system.maxey_riley(t, y, history, HIDE_PROGRESS)
+	z_0 = 0 if beta < 1 else -3
+	xdot_0, zdot_0 = wave.velocity(X_0, z_0, t=0)
+	t = np.arange(0, wave.period * NUM_PERIODS, DELTA_T)
+	y = [X_0, z_0, xdot_0, zdot_0]
+	x, z, xdot, _, t = system.maxey_riley(t, y, history, HIDE_PROGRESS)[:5]
 	return [x, z, xdot, t]
 
 def compute_npe(results, return_last=False):
@@ -145,13 +143,13 @@ def find_starting_points(St_list, npe_list):
 		print_failure('Cannot begin bisection method, too few Stokes numbers'
 					+ ' provided.')
 		return None, None
-	elif all(npe <= 1 for npe in npe_list):
+	elif all(npe <= CRITICAL_NPE for npe in npe_list):
 		print_failure('Cannot begin bisection method, no simulations have more'
-					+ 'than one period endpoint.')
+					+ ' than one period endpoint.')
 		return None, None
-	elif all(npe > 1 for npe in npe_list):
+	elif all(npe > CRITICAL_NPE for npe in npe_list):
 		print_failure('Cannot begin bisection method, all simulations have more'
-					+ 'than one period endpoint.')
+					+ ' than one period endpoint.')
 		return None, None
 	else:
 		# iterate through the npe list until it drops below 2 endpoints
@@ -162,11 +160,12 @@ def find_starting_points(St_list, npe_list):
 		if St_a == 0 and St_b == 0: # print an error if no points were found
 			print_failure('Could not find starting points for the bisection '
 						+ 'method.')
-			print(f'Stokes numbers:{stokes_nums}',
-				  f'\nNumber of period endpoints:{npe}')
+			print(f'\t\t Stokes numbers:{stokes_nums}',
+				  f'\n\t\t Number of period endpoints:{npe}')
 			return None, None
 		else:
-			print(f'Starting points found: St_a = {St_a}, St_b = {St_b}.')
+			print_success('Starting points found: ' \
+					   + f'St_a = {St_a}, St_b = {St_b}.')
 			return St_a, St_b
 
 def bisection_method(St_a, St_b, beta, history):
@@ -192,9 +191,11 @@ def bisection_method(St_a, St_b, beta, history):
 	z_final = None
 	St_c = (St_a + St_b) / 2 # initialize midpoint between St_a and St_b
 	while (St_c - St_a) / St_c >= TOL:
-		# compute number of period endpoints for St_c and add to npe_list
+		# compute number of period endpoints for St_c
 		results = run(St_c, beta, history)
 		npe, final_endpoints = compute_npe(results, return_last=True)
+
+		# ensure final point isn't too close to the seabed
 		if final_endpoints:
 			if len(final_endpoints) == 2:
 				z_f1, z_f2 = final_endpoints
@@ -207,7 +208,7 @@ def bisection_method(St_a, St_b, beta, history):
 				z_final = final_endpoints[0]
 
 		# update either St_a or St_b and recompute St_c
-		if npe > 1:
+		if npe > CRITICAL_NPE:
 			St_a = St_c
 		else:
 			St_b = St_c

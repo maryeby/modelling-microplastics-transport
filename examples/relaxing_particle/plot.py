@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
-from utils.plot import FS
 from utils.data_tools import extract_data
 from utils.colors import COLORS
 from examples.relaxing_particle.numerics import BETAS
@@ -61,7 +60,7 @@ def main():
 		params['history'] = False
 		t, xdot = extract_data(['t', 'xdot'], prasath, params)
 		plt.plot(t, xdot, c=COLORS[-1], ls='--')
-	plt.legend(fontsize=FS)
+	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':

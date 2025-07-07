@@ -3,7 +3,8 @@ from time import time
 from tqdm import tqdm
 
 from transport_framework import particle, wave, transport_system
-from utils.colors import print_warning
+from models import water_wave, dim_deep_water_wave, deep_water_wave
+from utils.colors import print_warning, print_failure
 
 class MyTransportSystem(transport_system.TransportSystem):
 	"""Represent the transport of a particle in a linear water wave.[^1]"""
@@ -20,9 +21,11 @@ class MyTransportSystem(transport_system.TransportSystem):
 			The ratio *R* between the particle and fluid densities.
 		reynolds_num : float
 			The particle Reynolds number, computed as,
-			$$Re_p = \frac{2\omega'A'a'}{\nu'},$$
-			where *ω'*, *A'* and ν' are attributes of the wave, and *a'* is the
-			radius of the particle.
+			$$Re_p = \frac{2a' v_s \omega' A'}{\nu'},$$
+			where $a'$ is the particle radius, $\omega'$ is the angular
+			frequency, $A'$ is the wave amplitude, and $\nu'$ is the kinematic
+			viscosity. The particle settling velocity $v_s$ is computed using
+			the expression for $v_{s, lin}$ from [2].
 
 		References
 		----------
@@ -30,18 +33,77 @@ class MyTransportSystem(transport_system.TransportSystem):
 			  Advection of inertial particles in the presence of the history
 			  force: Higher order numerical schemes.
 			  *Journal of Computational Physics* 254, 93–106.
+		[^2]: [M. H. DiBenedetto et al. (2022).](
+			  https://doi.org/10.1017/jfm.2022.95) Enhanced settling and
+			  dispersion of inertial particles in surface waves.
+			  *Journal of Fluid Mechanics* 936, A38.
 		"""
 		super().__init__(particle, flow, density_ratio)
 		if isinstance(flow, wave.Wave):
-			self.reynolds_num = (2 * self.flow.angular_freq
-								   * self.flow.amplitude
-								   * np.sqrt(9 * self.particle.stokes_num 
-								   / (2 * self.flow.wavenum ** 2
-								   * self.flow.reynolds_num))) \
-								   / self.flow.kinematic_viscosity
-			if 0.1 < self.reynolds_num:
-				print_warning('Particle Reynolds number' 
-						   + f'(Re_p = {self.reynolds_num:.4f}) is not << 1.')
+			# compute particle Reynolds number
+			a = np.sqrt(9 * self.particle.stokes_num
+						  * self.flow.kinematic_viscosity 
+						  / (2 * self.flow.angular_freq * self.flow.wavenum
+						  * self.flow.amplitude))
+			self.reynolds_num = a * np.abs(2 - 3 * density_ratio) \
+								  * self.particle.stokes_num \
+								  * self.flow.angular_freq \
+								  / (np.tanh(self.flow.wavenum 
+								  * self.flow.depth)
+								  * density_ratio * self.flow.wavenum \
+								  * self.flow.kinematic_viscosity)
+			# print warning if the particle Reynolds number is too large
+#			if isinstance(flow, water_wave.WaterWave) \
+#				or isinstance(flow, deep_water_wave.DeepWaterWave) \
+#				or isinstance(flow,
+#							  dim_deep_water_wave.DimensionalDeepWaterWave):
+#				if 0.1 < self.reynolds_num:
+#					print_warning('Particle Reynolds number (Re_p = ' \
+#							   + f'{self.reynolds_num:.4f}) is not << 1.')
+
+	def max_particle_reynolds_num(self, x, z, xdot, t):
+		r"""
+		Compute the maximum value of the particle Reynolds number $Re_p$.
+
+		Parameters
+		----------
+		x : ndarray
+			1D array of `float` data, the horizontal particle position.
+		z : ndarray
+			1D array of `float` data, the vertical particle position.
+		xdot : ndarray
+			1D array of `float` data, the horizontal particle velocity.
+		t : ndarray
+			1D array containing `float` time series data.
+
+		Notes
+		-----
+		The particle Reynolds number $Re_p$ is determined using equation (2.6)
+		from [1],
+		$$Re_p = \frac{2a'|\mathbf{v}' - \mathbf{u}'|}{\nu'},$$
+		where **v**' and **u**' are the particle and fluid velocities, $a'$ is
+		the particle radius, and $\nu'$ is the kinematic viscosity.
+
+		References
+		----------
+		[^1]: [M. H. DiBenedetto et al. (2022).](
+			  https://doi.org/10.1017/jfm.2022.95) Enhanced settling and
+			  dispersion of inertial particles in surface waves.
+			  *Journal of Fluid Mechanics* 936, A38.
+		"""
+		nu = self.flow.kinematic_viscosity
+		a = np.sqrt(9 * self.particle.stokes_num * nu
+					  / (2 * self.flow.angular_freq * self.flow.wavenum
+					  * self.flow.amplitude))
+		u, _ = self.flow.velocity(x, z, t)
+		max_reynolds_num = np.max(2 * a * self.flow.angular_freq 
+									* self.flow.amplitude 
+									* (np.abs(xdot - u)) / nu)
+
+		# print warning if particle Reynolds number is too large
+		if 0.1 < max_reynolds_num:
+			print_warning('Max particle Reynolds number ' 
+					   + f'(Re_p = {max_reynolds_num:.4f}) is not << 1.')
 
 	def maxey_riley(self, t, y, include_history, hide_progress=False,
 					include_H=False, order=3):
@@ -68,6 +130,11 @@ class MyTransportSystem(transport_system.TransportSystem):
 
 		Returns
 		-------
+		list
+			A list of 1D `ndarray` elements, including the time, horizontal and
+			vertical components of the particle position, velocity, and the
+			forces. The elements of the list are as follows:
+
 		x : ndarray
 			1D array of `float` data, the horizontal particle position.
 		z : ndarray
@@ -94,9 +161,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 			1D array of `float` data, the horizontal Stokes drag.
 		drag_z : ndarray
 			1D array of `float` data, the vertical Stokes drag.
-		H_x : ndarray
+		H_x : ndarray, optional
 			1D array of `float` data, the horizontal H value.
-		H_z : ndarray
+		H_z : ndarray, optional
 			1D array of `float` data, the vertical H value.
 		history_x : ndarray
 			1D array of `float` data, the horizontal history force.
@@ -122,39 +189,45 @@ class MyTransportSystem(transport_system.TransportSystem):
 		mini_step = 2 * delta_t / num_mini_steps
 		mini_steps = np.arange(0, num_mini_steps * mini_step + mini_step,
 							   mini_step)
-		mini_x = np.empty((mini_steps.size, 2)) 
-		mini_v = np.empty((mini_steps.size, 2))
-		mini_u = np.empty((mini_steps.size, 2))
-		mini_fpg = np.empty((mini_steps.size, 2))	   # fluid pressure gradient
-		mini_buoyancy = np.empty((mini_steps.size, 2)) # buoyancy force
-		mini_mass = np.empty((mini_steps.size, 2))	   # added mass force
-		mini_drag = np.empty((mini_steps.size, 2))	   # Stokes drag
-		mini_history = np.empty((mini_steps.size, 2)) if include_history else \
-					   np.zeros((mini_steps.size, 2))  # history force
+		mini_x = np.zeros((mini_steps.size, 2)) 
+		mini_v = np.zeros((mini_steps.size, 2))
+		mini_u = np.zeros((mini_steps.size, 2))
+		mini_fpg = np.zeros((mini_steps.size, 2))	   # fluid pressure gradient
+		mini_buoyancy = np.zeros((mini_steps.size, 2)) # buoyancy force
+		mini_mass = np.zeros((mini_steps.size, 2))	   # added mass force
+		mini_drag = np.zeros((mini_steps.size, 2))	   # Stokes drag
+		mini_history = np.zeros((mini_steps.size, 2))  # history force
 		num_steps = t.size - 1
-		x = np.empty((t.size, 2))
-		v = np.empty((t.size, 2))
-		u = np.empty((t.size, 2))
-		fluid_pressure_gradient = np.empty((t.size, 2))
-		buoyancy = np.empty((t.size, 2))
-		added_mass = np.empty((t.size, 2))
-		stokes_drag = np.empty((t.size, 2))
-		history = np.empty((t.size, 2)) if include_history else \
-				  np.zeros((t.size, 2))
+		x = np.zeros((t.size, 2))
+		v = np.zeros((t.size, 2))
+		u = np.zeros((t.size, 2))
+		fluid_pressure_gradient = np.zeros((t.size, 2))
+		buoyancy = np.zeros((t.size, 2))
+		added_mass = np.zeros((t.size, 2))
+		stokes_drag = np.zeros((t.size, 2))
+		history = np.zeros((t.size, 2))
 
 		# set initial conditions
 		x[0] = y[:2]
 		v[0] = y[2:]
 		u[0] = self.flow.velocity(x[0, 0], x[0, 1], t[0])
+		results = [x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0],
+				   fluid_pressure_gradient[0, 0], fluid_pressure_gradient[0, 1],
+				   buoyancy[0, 0], buoyancy[0, 1], added_mass[0, 0],
+				   added_mass[0, 1], stokes_drag[0, 0], stokes_drag[0, 1],
+				   history[0, 0], history[0, 1]]
 		mini_x[0] = x[0]
 		mini_v[0] = v[0]
 		mini_u[0] = u[0]
+		mini_results = results
 
 		# immediately return if z_0 is below the depth of the water (z_0 < -h)
 		if x[0, 1] <= -h:
-			print('ERROR: Initial vertical position is below the seabed.')
-			return x[0, 0], x[0, 1], v[0, 0], v[0, 1], t[0], \
-				   0, 0, 0, 0, 0, 0, 0, 0
+			print_failure('Initial vertical position is below the seabed.')
+			if include_H:
+				results.insert(-2, np.zeros(t.size))
+				results.insert(-2, np.zeros(t.size))
+			return results
 
 		# only compute alpha, beta, gamma, xi if we're including history effects
 		if include_history:
@@ -183,21 +256,33 @@ class MyTransportSystem(transport_system.TransportSystem):
 		# compute solutions for the first two intervals using finer time steps
 		if not hide_progress:
 			print('Computing the first two intervals using mini steps...')
-		for n_prime in tqdm(range(mini_steps.size - 1),
-							disable=hide_progress):
+		for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
 			# return immediately if the particle reaches the seabed (z < -h)
 			if mini_x[n_prime, 1] <= -h:
 				if not hide_progress:
 					print('Simulation ended prematurely: particle reached the',
 						  'seabed.')
-				return mini_x[:n_prime, 0], mini_x[:n_prime, 1], \
-					   mini_v[:n_prime, 0], mini_v[:n_prime, 1], \
-					   mini_steps[:n_prime], \
-					   mini_fpg[:n_prime, 0], mini_fpg[:n_prime, 1], \
-					   mini_buoyancy[:n_prime, 0], mini_buoyancy[:n_prime, 1],\
-					   mini_mass[:n_prime, 0], mini_mass[:n_prime, 1], \
-					   mini_drag[:n_prime, 0], mini_drag[:n_prime, 1], \
-					   mini_history[:n_prime, 0], mini_history[:n_prime, 1]
+
+				# compute mini_H and mini_history
+				mini_H = np.copy(mini_history)
+				mini_history[:, 0] = np.gradient(mini_history[:, 0], mini_steps,
+												 edge_order=2)
+				mini_history[:, 1] = np.gradient(mini_history[:, 1], mini_steps,
+												 edge_order=2)
+				mini_results[-2] = mini_history[:n_prime + 1, 0]
+				mini_results[-1] = mini_history[:n_prime + 1, 1]
+
+				if include_H: # add mini_H to mini_results
+					mini_results.insert(-2, mini_H[:n_prime + 1, 0])
+					mini_results.insert(-2, mini_H[:n_prime + 1, 1])
+
+				# truncate data after the vertical position reaches the surface
+				m = np.where(0 < mini_x[:, 1])[0]
+				if 0 < len(m) and isinstance(self.flow, wave.Wave):
+					m = m[0]
+					print('Data truncated after particle reached the surface.')
+					return [r[:m] for r in mini_results]
+				return mini_results
 
 			mini_w = mini_v - mini_u
 			mini_fpg = (3 / 2 * R - 1) \
@@ -296,13 +381,21 @@ class MyTransportSystem(transport_system.TransportSystem):
 											- 16 * G[n_prime - 1]
 											+ 5 * G[n_prime - 2]) \
 											+ mini_u[n_prime + 1]
+			# store results
+			mini_results = [mini_x[:n_prime + 2, 0], mini_x[:n_prime + 2, 1],
+							mini_v[:n_prime + 2, 0], mini_v[:n_prime + 2, 1],
+							mini_steps[:n_prime + 2], mini_fpg[:n_prime + 2, 0],
+							mini_fpg[:n_prime + 2, 1],
+							mini_buoyancy[:n_prime + 2, 0],
+							mini_buoyancy[:n_prime + 2, 1],
+							mini_mass[:n_prime + 2, 0],
+							mini_mass[:n_prime + 2, 1],
+							mini_drag[:n_prime + 2, 0],
+							mini_drag[:n_prime + 2, 1],
+							mini_history[:n_prime + 2, 0],
+							mini_history[:n_prime + 2, 1]]
 
 		# store solutions for the first two intervals
-		fluid_pressure_gradient[0] = mini_fpg[0]
-		buoyancy[0] = mini_buoyancy[0]
-		added_mass[0] = mini_mass[0]
-		stokes_drag[0] = mini_drag[0]
-		history[0] = mini_history[0]
 		x[1] = mini_x[int(mini_steps.size / 2)]
 		v[1] = mini_v[int(mini_steps.size / 2)]
 		u[1] = mini_u[int(mini_steps.size / 2)]
@@ -319,6 +412,12 @@ class MyTransportSystem(transport_system.TransportSystem):
 		added_mass[2] = mini_mass[-1]
 		stokes_drag[2] = mini_drag[-1]
 		history[2] = mini_history[-1]
+		results = [x[:3, 0], x[:3, 1], v[:3, 0], v[:3, 1], t[:3], \
+				   fluid_pressure_gradient[:3, 0], \
+				   fluid_pressure_gradient[:3, 1], \
+				   buoyancy[:3, 0], buoyancy[:3, 1], added_mass[:3, 0], \
+				   added_mass[:3, 1], stokes_drag[:3, 0], stokes_drag[:3, 1], \
+				   history[:3, 0], history[:3, 1]]
 
 		# compute solutions for the remaining intervals
 		if not hide_progress:
@@ -329,13 +428,32 @@ class MyTransportSystem(transport_system.TransportSystem):
 				if not hide_progress:
 					print('Simulation ended prematurely: particle reached the',
 						  'seabed.')
-				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
-					   fluid_pressure_gradient[:n, 0], \
-					   fluid_pressure_gradient[:n, 1], \
-					   buoyancy[:n, 0], buoyancy[:n, 1], \
-					   added_mass[:n, 0], added_mass[:n, 1], \
-					   stokes_drag[:n, 0], stokes_drag[:n, 1], \
-					   history[:n, 0], history[:n, 1]
+				# compute H and history
+				H = np.copy(history)
+				history[:, 0] = np.gradient(history[:, 0], t, edge_order=2)
+				history[:, 1] = np.gradient(history[:, 1], t, edge_order=2)
+
+				# add history (and H if included) to results
+				if n > 2:
+					results[-2] = history[:n + 1, 0]
+					results[-1] = history[:n + 1, 1]
+					if include_H:
+						results.insert(-2, H[:n + 1, 0])
+						results.insert(-2, H[:n + 1, 1])
+				else:
+					results[-2] = history[:2, 0]
+					results[-1] = history[:2, 1]
+					if include_H:
+						results.insert(-2, H[:2, 0])
+						results.insert(-2, H[:2, 1])
+
+				# truncate data after the vertical position reaches the surface
+				m = np.where(0 < x[:, 1])[0]
+				if 0 < len(m) and isinstance(self.flow, wave.Wave):
+					m = m[0]
+					print('Data truncated after particle reached the surface.')
+					return [r[:m] for r in results]
+				return results
 			w = v - u
 			fluid_pressure_gradient = (3 / 2 * R - 1) \
 					* self.flow.derivative_along_trajectory(x[:, 0].T,
@@ -393,46 +511,32 @@ class MyTransportSystem(transport_system.TransportSystem):
 				else:
 					v[n + 1] = w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
 									+ 5 * G[n - 2]) + u[n + 1]
+			results = [x[:n + 2, 0], x[:n + 2, 1], v[:n + 2, 0], v[:n + 2, 1],
+					   t[:n + 2], fluid_pressure_gradient[:n + 2, 0], \
+					   fluid_pressure_gradient[:n + 2, 1], \
+					   buoyancy[:n + 2, 0], buoyancy[:n + 2, 1], \
+					   added_mass[:n + 2, 0], added_mass[:n + 2, 1], \
+					   stokes_drag[:n + 2, 0], stokes_drag[:n + 2, 1], \
+					   history[:n + 2, 0], history[:n + 2, 1]]
+			
+		# compute H and history
 		H = np.copy(history)
 		history[:, 0] = np.gradient(history[:, 0], t, edge_order=2)
 		history[:, 1] = np.gradient(history[:, 1], t, edge_order=2)
+		results[-2] = history[:, 0]
+		results[-1] = history[:, 1]
+
+		if include_H: # add H to results
+			results.insert(-2, H[:, 0])
+			results.insert(-2, H[:, 1])
 
 		# truncate data after the vertical position reaches the surface
-		n = np.where(0 < x[:, 1])[0]
-		if 0 < len(n) and isinstance(self.flow, wave.Wave):
-			n = n[0]
+		m = np.where(0 < x[:, 1])[0]
+		if 0 < len(m) and isinstance(self.flow, wave.Wave):
+			m = m[0]
 			print('Data truncated after particle reached the surface.')
-			if include_H:
-				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
-					   fluid_pressure_gradient[:n, 0], \
-					   fluid_pressure_gradient[:n, 1], \
-					   buoyancy[:n, 0], buoyancy[:n, 1], \
-					   added_mass[:n, 0], added_mass[:n, 1], \
-					   stokes_drag[:n, 0], stokes_drag[:n, 1], \
-					   H[:n, 0], H[:n, 1], history[:n, 0], history[:n, 1]
-			else:
-				return x[:n, 0], x[:n, 1], v[:n, 0], v[:n, 1], t[:n], \
-					   fluid_pressure_gradient[:n, 0], \
-					   fluid_pressure_gradient[:n, 1], \
-					   buoyancy[:n, 0], buoyancy[:n, 1], \
-					   added_mass[:n, 0], added_mass[:n, 1], \
-					   stokes_drag[:n, 0], stokes_drag[:n, 1], \
-					   history[:n, 0], history[:n, 1]
-
-		if include_H:
-			return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
-				   fluid_pressure_gradient[:, 0], \
-				   fluid_pressure_gradient[:, 1], \
-				   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
-				   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
-				   H[:, 0], H[:, 1], history[:, 0], history[:, 1]
-		else:
-			return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t, \
-				   fluid_pressure_gradient[:, 0], \
-				   fluid_pressure_gradient[:, 1], \
-				   buoyancy[:, 0], buoyancy[:, 1], added_mass[:, 0], \
-				   added_mass[:, 1], stokes_drag[:, 0], stokes_drag[:, 1], \
-				   history[:, 0], history[:, 1]
+			return [r[:m] for r in results]
+		return results
 
 def compute_alpha(size, hide_progress):
 	r"""

@@ -1,5 +1,5 @@
 COLORS = ['#003c30', '#01665e', '#35978f', '#80cdc1', '#c7eae5', '#f6e8c3',
-		  '#dfc27d', '#bf812d', '#8c510a', '#543005', 'silver']
+		  '#dfc27d', '#bf812d', '#8c510a', '#543005', 'grey', 'silver']
 
 def print_success(message):
 	"""Print `SUCCESS` in colored text followed by the provided `message`."""

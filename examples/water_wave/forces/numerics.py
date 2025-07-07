@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from itertools import repeat
 from parallelbar import progress_starmap
 
@@ -10,22 +11,25 @@ from models import water_wave as fl
 from models import my_system as ts
 
 # particle conditions
-STOKES_NUMS = np.round(np.linspace(0.01, 0.05, 8, endpoint=False).tolist() \
+STOKES_NUMS = np.round(np.linspace(0.01, 0.04, 8).tolist() \
 			+ np.arange(0.05, 1.05, 0.05).tolist(), 3)
+#STOKES_NUMS = np.round(np.arange(0.009, 0.0301, 0.001), 4).tolist()
 X_0, Z_0 = 0, 0
 
 # wave conditions
 DEPTH = 10
 AMPLITUDE = 0.02
-WAVELENGTH = 1
+WAVELENGTH = 1.5
 
 # simulation conditions
 SCALE = 2 / 3
 BETA = 0.99
 R = SCALE * BETA
-NUM_PERIODS = 3
+NUM_PERIODS = 30
 DELTA_T = 5e-3
 NUM_TASKS = len(STOKES_NUMS)
+NUM_CPUS = None
+TIMEOUT = 600
 INCLUDE_HISTORY = True
 HIDE_PROGRESS = True
 KEYS = ['t', 'x', 'z', 'xdot', 'zdot', 'fluid_pressure_gradient_x',
@@ -33,6 +37,7 @@ KEYS = ['t', 'x', 'z', 'xdot', 'zdot', 'fluid_pressure_gradient_x',
 		'added_mass_force_x', 'added_mass_force_z', 'stokes_drag_x',
 		'stokes_drag_z', 'history_force_x', 'history_force_z', 'St']
 OUT_FILE = '../../data/water_wave/forces_numerics.csv'
+#OUT_FILE = '../../data/water_wave/st_star/numerics20.csv'
 
 def main():
 	"""
@@ -48,12 +53,13 @@ def main():
 	wave = fl.WaterWave(DEPTH, AMPLITUDE, WAVELENGTH)
 	xdot_0, zdot_0 = wave.velocity(X_0, Z_0, t=0)
 	y = [X_0, Z_0, xdot_0, zdot_0]
-	t = np.arange(0, NUM_PERIODS, DELTA_T)
+	t = np.arange(0, wave.period * NUM_PERIODS, DELTA_T)
 
 	# run simulations in parallel
 	params = zip(STOKES_NUMS, repeat(wave), repeat(t), repeat(y))
-	sols = progress_starmap(run_simulation, params, n_cpu=4, total=NUM_TASKS)
-	for sol in sols: results = update_results(results, sol[:-1], [sol[-1]])
+	sols = progress_starmap(run_simulation, params, n_cpu=NUM_CPUS,
+							total=NUM_TASKS, process_timeout=TIMEOUT)
+	for sol in sols: results = update_results(results, sol[:15], sol[15:])
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False)
 
 def run_simulation(stokes_num, wave, t, y):

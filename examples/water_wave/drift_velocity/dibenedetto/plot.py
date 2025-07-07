@@ -2,8 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils.plot import initialize_subplot as subplot
-from utils.plot import FS
+from utils.plot import initialize_figure as fig
 from utils.data_tools import extract_data
 
 IN_FILE = '../../../data/water_wave/dibenedetto_analytics.csv'
@@ -26,11 +25,9 @@ def main():
 	vslin = analytics['v_s_lin'].iloc[0]
 
 	# create left subplot (horizontal results)
-	plt.figure()
-	subplot(121, r'$t$', r'$\bar{\bar{u}}$')
+	fig(r'$t$', r'$\bar{\bar{u}}$', 121)
 	names = ['t', 'u_double_bar', 'v_x_drift']
 	t, u_bar, v_x_drift = extract_data(names, analytics, {'history': False})
-#	u_bar = u_bar.to_numpy() / vslin
 	plt.plot(t, v_x_drift, '-k')
 	plt.scatter(t, u_bar, edgecolors='k', facecolors='none')
 	t, u_bar, v_x_drift = extract_data(names, analytics, {'history': True})
@@ -38,10 +35,9 @@ def main():
 	plt.scatter(t, u_bar, marker='s', edgecolors='k', facecolors='none')
 	
 	# create right subplot (vertical results)
-	subplot(122, r'$t$', r'$\bar{\bar{w}}$')
+	fig(r'$t$', r'$\bar{\bar{w}}$', 122)
 	names = ['t', 'w_double_bar', 'v_y_drift']
 	t, w_bar, v_y_drift = extract_data(names, analytics, {'history': False})
-#	w_bar = w_bar.to_numpy() / vslin
 	plt.plot(t, v_y_drift, '-k', label='without history effects')
 	plt.scatter(t, w_bar, edgecolors='k', facecolors='none',
 				label='without history effects')
@@ -49,7 +45,7 @@ def main():
 	plt.plot(t, v_y_drift, ':k', label='with history effects')
 	plt.scatter(t, w_bar, marker='s', edgecolors='k', facecolors='none',
 				label='with history effects')
-	plt.legend(fontsize=FS)
+	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':

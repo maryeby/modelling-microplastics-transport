@@ -22,7 +22,7 @@ def main():
 	betas = numerics['beta'].drop_duplicates()
 	methods = numerics['method'].drop_duplicates()
 
-	fig('x', 'z', lims=[0, 3.2, -4, 0])
+	fig(r'$x$', r'$z$', lims=[0, 3.2, -4, 0])
 	for beta, method in itertools.product(betas, methods):
 		params = {'beta': beta, 'method': method}
 		x = extract_data('x', numerics, params)

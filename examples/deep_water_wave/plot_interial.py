@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import itertools
 
 from utils.plot import initialize_figure as fig
-from utils.plot import FS
 from utils.data_tools import extract_data
 from utils.colors import COLORS
 
@@ -43,7 +42,7 @@ def main():
 	global_error = pd.read_csv(IN_FILE2)
 	methods = numerics['method'].drop_duplicates().tolist()
 
-	fig('x', 'z', equal_aspect=True)
+	fig(r'$x$', r'$z$', equal_aspect=True)
 	for order, method in itertools.product(range(3), methods[:2]):
 		# extract inertial equation solutions to plot
 		i = methods.index(method)
@@ -64,7 +63,7 @@ def main():
 		lc, lw = COLORS[i], WIDTHS[i]
 		label = 'Maxey-Riley' if i == 0 else ''
 		plt.plot(x, z, c=lc, lw=lw, marker='o', label=label)
-	plt.legend(fontsize=FS)
+	plt.legend()
 
 	# create global error figure and plot reference lines (h, h^2, h^3)
 	fig(r'$\Delta t$', r'$\mathcal{\epsilon}$', x_scale='log', y_scale='log',
@@ -79,7 +78,7 @@ def main():
 									  params)
 		fmt = STYLES[order - 1] + 'k.'
 		plt.plot(delta_t, error, fmt, label=LABELS[order - 1])
-	plt.legend(fontsize=FS)
+	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':
