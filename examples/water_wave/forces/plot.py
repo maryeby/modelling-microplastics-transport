@@ -73,7 +73,7 @@ def main():
 
 	# plot particle trajectory with horizontal force vectors (top left)
 	fig(y_label=r'$z$', num=221, equal_aspect=True, make_square=True,
-		hide_xticks=True)
+		hide_xticks=True, width='jfm')
 	plt.plot(x, z, c='k')
 	plt.quiver(X, Y, inertial_U, ZEROS, color=COLORS[1], label=LABELS[0],
 			   scale=1, angles='xy', scale_units='xy')
@@ -91,7 +91,7 @@ def main():
 	plt.text(x[D] - OS, z[D] - OS, 'D', ha='right', va='bottom')
 
 	# initialize top right subplot
-	fig(y_label='horizontal force', num=222, hide_xticks=True)
+	fig(y_label='horizontal force', num=222, hide_xticks=True, width='jfm')
 	plt.axvline(t[A], c=COLORS[-1])
 	plt.axvline(t[B], c=COLORS[-1])
 	plt.axvline(t[C], c=COLORS[-1])
@@ -109,7 +109,7 @@ def main():
 #	plt.plot(t, A_x - G_x, ':k', label='verification')
 
 	# plot particle trajectory with vertical force vectors (bottom left)
-	fig(r'$x$', r'$z$', 223, equal_aspect=True, make_square=True)
+	fig(r'$x$', r'$z$', 223, equal_aspect=True, make_square=True, width='jfm')
 	plt.xticks([0, 0.1, 0.2])
 	plt.plot(x, z, c='k')
 	plt.quiver(X, Y, ZEROS, inertial_V, color=COLORS[1], label=LABELS[0],
@@ -128,7 +128,7 @@ def main():
 	plt.text(x[D] - OS, z[D] - OS, 'D', ha='right', va='bottom')
 
 	# initialize bottom right subplot
-	fig('time', 'vertical force', 224)
+	fig('time', 'vertical force', 224, width='jfm')
 	plt.xticks(ticks=[0, 0.5, t[A], t[B], t[C], t[D], 2, 2.5],
 			   labels=['0', '0.5', 'A', 'B', 'C', 'D', '2', '2.5'])
 	plt.axvline(t[A], c=COLORS[-1])

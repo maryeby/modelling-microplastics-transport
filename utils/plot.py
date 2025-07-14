@@ -69,7 +69,7 @@ def initialize_figure(x_label=None, y_label=None, num=None, make_square=False,
 	plt.minorticks_on()
 
 	# set figure size
-	width_pts = JFM_WIDTH if width == 'jfm' else width
+	if width == 'jfm': width = JFM_WIDTH
 	width /= PTS_PER_INCH
 	height = width * RATIO * (rows / cols)
 	plt.gcf().set_size_inches(width, height)
