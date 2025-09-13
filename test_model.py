@@ -31,253 +31,279 @@ def main():
 	sm_data = pd.read_csv(IN_FILE3)
 	cc_data = pd.read_csv(IN_FILE4)
 
-	# relaxing particle tests
-	print('CASE 1: RELAXING PARTICLE')
-	q_flow = qfl.QuiescentFlow()			# quiescent flow object
-	xdots, ts, asymptotics = [], [], []		# empty lists to store results
-	betas = [0.01, 1, 5]
+	# conditions to allow for testing individual cases
+	relaxing_particle_tests = True
+	rigid_body_rotation_tests = True
+	neutrally_bouyant_particle_tests = True
+	positively_negatively_buoyant_particle_tests = True
+	surface_tests = True
+	seabed_tests = True
+	warnings.filterwarnings('ignore')
 	success = True
 
-	# run and test a simulation for each beta with and without history effects
-	warnings.filterwarnings('ignore')
-	for beta, history in itertools.product(betas, [True, False]):
-		params = {'beta': beta, 'history': history, 'asymptotic': False}
-		h_str = 'with history' if history else 'without history'
+	# relaxing particle tests
+	if relaxing_particle_tests:
+		print('CASE 1: RELAXING PARTICLE')
+		q_flow = qfl.QuiescentFlow()			# quiescent flow object
+		xdots, ts, asymptotics = [], [], []		# empty lists to store results
+		betas = [0.01, 1, 5]
 
-		# run relaxing particle simulation, store results & get extracted data
-		print('Simulating a relaxing particle for beta =', beta, h_str, '...')
-		_, _, xdot, _, t, \
-		   _, _, _, _, _, _, _, _, _, _, _, _ = simulate(q_flow, beta, history)
-		xdots.append(xdot)
-		ts.append(t)
-		ext_xdot, ext_t = extract_data(['xdot', 't'], relaxing_data, params)
+		# run and test a simulation for each beta with & without history effects
+		for beta, history in itertools.product(betas, [True, False]):
+			params = {'beta': beta, 'history': history, 'asymptotic': False}
+			h_str = 'with history' if history else 'without history'
 
-		if history:
-			# compute asymptotic results and get extracted asymptotic data
-			print('Computing asymptotic results...', end='')
-			asymptotics.append(relaxing_asymptotics(beta, t[1:]))
-			print('done.')
-			params['asymptotic'] = True
-			ext_asym = extract_data('xdot', relaxing_data, params)
+			# run relaxing particle sims, store results, get extracted data
+			print('Simulating a relaxing particle for beta =',
+				  beta, h_str, '...')
+			sols = simulate(q_flow, beta, history)
+			xdot, t = sols[2], sols[4]
+			xdots.append(xdot)
+			ts.append(t)
+			ext_xdot, ext_t = extract_data(['xdot', 't'], relaxing_data, params)
 
-			# compare asymptotic results to the extracted data
-			print('\nComparing solutions to extracted data from Prasath et al.',
-				  '(2019) Figure 4...')
-			if match_data(asymptotics[-1], ext_asym):
-				print_success('Asymptotic solutions match')
+			if history:
+				# compute asymptotic results and get extracted asymptotic data
+				print('Computing asymptotic results...', end='')
+				asymptotics.append(relaxing_asymptotics(beta, t[1:]))
+				print('done.')
+				params['asymptotic'] = True
+				ext_asym = extract_data('xdot', relaxing_data, params)
+
+				# compare asymptotic results to the extracted data
+				print('\nComparing solutions to extracted data from Prasath ',
+					  'et al. 2019) Figure 4...')
+				if match_data(asymptotics[-1], ext_asym):
+					print_success('Asymptotic solutions match')
+				else:
+					print_failure('Asymptotic solutions do not match')
+					success = False
 			else:
-				print_failure('Asymptotic solutions do not match')
-				success = False
-		else:
-			print('\nComparing solutions to extracted data from Prasath et al.',
-				  '(2019) Figure 4...')
+				print('\nComparing solutions to extracted data from Prasath ',
+					  'et al. (2019) Figure 4...')
 
-		# compare the numerical results to the extracted data
-		if match_data(xdot, ext_xdot):
-			print_success(f'Numerical solutions match {h_str}\n')
-		else:
-			print_failure(f'Numerical solutions do not match {h_str}\n')
-			success = False
-	if not success: # plot the data if there were any failures
-		plot_relaxing_case(betas, relaxing_data, xdots, ts, asymptotics)
-		quit()
+			# compare the numerical results to the extracted data
+			if match_data(xdot, ext_xdot):
+				print_success(f'Numerical solutions match {h_str}\n')
+			else:
+				print_failure(f'Numerical solutions do not match {h_str}\n')
+				success = False
+		if not success: # plot the data if there were any failures
+			plot_relaxing_case(betas, relaxing_data, xdots, ts, asymptotics)
+			quit()
 
 	# rigid body rotation tests
-	print('\nCASE 2: RIGID BODY ROTATION')
-	r_flow = rfl.RotatingFlow()				# rotating flow object
-	history = True
-	beta = 0.75
-	x_0 = (1, 0)
+	if rigid_body_rotation_tests:
+		print('\nCASE 2: RIGID BODY ROTATION')
+		r_flow = rfl.RotatingFlow()				# rotating flow object
+		history = True
+		beta = 0.75
+		x_0 = (1, 0)
 
-	# run rigid body rotation simulations
-	print('Simulating first order rigid body rotation...')
-	x, z, _, _, _, _, _, _, _, _, _, _, _, \
-	   _, _, _, _ = simulate(r_flow, beta, history, x_0=x_0, order=1)
-	x1 = np.array((x, z)).T
-	print('\nSimulating second order rigid body rotation...')
-	x, z, _, _, _, _, _, _, _, _, _, _, _, \
-	   _, _, _, _ = simulate(r_flow, beta, history, x_0=x_0, order=2)
-	x2 = np.array((x, z)).T
-	print('\nSimulating third order rigid body rotation...')
-	x, z, _, _, t, _, _, _, _, _, _, _, _, \
-	   _, _, history_x, history_z = simulate(r_flow, beta, history, x_0=x_0)
-	x3 = np.array((x, z)).T
+		# run rigid body rotation simulations
+		print('Simulating first order rigid body rotation...')
+		x, z = simulate(r_flow, beta, history, x_0=x_0, order=1)[:2]
+		x1 = np.array((x, z)).T
+		print('\nSimulating second order rigid body rotation...')
+		x, z = simulate(r_flow, beta, history, x_0=x_0, order=2)[:2]
+		x2 = np.array((x, z)).T
+		print('\nSimulating third order rigid body rotation...')
+		sols = simulate(r_flow, beta, history, x_0=x_0)
+		x, z, t = sols[0], sols[1], sols[4]
+		history_x, history_z = sols[-2:]
+		x3 = np.array((x, z)).T
 
-	# variables to help slice data for plotting
-	history_x = history_x[:-3]
-	history_z = history_z[:-3]
-	n = t.size // 5
-	m = n // 100 + 1
+		# variables to help slice data for plotting
+		history_x = history_x[:-3]
+		history_z = history_z[:-3]
+		n = t.size // 5
+		m = n // 100 + 1
 	
-	# compute and store analytical solutions
-	print('\nComputing analytical results...')
-	x, z, x_int, z_int, exact_hx, exact_hz, \
-		analytical, delta_ts = rotating_analytics(t)
-	exact_hx, exact_hz = exact_hx[:-3], exact_hz[:-3]
-	exact = np.array((x, z)).T
-	x_int = np.array((x_int[:m], z_int[:m]))
+		# compute and store analytical solutions
+		print('\nComputing analytical results...')
+		x, z, x_int, z_int, exact_hx, exact_hz, \
+			analytical, delta_ts = rotating_analytics(t)
+		exact_hx, exact_hz = exact_hx[:-3], exact_hz[:-3]
+		exact = np.array((x, z)).T
+		x_int = np.array((x_int[:m], z_int[:m]))
 
-	# compute relative error
-	print('Computing relative error...', end='')
-	e_rel1 = np.linalg.norm(exact - x1, axis=1) / np.linalg.norm(exact, axis=1)
-	e_rel2 = np.linalg.norm(exact - x2, axis=1) / np.linalg.norm(exact, axis=1)
-	e_rel3 = np.linalg.norm(exact - x3, axis=1) / np.linalg.norm(exact, axis=1)
-	print('done.')
+		# compute relative error
+		print('Computing relative error...', end='')
+		e_rel1 = np.linalg.norm(exact - x1, axis=1) / np.linalg.norm(exact,
+																	 axis=1)
+		e_rel2 = np.linalg.norm(exact - x2, axis=1) / np.linalg.norm(exact,
+																	 axis=1)
+		e_rel3 = np.linalg.norm(exact - x3, axis=1) / np.linalg.norm(exact,
+																	 axis=1)
+		print('done.')
 
-	# get extracted data from Daitche (2013) Fig 3
-	names = ['first_x', 'first_z', 'exact_x', 'exact_z', 'rel_error1',
-			 'rel_error2', 'rel_error3', 't1', 't2', 't3']
-	ext_x, ext_z, ext_x_analytical,	ext_z_analytical, ext_e_rel1, ext_e_rel2, \
-		ext_e_rel3, ext_t1, ext_t2, ext_t3 = extract_data(names, rotating_data)
+		# get extracted data from Daitche (2013) Fig 3
+		names = ['first_x', 'first_z', 'exact_x', 'exact_z', 'rel_error1',
+				 'rel_error2', 'rel_error3', 't1', 't2', 't3']
+		ext_x, ext_z, ext_x_analytical,	ext_z_analytical, ext_e_rel1, \
+			   ext_e_rel2, ext_e_rel3, ext_t1, ext_t2, \
+			   ext_t3 = extract_data(names, rotating_data)
 
-	# compare our numerical results to the data extracted from Daitche
-	print('\nComparing numerical results to extracted data from Daitche (2013)',
-		  'Figure 3...')
-	if match_data(x1[:, 0], ext_x) and match_data(x1[:, 1], ext_z):
-		print_success('First order numerical solutions match')
-	else:
-		print_failure('First order numerical solutions do not match')
-		success = False
-		plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n])
-		plt.legend()
-		plt.show()
-		quit()
+		# compare our numerical results to the data extracted from Daitche
+		print('\nComparing numerical results to extracted data from Daitche ',
+			  '(2013) Figure 3...')
+		if match_data(x1[:, 0], ext_x) and match_data(x1[:, 1], ext_z):
+			print_success('First order numerical solutions match')
+		else:
+			print_failure('First order numerical solutions do not match')
+			success = False
+			plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n])
+			plt.legend()
+			plt.show()
+			quit()
 
-	# compare error analysis to the extracted data
-	print('Comparing relative error to extracted data from Daitche (2013)',
-		  'Figure 3...')
-	if match_data(e_rel1, ext_e_rel1):
-		print_success('First order error analysis matches')
-	else:
-		print_failure('First order error analysis does not match')
-		success = False
-		plot_error_analysis(rotating_data, t, e_rel1)
-		plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n])
-		plt.legend()
-		plt.show()
-		quit()
-	if match_data(e_rel2, ext_e_rel2):
-		print_success('Second order error analysis matches')
-	else:
-		print_failure('Second order error analysis does not match')
-		success = False
-		plot_error_analysis(rotating_data, t, e_rel1, e_rel2)
-		plot_rotating_trajectory(rotating_data, exact[:n], x_int,
-								 x1[:n], x2[:n])
-		plt.legend()
-		plt.show()
-		quit()
-	if match_data(e_rel3, ext_e_rel3):
-		print_success('Third order error analysis matches')
-	else:
-		print_failure('Third order error analysis does not match')
-		success = False
-		plot_error_analysis(rotating_data, t, e_rel1, e_rel2, e_rel3)
-		plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n],
-								 x2[:n], x3[:n])
-		plt.legend()
-		plt.show()
-		quit()
+		# compare error analysis to the extracted data
+		print('Comparing relative error to extracted data from Daitche (2013)',
+			  'Figure 3...')
+		if match_data(e_rel1, ext_e_rel1):
+			print_success('First order error analysis matches')
+		else:
+			print_failure('First order error analysis does not match')
+			success = False
+			plot_error_analysis(rotating_data, t, e_rel1)
+			plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n])
+			plt.legend()
+			plt.show()
+			quit()
+		if match_data(e_rel2, ext_e_rel2):
+			print_success('Second order error analysis matches')
+		else:
+			print_failure('Second order error analysis does not match')
+			success = False
+			plot_error_analysis(rotating_data, t, e_rel1, e_rel2)
+			plot_rotating_trajectory(rotating_data, exact[:n], x_int,
+									 x1[:n], x2[:n])
+			plt.legend()
+			plt.show()
+			quit()
+		if match_data(e_rel3, ext_e_rel3):
+			print_success('Third order error analysis matches')
+		else:
+			print_failure('Third order error analysis does not match')
+			success = False
+			plot_error_analysis(rotating_data, t, e_rel1, e_rel2, e_rel3)
+			plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n],
+									 x2[:n], x3[:n])
+			plt.legend()
+			plt.show()
+			quit()
 
-	# compare analytical solutions for history force to numerical solutions
-	print('Comparing numerical history to analytical history...')
-	if match_data(exact_hx, history_x):
-		print_success('History force verified in the x direction')
-	else:
-		print_failure('History force not verified in the x direction')
-		success = False
-		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
-		plt.show()
-		quit()
-	if match_data(exact_hz, history_z):
-		print_success('History force verified in the z direction')
-	else:
-		print_failure('History force not verified in the z direction')
-		success = False
-		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
-		plt.show()
-		quit()
+		# compare analytical solutions for history force to numerical solutions
+		print('Comparing numerical history to analytical history...')
+		if match_data(exact_hx, history_x):
+			print_success('History force verified in the x direction')
+		else:
+			print_failure('History force not verified in the x direction')
+			success = False
+			plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
+			plt.show()
+			quit()
+		if match_data(exact_hz, history_z):
+			print_success('History force verified in the z direction')
+		else:
+			print_failure('History force not verified in the z direction')
+			success = False
+			plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
+			plt.show()
+			quit()
 
 	# neutrally buoyant particle in a wavy flow tests
-	print('\n\nCASE 3: NEUTRALLY BUOYANT PARTICLE IN A WAVY FLOW')
-	beta = 1
-	depths, amplitude, wavelength = [10, 1, 0.5], 0.02, 1
-	label_values = (np.array(depths) / wavelength).tolist()
-	label1 = 'h\'/' +  r'$\lambda$' + f'\' = {wavelength / depths[1]:.2f}'
-	label2 = 'h\'/' +  r'$\lambda$' + f'\' = {wavelength / depths[2]:.2f}'
-	u_bar, z_bar, analytical_u, analytical_z = [], [], [], []
+	if neutrally_bouyant_particle_tests:
+		print('\n\nCASE 3: NEUTRALLY BUOYANT PARTICLE IN A WAVY FLOW')
+		beta = 1
+		depths, amplitude, wavelength = [10, 1, 0.5], 0.02, 1
+		label_values = (np.array(depths) / wavelength).tolist()
+		label1 = 'h\'/' +  r'$\lambda$' + f'\' = {wavelength / depths[1]:.2f}'
+		label2 = 'h\'/' +  r'$\lambda$' + f'\' = {wavelength / depths[2]:.2f}'
+		u_bar, z_bar, analytical_u, analytical_z = [], [], [], []
 
-	# run and test a simulation for each water depth at 4 different z_0 values
-	m = 1
-	for depth in depths:
-		wave = wfl.WaterWave(depth, amplitude, wavelength)
-		h = wave.wavenum * depth
-		z = np.linspace(0, -h, 100)
-		analytical_z.append(z / h)
-		analytical_u.append(analytical_stokes_drift(wave, z))
-		z_0s = np.linspace(0, -h, 4, endpoint=False)
-		for z_0 in z_0s:
-			print(f'({m}/{len(depths) * len(z_0s):g}) ', end='')
-			drift_vel_success, u, z = test_wave(wave, beta, (0, z_0))
-			u_bar.append(u)
-			z_bar.append(z)
-			success &= drift_vel_success
-			m += 1
+		# run and test a simulation for each water depth at 4 different z_0s
+		m = 1
+		for depth in depths:
+			wave = wfl.WaterWave(depth, amplitude, wavelength)
+			h = wave.wavenum * depth
+			z = np.linspace(0, -h, 100)
+			analytical_z.append(z / h)
+			analytical_u.append(analytical_stokes_drift(wave, z))
+			z_0s = np.linspace(0, -h, 4, endpoint=False)
+			for z_0 in z_0s:
+				print(f'({m}/{len(depths) * len(z_0s):g}) ', end='')
+				drift_vel_success, u, z = test_wave(wave, beta, (0, z_0))
+				u_bar.append(u)
+				z_bar.append(z)
+				success &= drift_vel_success
+				m += 1
 
-	if not success: # plot if any tests failed
-		plot_wavy_drift_velocity(label_values, analytical_u, analytical_z,
-								 u_bar, z_bar)
-		plt.legend()
-		plt.show()
+		if not success: # plot if any tests failed
+			plot_wavy_drift_velocity(label_values, analytical_u, analytical_z,
+									 u_bar, z_bar)
+			plt.legend()
+			plt.show()
 
 	# +/- buoyant particles in a wavy flow of deep water
-	print('\n\nCASE 4: POSITIVELY BUOYANT PARTICLE IN A WAVY FLOW')
-	wave = dfl.DeepWaterWave(depth=5, amplitude=0.026, wavelength=0.5)
-	k = wave.wavenum
-	x_light, z_light = test_wave(wave, beta=1.04, x_0=(k * 0.13, k * -0.4))
-	print('\n\nCASE 5: NEGATIVELY BUOYANT PARTICLE IN A WAVY FLOW')
-	x_heavy, z_heavy = test_wave(wave, beta=0.96)
+	if positively_negatively_buoyant_particle_tests:
+		print('\n\nCASE 4: POSITIVELY BUOYANT PARTICLE IN A WAVY FLOW')
+		wave = dfl.DeepWaterWave(depth=5, amplitude=0.026, wavelength=0.5)
+		k = wave.wavenum
+		x_light, z_light = test_wave(wave, beta=1.04, x_0=(k * 0.13, k * -0.4))
+		print('\n\nCASE 5: NEGATIVELY BUOYANT PARTICLE IN A WAVY FLOW')
+		x_heavy, z_heavy = test_wave(wave, beta=0.96)
 
-	# extract data from Santamaria et al. (2013) Figure 1
-	names = ['heavy_x', 'heavy_z', 'light_x', 'light_z']
-	sm_heavy_x, sm_heavy_z, sm_light_x, sm_light_z = extract_data(names,
+		# extract data from Santamaria et al. (2013) Figure 1
+		names = ['heavy_x', 'heavy_z', 'light_x', 'light_z']
+		sm_heavy_x, sm_heavy_z, sm_light_x, sm_light_z = extract_data(names,
 																  sm_data)
-	# compare trajectories to extracted data
-	print('\nComparing solutions to extracted data from Santamaria et al.',
-		  '(2013) Figure 1...')
-	if match_data(sm_heavy_x, x_heavy) and match_data(sm_heavy_z, z_heavy) \
-		and match_data(sm_light_x, x_light) and match_data(sm_light_z, z_light):
-		print_success('Numerical solutions match')
-	else:
-		print_failure('Numerical solutions do not match')
-		plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy,
-												 x_light, z_light)
-		plt.legend()
-		plt.show()
-		quit()
+		# compare trajectories to extracted data
+		print('\nComparing solutions to extracted data from Santamaria et al.',
+			  '(2013) Figure 1...')
+		if match_data(sm_heavy_x, x_heavy) and match_data(sm_heavy_z, z_heavy) \
+			and match_data(sm_light_x, x_light) \
+			and match_data(sm_light_z, z_light):
+			print_success('Numerical solutions match')
+		else:
+			print_failure('Numerical solutions do not match')
+			plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy,
+													 x_light, z_light)
+			plt.legend()
+			plt.show()
+			quit()
 	
 	# surface and seabed boundary cases
 	wave = wfl.WaterWave(depth=3, amplitude=0.01, wavelength=2)
-	print('\n\nCASE 6: POSITIVELY BUOYANT PARTICLE REACHING THE SURFACE',
-		  'BOUNDARY')
-	test_wave(wave, beta=1.1, x_0=(0, -4))
-	print('\n\nCASE 7: NEGATIVELY BUOYANT PARTICLE REACHING THE SEABED',
-		  'BOUNDARY')
-	test_wave(wave, beta=0.81)
+	if surface_tests:
+		print('\n\nCASE 6: POSITIVELY BUOYANT PARTICLE REACHING THE SURFACE',
+			  'BOUNDARY')
+		test_wave(wave, beta=1.1, x_0=(0, -4))
+	if seabed_tests:
+		print('\n\nCASE 7: NEGATIVELY BUOYANT PARTICLE REACHING THE SEABED',
+			  'BOUNDARY')
+		test_wave(wave, beta=0.81)
 
 	# plot all results if none failed
 	if success and PLOT_IF_SUCCESSFUL:
-		plot_relaxing_case(betas, relaxing_data, xdots, ts, asymptotics)
-		plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n],
-								 x2[:n], x3[:n])
-		plot_error_analysis(rotating_data, t, e_rel1, e_rel2, e_rel3)
-		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
-		plot_wavy_drift_velocity(label_values, analytical_u, analytical_z,
-								 u_bar, z_bar)
-		plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy,
-												 x_light, z_light)
-		plt.legend()
-		plt.show()
+		if relaxing_particle_tests:
+			plot_relaxing_case(betas, relaxing_data, xdots, ts, asymptotics)
+		if rigid_body_rotation_tests:
+			plot_rotating_trajectory(rotating_data, exact[:n], x_int, x1[:n],
+									 x2[:n], x3[:n])
+			plot_error_analysis(rotating_data, t, e_rel1, e_rel2, e_rel3)
+			plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
+		if neutrally_bouyant_particle_tests:
+			plot_wavy_drift_velocity(label_values, analytical_u, analytical_z,
+									 u_bar, z_bar)
+		if positively_negatively_buoyant_particle_tests:
+			plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy,
+													 x_light, z_light)
+		if relaxing_particle_tests or rigid_body_rotation_tests \
+			or neutrally_bouyant_particle_tests \
+			or positively_negatively_buoyant_particle_tests:
+			plt.legend()
+			plt.show()
 
 def simulate(flow, beta, include_history, x_0=(0, 0), order=3):
 	"""
@@ -638,7 +664,7 @@ def test_wave(wave, beta, x_0=(0, 0)):
 					mass_x, mass_z, drag_x, drag_z, history_x, history_z])
 	verify_trajectory_range(x, z, wave.depth * wave.wavenum)
 	verify_velocities(beta, x, z, t, xdot, zdot, u_x, u_z)
-	verify_forces(wave, beta, stokes_num, u_x, u_z, x[0], z[0], xdot, zdot, t,
+	verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, t,
 				  fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
 				  drag_x, drag_z, history_x, history_z, include_history=False)
 
@@ -689,7 +715,7 @@ def test_wave(wave, beta, x_0=(0, 0)):
 						history_z])
 		verify_trajectory_range(x, z, wave.depth * wave.wavenum)
 		verify_velocities(beta, x, z, t, xdot, zdot, u_x, u_z)
-		verify_forces(wave, beta, stokes_num, u_x, u_z, x[0], z[0], xdot, zdot, 
+		verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, 
 					  t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
 					  drag_x, drag_z, history_x, history_z,
 					  include_history=True)
@@ -905,7 +931,7 @@ def verify_velocities(beta, x, z, t, xdot, zdot, u_x=None, u_z=None):
 		plt.show()
 		quit()
 
-def verify_forces(wave, beta, stokes_num, u_x, u_z, x_0, z_0, xdot, zdot, t,
+def verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, t,
 				  fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
 				  drag_x, drag_z, history_x, history_z, include_history):
 	"""
@@ -923,8 +949,8 @@ def verify_forces(wave, beta, stokes_num, u_x, u_z, x_0, z_0, xdot, zdot, t,
 		1D array of `float` data, the horizontal fluid velocity.
 	u_z : ndarray
 		1D array of `float` data, the vertical fluid velocity.
-	x_0, z_0 : float
-		The initial horizontal and vertical position of the particle.
+	x, z : float
+		The horizontal and vertical position of the particle.
 	xdot : ndarray
 		1D array of `float` data, the horizontal particle velocity.
 	zdot : ndarray
@@ -961,6 +987,8 @@ def verify_forces(wave, beta, stokes_num, u_x, u_z, x_0, z_0, xdot, zdot, t,
 	u_z = u_z[:n]
 	xdot = xdot[:n]
 	zdot = zdot[:n]
+	x = x[:n]
+	z = z[:n]
 	t = t[:n]
 	fpg_x = fpg_x[:n]
 	fpg_z = fpg_z[:n]
@@ -972,26 +1000,29 @@ def verify_forces(wave, beta, stokes_num, u_x, u_z, x_0, z_0, xdot, zdot, t,
 	drag_z = drag_z[:n]
 	history_x = history_x[5:n]
 	history_z = history_z[5:n]
+	inertial_x = fpg_x + mass_x
+	inertial_z = fpg_z + mass_z
 
 	# define local variables for verification
+	dudt, dwdt = wave.derivative_along_trajectory(x, z, t, [xdot, zdot])
 	w_x, w_z = xdot - u_x, zdot - u_z			# relative velocity w
 	A_x = np.gradient(w_x, t)[5:]				# dw_x/dt
 	A_z = np.gradient(w_z, t)[5:]				# dw_z/dt
-	G_x = (fpg_x + buoyancy_x + mass_x + drag_x)[5:]
-	G_z = (fpg_z + buoyancy_z + mass_z + drag_z)[5:]
+	G_x = (fpg_x + buoyancy_x + mass_x + drag_x - dudt)[5:]
+	G_z = (fpg_z + buoyancy_z + mass_z + drag_z - dwdt)[5:]
 	success = True
 	rtol, atol = 1e-1, 1e-2
 
 	# verify the fluid pressure gradient at t = 0
-	mdx, mdz = wave.material_derivative(x_0, z_0, t=0)
-	if np.isclose(fpg_x[0], (beta - 1) * mdx, rtol, atol):
+	mdx, mdz = wave.material_derivative(x, z, t)
+	if np.isclose(fpg_x[0], beta * mdx[0], rtol, atol):
 		print_success('Fluid pressure gradient verified at t = 0 in the '
 					+ 'x direction')
 	else:
 		print_failure('Fluid pressure gradient not verified at t = 0 in the '
 					+ 'x direction')
 		success = False
-	if np.isclose(fpg_z[0], (beta - 1) * mdz, rtol, atol):
+	if np.isclose(fpg_z[0], beta * mdz[0], rtol, atol):
 		print_success('Fluid pressure gradient verified at t = 0 in the '
 					+ 'z direction')
 	else:
@@ -1026,18 +1057,45 @@ def verify_forces(wave, beta, stokes_num, u_x, u_z, x_0, z_0, xdot, zdot, t,
 		print_failure('Added mass force != 0 at t = 0 in the z direction')
 		success = False
 
+	# verify the inertial forces
+	if np.allclose(inertial_x, beta * mdx, rtol, atol):
+		print_success('Inertial forces verified in the x direction')
+	else:
+		print_failure('Inertial forces not verified in the x direction')
+		success = False
+	if np.allclose(inertial_z, beta * mdz, rtol, atol):
+		print_success('Inertial forces verified in the z direction')
+	else:
+		print_failure('Inertial forces not verified in the z direction')
+		success = False
+
 	# verify the Stokes drag
 	drag_coeff = -2 / 3 * beta / stokes_num
+	drag_est_x = -(beta - 1) * (mdx - wave.gravity[0])
+	drag_est_z = -(beta - 1) * (mdz - wave.gravity[1])
 	if np.allclose(drag_x, drag_coeff * w_x, rtol, atol):
 		print_success('Stokes drag verified in the x direction')
 	else:
 		print_failure('Stokes drag not verified in the x direction')
 		success = False
+	if not include_history and np.allclose(drag_x, drag_est_x, rtol=2, atol=1):
+		print_success('Stokes drag approximated in the x direction')
+	else:
+		if not include_history:
+			print_failure('Stokes drag not approximated in the x direction')
+			success = False
 	if np.allclose(drag_z, drag_coeff * w_z, rtol, atol):
 		print_success('Stokes drag verified in the z direction')
 	else:
 		print_failure('Stokes drag not verified in the z direction')
 		success = False
+	if not include_history and np.allclose(drag_z[20:], drag_est_z[20:],
+										   rtol=0.2, atol=0.1):
+		print_success('Stokes drag approximated in the z direction')
+	else:
+		if not include_history:
+			print_failure('Stokes drag not approximated in the z direction')
+			success = False
 
 	# verify the history force
 	if include_history: # A(t) - G(t) = H'(t)
@@ -1074,43 +1132,49 @@ def verify_forces(wave, beta, stokes_num, u_x, u_z, x_0, z_0, xdot, zdot, t,
 			print_success('dw_z/dt = the sum of non-history forces ')
 		else:
 			print_failure('dw_z/dt != the sum of non-history forces')
-			print(np.max(np.abs(np.abs(A_z[1:-1]) - np.abs(G_z[1:-1]))))
-			print(np.argmax(np.abs(np.abs(A_z[1:-1]) - np.abs(G_z[1:-1]))))
-			print(np.abs(np.abs(A_z) - np.abs(G_z))[:10])
 			success = False
 
 	if not success:
 		# plot verifications for horizontal forces over time
 		fig(r'$t$', 'horizontal force')
-		plt.scatter(t[0], (beta - 1) * mdx, marker='.', fc='none', ec=COLORS[0])
-		plt.axhline(b_x, c=COLORS[2], ls=':')
-		plt.plot(t, drag_coeff * w_x, c=COLORS[3], ls=':')
+		plt.scatter(t[0], beta * mdx[0], marker='.', c=COLORS[0])
+		plt.axhline(b_x, c=COLORS[4], ls=':')
+		plt.plot(t, drag_coeff * w_x, c=COLORS[6], ls=':')
+		plt.plot(t, drag_est_x, c=COLORS[6], ls='--')
+		plt.plot(t, beta * mdx, c=COLORS[8], ls=':')
 		if include_history:
-			plt.plot(t[5:], (A_x - G_x), c=COLORS[4], ls=':')
+			plt.plot(t[5:], (A_x - G_x), c=COLORS[10], ls=':')
 		else:
-			plt.axhline(0, c=COLORS[4], ls=':')
+			plt.axhline(0, c=COLORS[10], ls=':')
+
 		# plot horizontal forces over time
 		plt.plot(t, fpg_x, c=COLORS[0], label='fluid pressure gradient')
-		plt.plot(t, mass_x, c=COLORS[1], label='added mass')
-		plt.plot(t, buoyancy_x, c=COLORS[2], label='buoyancy')
-		plt.plot(t, drag_x, c=COLORS[3], label='Stokes drag')
-		plt.plot(t[5:], history_x, c=COLORS[4], label='history force')
+		plt.plot(t, mass_x, c=COLORS[2], label='added mass')
+		plt.plot(t, buoyancy_x, c=COLORS[4], label='buoyancy')
+		plt.plot(t, drag_x, c=COLORS[6], label='Stokes drag')
+		plt.plot(t, inertial_x, c=COLORS[8], label='inertial forces')
+		plt.plot(t[5:], history_x, c=COLORS[10], label='history force')
+		plt.legend()
 
 		# plot verifications for vertical forces over time
 		fig(r'$t$', 'vertical force')
-		plt.scatter(t[0], (beta - 1) * mdz, marker='.', fc='none', ec=COLORS[0])
-		plt.axhline(b_z, c=COLORS[2], ls=':')
-		plt.plot(t, drag_coeff * w_z, c=COLORS[3], ls=':')
+		plt.scatter(t[0], beta * mdz[0], marker='.', c=COLORS[0])
+		plt.axhline(b_z, c=COLORS[4], ls=':')
+		plt.plot(t, drag_coeff * w_z, c=COLORS[6], ls=':')
+		plt.plot(t, drag_est_z, c=COLORS[6], ls='--')
+		plt.plot(t, beta * mdz, c=COLORS[8], ls=':')
 		if include_history:
-			plt.plot(t[5:], (A_z - G_z), c=COLORS[4], ls=':')
+			plt.plot(t[5:], (A_z - G_z), c=COLORS[10], ls=':')
 		else:
-			plt.axhline(0, c=COLORS[4], ls=':')
+			plt.axhline(0, c=COLORS[10], ls=':')
+
 		# plot vertical forces over time
 		plt.plot(t, fpg_z, c=COLORS[0], label='fluid pressure gradient')
-		plt.plot(t, mass_z, c=COLORS[1], label='added mass')
-		plt.plot(t, buoyancy_z, c=COLORS[2], label='buoyancy')
-		plt.plot(t, drag_z, c=COLORS[3], label='Stokes drag')
-		plt.plot(t[5:], history_z, c=COLORS[4], label='history force')
+		plt.plot(t, mass_z, c=COLORS[2], label='added mass')
+		plt.plot(t, buoyancy_z, c=COLORS[4], label='buoyancy')
+		plt.plot(t, drag_z, c=COLORS[6], label='Stokes drag')
+		plt.plot(t, inertial_z, c=COLORS[8], label='inertial forces')
+		plt.plot(t[5:], history_z, c=COLORS[10], label='history force')
 		plt.legend()
 		plt.show()
 		quit()

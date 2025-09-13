@@ -9,7 +9,7 @@ def main():
 	numerics = pd.read_csv(IN_FILE)
 
 	# plot particle trajectory
-	fig(r'$x$', r'$z$', make_square=True, equal_aspect=True)
+	fig(r'$x$', r'$z$', make_square=True, equal_aspect=True, width='jfm')
 	plt.plot('x', 'z', '-k', data=numerics)
 	plt.scatter('x_crossings', 'z_crossings', ec='k', fc='none', data=numerics)
 	

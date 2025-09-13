@@ -1,9 +1,11 @@
 import numpy as np
 from time import time
 from tqdm import tqdm
+from scipy.integrate import trapezoid
 
 from transport_framework import particle, wave, transport_system
-from models import water_wave, dim_deep_water_wave, deep_water_wave
+from models import water_wave, dim_deep_water_wave, deep_water_wave, \
+				   bichromatic_wave
 from utils.colors import print_warning, print_failure
 
 class MyTransportSystem(transport_system.TransportSystem):
@@ -181,8 +183,12 @@ class MyTransportSystem(transport_system.TransportSystem):
 		R = self.density_ratio
 		St = self.particle.stokes_num
 		delta_t = t[1] - t[0]
-		h = self.flow.wavenum * self.flow.depth if isinstance(self.flow,
-			wave.Wave) else self.flow.depth
+		if isinstance(self.flow, bichromatic_wave.BichromaticWave):
+			h = self.flow.wavenum[0] * self.flow.depth
+		elif isinstance(self.flow, wave.Wave):
+			h = self.flow.wavenum * self.flow.depth
+		else:
+			h = self.flow.depth
 
 		# compute the number of time steps and create arrays to store solutions
 		num_mini_steps = int(np.ceil(2 * np.sqrt(2) / delta_t))
@@ -285,11 +291,13 @@ class MyTransportSystem(transport_system.TransportSystem):
 				return mini_results
 
 			mini_w = mini_v - mini_u
-			mini_fpg = (3 / 2 * R - 1) \
-						* self.flow.derivative_along_trajectory(mini_x[:, 0].T,
-																mini_x[:, 1].T,
-																mini_steps,
-																mini_v.T).T
+			mini_dudt = self.flow.derivative_along_trajectory(mini_x[:, 0].T,
+						mini_x[:, 1].T, mini_steps, mini_v.T).T
+			mini_fpg = (3 / 2 * R - 1) * mini_dudt
+#						* self.flow.derivative_along_trajectory(mini_x[:, 0].T,
+#																mini_x[:, 1].T,
+#																mini_steps,
+#																mini_v.T).T
 			mini_buoyancy[n_prime] = (1 - 3 * R / 2) * self.flow.gravity
 			mini_mass = -3 / 2 * R * self.flow.dot_jacobian(mini_w.T,
 															mini_x[:, 0].T,
@@ -297,6 +305,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 															mini_steps).T
 			mini_drag = -R / St * mini_w
 			G = mini_fpg + mini_buoyancy[n_prime] + mini_mass + mini_drag
+			mini_fpg += mini_dudt
 			sum_term = 0
 			history_sum = 0
 
@@ -455,14 +464,16 @@ class MyTransportSystem(transport_system.TransportSystem):
 					return [r[:m] for r in results]
 				return results
 			w = v - u
-			fluid_pressure_gradient = (3 / 2 * R - 1) \
-					* self.flow.derivative_along_trajectory(x[:, 0].T,
-															x[:, 1].T, t, v.T).T
+			dudt = self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
+														 t, v.T).T
+			fluid_pressure_gradient = (3 / 2 * R - 1) * dudt
 			buoyancy[n] = (1 - 3 * R / 2) * self.flow.gravity
 			added_mass = -3 / 2 * R \
 					* self.flow.dot_jacobian(w.T, x[:, 0].T, x[:, 1].T, t).T
 			stokes_drag = -R / St * w
 			G = fluid_pressure_gradient + buoyancy[n] + added_mass + stokes_drag
+			fluid_pressure_gradient += dudt
+
 			sum_term = 0
 			history_sum = 0
 			if order == 1 or n == 0:
@@ -879,7 +890,11 @@ def compute_gamma(size, beta, hide_progress):
 
 def compute_drift_velocity(x, z, xdot, t):
 	r"""
-	Compute the Stokes drift velocity numerically.
+	Compute the Stokes drift velocity from provided numerical data.
+
+	The drift velocity is averaged over each wave period, where the end of a
+	wave period is defined as the point at which the horizontal Lagrangian
+	velocity changes from negative to positive, as in [3].
 
 	Parameters
 	----------
@@ -910,6 +925,13 @@ def compute_drift_velocity(x, z, xdot, t):
 	wave period *p*,
 	$$\bar{\mathbf{u}} = \frac{\mathbf{x}_{p + 1} - \mathbf{x}_p}
 	{t_{p + 1} - t_p}.$$
+
+	References
+	----------
+	[^3]: [F. Santamaria et al. (2013).](
+		  https://doi.org/10.1209/0295-5075/102/14003)
+		  Stokes drift for inertial particles transported by water waves.
+		  *EPL (Europhysics Letters)* 102(1), 14003.
 	"""
 	# find the estimated endpoints of the periods
 	estimated_endpoints = []
@@ -945,4 +967,53 @@ def compute_drift_velocity(x, z, xdot, t):
 	u_bar = np.array(u_bar)
 	w_bar = np.array(w_bar)
 	t = np.array(interpd_t)
+
 	return x_crossings, z_crossings, u_bar, w_bar, t
+
+def compute_alternate_drift_velocity(x, z, xdot, zdot, t, num_periods):
+	r"""
+	Compute the Stokes drift velocity using an alternate method.
+
+	The drift velocity is computed by taking the mean particle velocity over
+	each wave period, where the end of a wave period is determined based on the
+	total time $t_f$ divided by the specified number of wave periods.
+
+	Parameters
+	----------
+	x : ndarray
+		1D array of `float` data, the horizontal particle position.
+	z : ndarray
+		1D array of `float` data, the vertical particle position.
+	xdot : ndarray
+		1D array of `float` data, the horizontal particle velocity.
+	t : ndarray
+		1D array containing `float` time series data.
+	num_periods : int
+		The number of wave periods specified for the time series data.
+
+	Returns
+	-------
+	x_crossings, z_crossings : ndarray
+		The horizontal and vertical particle position at the end of each period.
+	u_d, w_d : ndarray
+		1D arrays of the horizontal and vertical Stokes drift velocities.
+	t : ndarray
+		1D array containing `float` time series data for the end of each period.
+	"""
+	x_crossings, z_crossings, t_crossings, u_bar, w_bar = [], [], [], [], []
+	period_index = len(t) // num_periods
+	for i in range(num_periods):
+		j = period_index * i
+		k = period_index * (i + 1)
+		u_bar.append(np.mean(xdot[j:k]))
+		w_bar.append(np.mean(zdot[j:k]))
+		x_crossings.append(x[k])
+		z_crossings.append(z[k])
+		t_crossings.append(t[k])
+	u_bar = np.array(u_bar)
+	w_bar = np.array(w_bar)
+	x_crossings = np.array(x_crossings)
+	z_crossings = np.array(z_crossings)
+	t_crossings = np.array(t_crossings)
+
+	return x_crossings, z_crossings, u_bar, w_bar, t_crossings

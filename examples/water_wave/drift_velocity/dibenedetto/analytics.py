@@ -34,7 +34,6 @@ def main():
 	k = wave.wavenum
 
 	# create dictionary to store solutions and list of names to extract data
-#	keys = ['t', 'u_bar', 'w_bar', 'v_x_drift', 'v_y_drift', 'history']
 	keys = ['t', 'u_double_bar', 'w_double_bar', 'v_x_drift', 'v_y_drift',
 			'v_s_lin', 'history']
 	results = {key: [] for key in keys}

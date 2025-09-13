@@ -29,7 +29,8 @@ def main():
 	properties = dict(boxstyle='circle', fc='w', ec='k')
 
 	# plot neutrally buoyant curve, data points, and label
-	fig(r'$\bar{u}$', r'$\bar{z}$', lims=[-0.075, 1, -7, 0], make_square=True)
+	fig(r'$\bar{u}$', r'$\bar{z}$', lims=[-0.075, 1, -7, 0], make_square=True,
+		width='jfm')
 	ax = plt.gca()
 	analytical_z, analytical_u = extract_data(names1, analysis, params1)
 	neutral_z, neutral_u = extract_data(names2, numerics, params2)
@@ -119,7 +120,6 @@ def main():
 			   str(Fraction(R[2]).limit_denominator()), bbox=properties,
 			   fontsize=8)
 	ax.indicate_inset_zoom(axins)
-#	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':

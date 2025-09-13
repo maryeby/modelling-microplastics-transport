@@ -4,7 +4,7 @@ from transport_framework import wave
 from utils.colors import print_warning
 
 class WaterWave(wave.Wave):
-	"""Represent a non-dimensional linear water wave with arbitrary depth."""
+	"""Represent a dimensionless linear water wave with arbitrary depth."""
 
 	def __init__(self, depth, amplitude, wavelength):
 		r"""
@@ -43,8 +43,8 @@ class WaterWave(wave.Wave):
 		super().__init__(depth, amplitude, wavelength)
 		self.gravity /= self.wavenum * (self.angular_freq * self.amplitude) ** 2
 		self.period *= self.angular_freq * self.wavenum * self.amplitude
-		if 0.1 * np.tanh(self.wavenum * self.depth) < self.wavenum \
-													* self.amplitude:
+		if 0.1 * np.tanh(self.wavenum * self.depth) < np.round(self.wavenum \
+			   * self.amplitude, 4):
 			print_warning('Wave steepness parameter '
 				+ f'(epsilon = {self.wavenum * self.amplitude:.4f}) is not '
 				+ f'<< tanh(h) (= {np.tanh(self.wavenum * self.depth):.4f}).')

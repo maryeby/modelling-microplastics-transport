@@ -81,6 +81,6 @@ def compute_horizontal_displacement(x_0, x_f, x_f_history):
 	float
 		The percent horizontal displacement.
 	"""
-	return (x_f_history - x_0) * 100 / (x_f - x_0) - 100
+	return np.abs((x_f_history - x_0) - (x_f - x_0)) / np.abs(x_f - x_0) * 100
 
 if __name__ == '__main__': main()

@@ -4,10 +4,13 @@ import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
 from utils.data_tools import extract_data
+from examples.water_wave.drift_velocity.numerics import AMPLITUDE, WAVELENGTH, \
+	 STOKES_NUM, R
 
 IN_FILE1 = '../../data/water_wave/drift_vel_numerics.csv'
 IN_FILE2 = '../../data/water_wave/drift_vel_analysis.csv'
-
+SETTLING_VEL = STOKES_NUM / R * (1 - 3 * R / 2) * (-1 / (2 * np.pi * AMPLITUDE 
+														   / WAVELENGTH) ** 2)
 def main():
 	"""
 	Plot the drift velocity of a particle in a wave over time.
@@ -41,6 +44,7 @@ def main():
 	t, w_bar = extract_data(['t', 'w_bar'], numerics, {'history': True})
 	plt.scatter(t, w_bar, marker='s', edgecolors='k', facecolors='none',
 				label='with history effects')
+	plt.axhline(SETTLING_VEL, c='silver', ls=':')
 	plt.legend()
 	plt.show()
 

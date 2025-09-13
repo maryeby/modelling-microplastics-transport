@@ -20,7 +20,7 @@ STOKES_NUM = 0.157
 SCALE = 2 / 3
 BETA = 0.9
 R = SCALE * BETA
-NUM_PERIODS = 50
+NUM_PERIODS = 30
 DELTA_TS = [1e-3, 5e-3, 1e-2]
 INCLUDE_HISTORY = False
 OUT_FILE = '../../data/deep_water_wave/santamaria_fig2_recreation.csv'
@@ -48,17 +48,19 @@ def main():
 	delta_t = DELTA_TS[0] / (wave.angular_freq * wave.froude_num)
 
 	# numerically integrate
-	x, z, xdot, _, t = system.run_numerics(system.maxey_riley, X_0, Z_0,
-										   NUM_PERIODS, delta_t)
+	x, z, xdot, zdot, t = system.run_numerics(system.maxey_riley, X_0, Z_0,
+											  NUM_PERIODS, delta_t)
 	# scale solutions
 	x *= wave.wavenum
 	z *= wave.wavenum
 	xdot /= wave.max_velocity
+	zdot /= wave.max_velocity
 	t *= wave.angular_freq * wave.froude_num
 
 	# compute drift velocity and store solutions
-	_, _, u_bar, w_bar, t = ts.compute_drift_velocity(x, z, xdot, t)
-	results = update_results(results, [t[1:], u_bar, w_bar], [DELTA_TS[0],
+	_, _, u_bar, w_bar, t = ts.compute_alternate_drift_velocity(x, z, xdot, zdot,
+																t, NUM_PERIODS)
+	results = update_results(results, [t, u_bar, w_bar], [DELTA_TS[0],
 							'Santamaria'])
 
 	# create DeepWaterWave, Particle, and TransportSystem objects
@@ -85,15 +87,15 @@ def compute_numerics(system, delta_t, results):
 
 	See Also
 	--------
-	models.my_system.compute_drift_velocity
+	models.my_system.compute_alternate_drift_velocity
 	"""
 	xdot_0, zdot_0 = system.flow.velocity(X_0, Z_0, t=0)
 	y = [X_0, Z_0, xdot_0, zdot_0]
 	t = np.arange(0, NUM_PERIODS * system.flow.period, delta_t)
-	x, z, xdot, _, t, _, _, _, _, _, _, _, _, _, \
-	   _ = system.maxey_riley(t, y, INCLUDE_HISTORY)
-	_, _, u_bar, w_bar, t = ts.compute_drift_velocity(x, z, xdot, t)
-	results = update_results(results, [t[1:], u_bar, w_bar],
+	x, z, xdot, zdot, t = system.maxey_riley(t, y, INCLUDE_HISTORY)[:5]
+	_, _, u_bar, w_bar, t = ts.compute_alternate_drift_velocity(x, z, xdot, zdot,
+																t, NUM_PERIODS)
+	results = update_results(results, [t, u_bar, w_bar],
 							[delta_t, 'Daitche'])
 
 if __name__ == '__main__':

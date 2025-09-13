@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 PTS_PER_INCH = 72.27			# used to compute figure size
 THESIS_WIDTH = 426.79135		# textwidth for thesis LaTeX template
@@ -42,7 +43,7 @@ def initialize_figure(x_label=None, y_label=None, num=None, make_square=False,
 	plt.style.use('tex')
 
 	# skip initialization of the figure for subplots (except the first subplot)
-	if num:
+	if num and isinstance(num, int):
 		if num % 10 == 1:
 			plt.figure(layout='constrained')
 			if add_subplot_labels:
@@ -51,6 +52,15 @@ def initialize_figure(x_label=None, y_label=None, num=None, make_square=False,
 				plt.gcf().text(LABEL_BX, LABEL_Y, r'$(b)$')
 		plt.subplot(num)
 		rows, cols = num // 100, num % 100 // 10
+	elif num and isinstance(num, gridspec.SubplotSpec):
+		rows, cols, row_index, col_index = num.get_geometry()
+		if row_index == 0 and col_index == 0:
+			plt.figure(layout='tight')
+			if add_subplot_labels:
+				plt.suptitle(' ') # add space for labels
+				plt.gcf().text(LABEL_AX, LABEL_Y, r'$(a)$')
+				plt.gcf().text(LABEL_BX, LABEL_Y, r'$(b)$')
+		plt.subplot(num)
 	else:
 		plt.figure(layout='constrained')
 	

@@ -10,7 +10,7 @@ def main():
 	r"""
 	Compute analytical solutions for the drift velocity of a particle in a wave.
 	
-	The non-dimensional horizontal Stokes drift velocity is computed[^1] for a
+	The dimensionless horizontal Stokes drift velocity is computed[^1] for a
 	neutrally buoyant particle in a linear wave of infinitely deep water.
 	Results are saved to the `data/deep_water_wave` directory.
 

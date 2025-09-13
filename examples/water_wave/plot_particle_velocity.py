@@ -3,26 +3,36 @@ import matplotlib.pyplot as plt
 
 from utils.data_tools import extract_data
 from utils.plot import initialize_figure as fig
+from examples.water_wave.particle_velocity import STOKES_NUMS, BETAS, \
+												  INCLUDE_HISTORY, SCALE
 from examples.water_wave.particle_velocity import OUT_FILE as IN_FILE
 
 def main():
 	"""Plot the time vs horizontal velocity of a particle in a wave."""
+	# read data and initialize figure
 	numerics = pd.read_csv(IN_FILE)
-	t = extract_data('t', numerics, {'curve_type': 'xdot'}).to_numpy()
+	fig(r'$t$', r'$\dot{x}$', width='jfm')
 
-	# plot particle velocity over time
-	fig(r'$t$', r'$\dot{x}$', lims=[-0.2, t[-1] + 0.1, -1.5, 1.5])
-	plot_curve(numerics, 'xdot', '-')
-	plot_curve(numerics, 'fitted', '--')
-#	plot_curve(numerics, 'envelope', '-.')
-	plot_curve(numerics, 'decay', ':')
-	plt.scatter('t_peaks', 'peaks', edgecolors='k', facecolors='none',
-				data=numerics)
+	# plot curves and data for each combination of parameters
+	for stokes_num, beta, history in zip(STOKES_NUMS, BETAS, INCLUDE_HISTORY):
+		# extract data
+		params = {'curve_type': 'xdot', 'St': stokes_num, 'beta': beta,
+				  'history': history}
+		t = extract_data('t', numerics, params)
+		xdot = extract_data('curve', numerics, params)
+		
+		# plot curves
+		if history and stokes_num == STOKES_NUMS[0]:
+			label = 'with history'
+		elif stokes_num == STOKES_NUMS[0]:
+			label = 'without history'
+		else:
+			label = ''
+		color = 'k' if stokes_num == STOKES_NUMS[0] else 'silver'
+		style = ':' if history else '-'
+		plt.plot(t, xdot, c=color, ls=style, label=label)
+		if history: print(f'St = {stokes_num:g}\nR = {beta * SCALE:.2f}\n')
+	plt.legend()
 	plt.show()
-
-def plot_curve(df, curve_type, ls):
-	"""Plot the specified curve over time."""
-	t, curve = extract_data(['t', 'curve'], df, {'curve_type': curve_type})
-	plt.plot(t, curve, ls + 'k')
 
 if __name__ == '__main__': main()

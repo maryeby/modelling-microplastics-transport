@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
-from examples.fifth_order_stokes_wave.numerics import OUT_FILE as IN_FILE
+from examples.bichromatic_wave.numerics import OUT_FILE as IN_FILE
 
 def main():
 	"""Plot the trajectory and velocity of a particle moving through a wave."""

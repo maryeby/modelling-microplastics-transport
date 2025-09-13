@@ -7,10 +7,6 @@ from transport_framework import particle as prt
 from models import water_wave as fl
 from models import my_system as ts
 
-# particle conditions
-STOKES_NUM = 0.01
-X_0, Z_0 = 0, 0
-
 # wave conditions
 DEPTH = 10
 AMPLITUDE = 0.02
@@ -20,8 +16,13 @@ WAVELENGTH = 1
 SCALE = 2 / 3
 BETA = 0.9
 R = SCALE * BETA
-NUM_PERIODS = 20
+NUM_PERIODS = 30
 DELTA_T = 5e-3
+
+# particle conditions
+STOKES_NUM = R * 0.157 * 0.125
+X_0, Z_0 = 0, 0
+
 OUT_FILE = '../../data/water_wave/drift_vel_numerics.csv'
 
 def main():
@@ -35,7 +36,7 @@ def main():
 
 	See Also
 	--------
-	models.my_system.compute_drift_velocity
+	models.my_system.compute_alternate_drift_velocity
 	"""
 	# create the Particle, Flow, and TransportSystem objects
 	particle = prt.Particle(STOKES_NUM)
@@ -52,13 +53,13 @@ def main():
 	for history in [False, True]:
 		# run simulation and store results
 		t = np.arange(0, wave.period * NUM_PERIODS, DELTA_T)
-		x, z, xdot, _, t, _, _, _, _, _, _, _, _, _, \
-		   _ = system.maxey_riley(t, y, include_history=history)
+		x, z, xdot, zdot, t = system.maxey_riley(t, y, history)[:5]
 		results = update_results(results, [t, x, z], [None, None, history])
 
 		# compute drift velocity and store results
-		x, z, u, w, t = ts.compute_drift_velocity(x, z, xdot, t)
-		results = update_results(results, [t[1:], x[1:], z[1:], u, w],
+		x, z, u, w, t = ts.compute_alternate_drift_velocity(x, z, xdot, zdot, t,
+															NUM_PERIODS)
+		results = update_results(results, [t, x, z, u, w],
 								[history])
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 

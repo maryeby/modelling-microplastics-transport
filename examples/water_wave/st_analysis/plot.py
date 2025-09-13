@@ -40,7 +40,7 @@ def main():
 
 		# initialize subplot and create subplot labels
 		fig(r'$\bar{u}$', ylabel, 121 + i, lims=lims, make_square=True,
-			add_subplot_labels=True)
+			add_subplot_labels=True, width='jfm')
 
 		# plot curves and data points
 		for stokes_num, history in product(nums, [False, True]):
@@ -48,21 +48,17 @@ def main():
 			params = {'St': stokes_num, 'beta': BETAS[i], 'history': history}
 			z_bar, u_bar = extract_data(['z', 'u_bar'], numerics, params)
 			u_bar /= k * AMPLITUDE
-			plt.scatter(u_bar, z_bar, marker='.', ec='k', fc='none', label='')
+			plt.scatter(u_bar, z_bar, marker='.', ec='k', fc='none')
 
 			# plot fitted curves
-			label = 'with' if history else 'without'
-			label += ' history effects'
 			ls = '--' if history else '-'
-			if stokes_num != STOKES_NUMS[2]: label = ''
 			z_bar, u_bar = extract_data(['z_bar', 'u_bar'], analysis, params)
-			plt.plot(u_bar, z_bar, c='k', ls=ls, label=label)
+			plt.plot(u_bar, z_bar, c='k', ls=ls)
 
 			# plot labels
 			j = STOKES_NUMS.index(stokes_num)
 			plt.text(text_position_x[j], text_position_y[j],
 					 f'{stokes_num:.2f}', bbox=properties, fontsize=8)
-#	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':

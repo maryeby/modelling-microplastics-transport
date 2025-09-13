@@ -1,18 +1,22 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 from utils.data_tools import extract_data
 from utils.plot import initialize_figure as fig
 from utils.colors import COLORS
 from models import water_wave as fl
-from examples.water_wave.forces.numerics import DEPTH, AMPLITUDE, WAVELENGTH, \
-	 NUM_PERIODS
+from examples.water_wave.forces.numerics import DEPTH, WAVELENGTH, NUM_PERIODS
 from examples.water_wave.forces.analysis import ST_TO_SHOW as STOKES_NUM
+from examples.water_wave.forces.analysis import R_TO_SHOW as R
+from examples.water_wave.forces.analysis import EPSILON_TO_SHOW as EPSILON
+from examples.water_wave.forces.analysis import A_TO_SHOW as AMPLITUDE
 
 ZEROS = [0, 0, 0, 0]
 LABELS = ['inertial forces', 'gravity', 'Stokes drag', 'history force']
-OS = 1e-3 # offset for text positions
+WIDTH = 0.013		# vector arrow width
+OS = 1e-3			# offset for text positions
 IN_FILE = '../../data/water_wave/forces_numerics.csv'
 
 def main():
@@ -20,7 +24,7 @@ def main():
 	numerics = pd.read_csv(IN_FILE)
 
 	# retrieve relevant numerical results
-	params = {'St': STOKES_NUM}
+	params = {'St': STOKES_NUM, 'R': R, 'epsilon': EPSILON}
 	names = ['t', 'x', 'z', 'xdot', 'zdot', 'fluid_pressure_gradient_x',
 			 'fluid_pressure_gradient_z', 'buoyancy_force_x',
 			 'buoyancy_force_z', 'added_mass_force_x', 'added_mass_force_z',
@@ -38,12 +42,14 @@ def main():
 	# verification
 	wave = fl.WaterWave(DEPTH, AMPLITUDE, WAVELENGTH)
 	u_x, u_z = wave.velocity(x, z, t)
+	dudt, dwdt = wave.derivative_along_trajectory(x, z, t,
+												  np.array([xdot, zdot]))
 	w_x = xdot - u_x
 	w_z = zdot - u_z
 	A_x = np.gradient(w_x, t)
 	A_z = np.gradient(w_z, t)
-	G_x = fpg_x + buoyancy_x + mass_x + drag_x
-	G_z = fpg_z + buoyancy_z + mass_z + drag_z
+	G_x = fpg_x + buoyancy_x + mass_x + drag_x - dudt
+	G_z = fpg_z + buoyancy_z + mass_z + drag_z - dwdt
 
 	# compute positions of various points on the particle trajectory plot
 	A = int(period * 1.3)
@@ -71,18 +77,41 @@ def main():
 	inertial_U, buoyancy_U, drag_U, history_U = np.asarray(U_forces) / U_scale
 	inertial_V, buoyancy_V, drag_V, history_V = np.asarray(V_forces) / V_scale
 
-	# plot particle trajectory with horizontal force vectors (top left)
-	fig(y_label=r'$z$', num=221, equal_aspect=True, make_square=True,
-		hide_xticks=True, width='jfm')
-	plt.plot(x, z, c='k')
+	# plot particle trajectory with horizontal force vectors
+	fig(y_label=r'$z$', num=221, make_square=True, equal_aspect=True,
+		width='jfm', hide_xticks=True)
+	plt.plot(x[:A], z[:A], c=COLORS[-1])
+	plt.plot(x[A:D], z[A:D], c='k')
+	plt.plot(x[D:], z[D:], c=COLORS[-1])
 	plt.quiver(X, Y, inertial_U, ZEROS, color=COLORS[1], label=LABELS[0],
-			   scale=1, angles='xy', scale_units='xy')
+			   scale=1, angles='xy', scale_units='xy', width=WIDTH)
 	plt.quiver(X, Y, buoyancy_U, ZEROS, color=COLORS[3], label=LABELS[1],
-			   scale=1, angles='xy', scale_units='xy')
+			   scale=1, angles='xy', scale_units='xy', width=WIDTH)
 	plt.quiver(X, Y, history_U, ZEROS, color=COLORS[8], label=LABELS[3],
-			   scale=1, angles='xy', scale_units='xy')
+			   scale=1, angles='xy', scale_units='xy', width=WIDTH)
 	plt.quiver(X, Y, drag_U, ZEROS, color=COLORS[6], label=LABELS[2], scale=1,
-			   angles='xy', scale_units='xy')
+			   angles='xy', scale_units='xy', width=WIDTH)
+	
+	# add labels
+	plt.text(x[A] + OS, z[A] + OS, 'A', ha='left', va='bottom')
+	plt.text(x[B] + OS, z[B] - OS, 'B', ha='left', va='top')
+	plt.text(x[C] - OS, z[C] - OS, 'C', ha='right', va='bottom')
+	plt.text(x[D] - OS, z[D] - OS, 'D', ha='right', va='bottom')
+
+	# plot particle trajectory with vertical force vectors
+	fig(r'$x$', r'$z$', 223, equal_aspect=True, make_square=True, width='jfm')
+	plt.xticks([0, 0.1, 0.2])
+	plt.plot(x[:A], z[:A], c=COLORS[-1])
+	plt.plot(x[A:D], z[A:D], c='k')
+	plt.plot(x[D:], z[D:], c=COLORS[-1])
+	plt.quiver(X, Y, ZEROS, inertial_V, color=COLORS[1], label=LABELS[0],
+			   scale=1, angles='xy', scale_units='xy', width=WIDTH)
+	plt.quiver(X, Y, ZEROS, buoyancy_V, color=COLORS[3], label=LABELS[1],
+			   scale=1, angles='xy', scale_units='xy', width=WIDTH)
+	plt.quiver(X, Y, ZEROS, drag_V, color=COLORS[6], label=LABELS[2], scale=1,
+			   angles='xy', scale_units='xy', width=WIDTH)
+	plt.quiver(X, Y, ZEROS, history_V, color=COLORS[8], label=LABELS[3],
+			   scale=1, angles='xy', scale_units='xy', width=WIDTH)
 	
 	# add labels
 	plt.text(x[A] + OS, z[A] + OS, 'A', ha='left', va='bottom')
@@ -90,66 +119,41 @@ def main():
 	plt.text(x[C] + OS, z[C] - OS, 'C', ha='left', va='top')
 	plt.text(x[D] - OS, z[D] - OS, 'D', ha='right', va='bottom')
 
-	# initialize top right subplot
+	# initialize horizontal forces over time subplot
 	fig(y_label='horizontal force', num=222, hide_xticks=True, width='jfm')
 	plt.axvline(t[A], c=COLORS[-1])
 	plt.axvline(t[B], c=COLORS[-1])
 	plt.axvline(t[C], c=COLORS[-1])
 	plt.axvline(t[D], c=COLORS[-1])
 
-	# enforce history = 0 at t = 0 for the numerical solution
-	history_x[0] = 0
-	history_x[1] = A_x[1] - G_x[1]
+	# enforce history = 0 at t = 0 for the numerical solution and verification
+	history_x[0], history_z[0] = 0, 0
+	A_x[0], A_z[0], G_x[0], G_z[0] = 0, 0, 0, 0
 
 	# plot horizontal forces
-	plt.plot(t, inertial_x, c=COLORS[1], ls='--', label=LABELS[0])
-	plt.plot(t, buoyancy_x, c=COLORS[3], label=LABELS[1])
-	plt.plot(t, drag_x, c=COLORS[6], ls='-.', label=LABELS[2])
-	plt.plot(t, history_x, c=COLORS[8], ls=':', label=LABELS[3])
-#	plt.plot(t, A_x - G_x, ':k', label='verification')
+	plt.plot(t, inertial_x, c=COLORS[1], ls='--')
+	plt.plot(t, buoyancy_x, c=COLORS[3])
+	plt.plot(t, drag_x, c=COLORS[6], ls='-.')
+	plt.plot(t[:-1], A_x[:-1] - G_x[:-1], c=COLORS[-1])
+	plt.plot(t, history_x, c=COLORS[8], ls=':')
 
-	# plot particle trajectory with vertical force vectors (bottom left)
-	fig(r'$x$', r'$z$', 223, equal_aspect=True, make_square=True, width='jfm')
-	plt.xticks([0, 0.1, 0.2])
-	plt.plot(x, z, c='k')
-	plt.quiver(X, Y, ZEROS, inertial_V, color=COLORS[1], label=LABELS[0],
-			   scale=1, angles='xy', scale_units='xy')
-	plt.quiver(X, Y, ZEROS, buoyancy_V, color=COLORS[3], label=LABELS[1],
-			   scale=1, angles='xy', scale_units='xy')
-	plt.quiver(X, Y, ZEROS, drag_V, color=COLORS[6], label=LABELS[2], scale=1,
-			   angles='xy', scale_units='xy')
-	plt.quiver(X, Y, ZEROS, history_V, color=COLORS[8], label=LABELS[3],
-			   scale=1, angles='xy', scale_units='xy')
-	
-	# add labels
-	plt.text(x[A] + OS, z[A] + OS, 'A', ha='left', va='bottom')
-	plt.text(x[B] + OS, z[B] - OS, 'B', ha='left', va='top')
-	plt.text(x[C] + OS, z[C] - OS, 'C', ha='left', va='top')
-	plt.text(x[D] - OS, z[D] - OS, 'D', ha='right', va='bottom')
-
-	# initialize bottom right subplot
-	fig('time', 'vertical force', 224, width='jfm')
-	plt.xticks(ticks=[0, 0.5, t[A], t[B], t[C], t[D], 2, 2.5],
-			   labels=['0', '0.5', 'A', 'B', 'C', 'D', '2', '2.5'])
+	# initialize vertical forces over time subplot
+	fig(r'$t$', 'vertical force', 224, width='jfm')
+	plt.xticks(ticks=[0, 0.5, t[A], t[B], t[C], t[D], 1.5],
+			   labels=['0', '0.5', 'A', 'B', 'C', 'D', '1.5'])
 	plt.axvline(t[A], c=COLORS[-1])
 	plt.axvline(t[B], c=COLORS[-1])
 	plt.axvline(t[C], c=COLORS[-1])
 	plt.axvline(t[D], c=COLORS[-1])
-#	plt.axhline(0, ls=':', c=COLORS[-1])
+	plt.axhline(0, ls=':', c=COLORS[-1])
 
 	# plot vertical numerical results
 	plt.plot(t, inertial_z, c=COLORS[1], ls='--', label=LABELS[0])
 	plt.plot(t[1:], buoyancy_z[1:], c=COLORS[3], label=LABELS[1])
 	plt.plot(t, drag_z, c=COLORS[6], ls='-.', label=LABELS[2])
-
-	# enforce history = 0 at t = 0 for the numerical solution and plot
-	history_z[0] = 0
+	plt.plot(t[:-1], A_z[:-1] - G_z[:-1], c=COLORS[-1], label='verification')
 	plt.plot(t, history_z, c=COLORS[8], ls=':', label=LABELS[3])
-
-	# enforce history = 0 at t = 0 for the verification
-	A_x[0], A_z[0], G_x[0], G_z[0] = 0, 0, 0, 0
-#	plt.plot(t, A_z - G_z, ':k', label='verification')
-	plt.legend(loc='lower right')
+	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':

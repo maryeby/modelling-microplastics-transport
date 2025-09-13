@@ -9,7 +9,7 @@ from utils.colors import COLORS
 from examples.water_wave.shear.numerics import X_0S, RADIUS, ANGLE, Z_NEGATIVE,\
 											   Z_POSITIVE, ST_TO_SHOW, \
 											   BETA_TO_SHOW, STOKES_NUMS, \
-											   BETAS, NUM_POINTS
+											   BETAS, NUM_POINTS, SCALE
 from examples.water_wave.shear.numerics import OUT_FILE as IN_FILE1
 from examples.water_wave.shear.analysis import OUT_FILE2 as IN_FILE2
 
@@ -21,7 +21,7 @@ def main():
 	z_center = Z_NEGATIVE * RADIUS
 	z_0s = np.round(RADIUS * np.sin(ANGLE) + z_center, 3)
 
-	fig(r'$x$', r'$z$', equal_aspect=True, make_square=True)
+	fig(r'$x$', r'$z$', equal_aspect=True, make_square=True, width='jfm')
 	for i, history in product(point_index, [False, True]):
 		params = {'x_0': X_0S[i], 'z_0': z_0s[i], 'St': ST_TO_SHOW,
 				  'beta': BETA_TO_SHOW, 'history': history}
@@ -29,7 +29,7 @@ def main():
 		x, z = extract_data(['x', 'z'], numerics, params)
 		plt.scatter(x, z, c=COLORS[i], marker=mk)
 
-	fig('point index', 'total shear')
+	fig('point index', 'S', width='jfm')
 	for i, history in product(point_index, [False, True]):
 		params = {'x_0': X_0S[i], 'z_0': z_0s[i], 'St': ST_TO_SHOW,
 				  'beta': BETA_TO_SHOW, 'history': history}
@@ -37,7 +37,7 @@ def main():
 		total_shear = extract_data('shear', numerics, params).to_numpy()[-1]
 		plt.scatter(i, total_shear, c=COLORS[i], marker=mk)
 
-	fig(r'$x$', 'shear', make_square=True)
+	fig(r'$x$', 'shear', make_square=True, width='jfm')
 	for i, history in product(point_index, [False, True]):
 		params = {'x_0': X_0S[i], 'z_0': z_0s[i], 'St': ST_TO_SHOW,
 				  'beta': BETA_TO_SHOW, 'history': history}
@@ -46,18 +46,18 @@ def main():
 		x, shear = extract_data(['x', 'shear'], numerics, params)
 		plt.plot(x[1:], shear[:-1], c=COLORS[i], marker=mk, ls=ls)
 
-	fig(r'$St$', 'shear difference', 121)
+	fig(r'$St$', r'$\Delta\bar{S}$', 121, width='jfm', add_subplot_labels=True)
 	stokes_num, shear = extract_data(['St', 'shear_difference'], shear_diff,
 									 {'beta': BETA_TO_SHOW})
 	plt.plot(stokes_num, shear, '-k')
-	fig(r'$\beta$', num=122)
+	fig(r'$R$', num=122, width='jfm', add_subplot_labels=True)
 	idx = shear_diff['beta'].sort_values().index
 	beta, shear = extract_data(['beta', 'shear_difference'],
 								shear_diff.loc[idx], {'St': ST_TO_SHOW})
 	n = np.where(beta == 1)[0][0]
-	plt.plot(beta[:n], shear[:n], '-k')
-	plt.plot(beta[n:-6], shear[n:-6], '--k')
-	plt.axvline(1, c='silver')
+	plt.plot(beta[:n] * SCALE, shear[:n], '-k')
+	plt.plot(beta[n:-6] * SCALE, shear[n:-6], '--k')
+	plt.axvline(SCALE, c='silver')
 	plt.show()
 
 if __name__ == '__main__':

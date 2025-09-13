@@ -3,7 +3,7 @@ from scipy import constants
 from transport_framework import wave
 
 class DeepWaterWave(wave.Wave):
-	"""Represent a non-dimensional linear wave of infinitely deep water.[^1]"""
+	"""Represent a dimensionless linear wave of infinitely deep water.[^1]"""
 
 	def __init__(self, amplitude, wavelength, depth=50):
 		r"""

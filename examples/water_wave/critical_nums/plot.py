@@ -13,7 +13,7 @@ DATA_PATH = '../../data/water_wave/critical_nums.csv'
 def main():
 	"""Plot the critical density ratio vs the critical Stokes number."""
 	analysis = pd.read_csv(DATA_PATH) # read data
-	fig(r'$R_c$', r'$St_c$', make_square=True, lims=[0.5, 0.81, 0.09, 1])
+	fig(r'$R_c$', r'$St_c$', lims=[0.5, 0.81, 0.09, 1], width='jfm')
 
 	for history in [False, True]:
 		beta_c, stokes_c = extract_data(['beta_c', 'St_c'], analysis,
@@ -22,19 +22,7 @@ def main():
 		fmt = ':k.' if history else '-k.'
 		lb = 'with history effects' if history else 'without history effects'
 		plt.plot(r_c, stokes_c, fmt, label=lb)
-#	plt.axvline(2 / 3, c='silver')
-
-#	# plot critical beta vs final z_crossings
-#	fig(r'$R_c$', r'$z-crossing_f$')
-#	for history in [False, True]:
-#		beta_c, z_f = extract_data(['beta_c', 'z_crossing_f'], analysis,
-#								   {'history': history})
-#		r_c = np.array(beta_c) * SCALE
-#		m = 'o' if history else 's'
-#		lb = 'with history effects' if history else 'without history effects'
-#		plt.scatter(r_c, z_f, marker=m, fc='none', ec='k', label=lb)
-#	plt.axhline(-2 * np.pi * DEPTH, c='silver', ls=':')
-#	plt.legend()
+	plt.legend()
 	plt.show()
 
 if __name__ == '__main__':

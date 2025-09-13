@@ -24,11 +24,12 @@ def main():
 	# read data files and initilize figure
 	numerics = pd.read_csv(IN_FILE1)
 	analytics = pd.read_csv(IN_FILE2)
-	fig(r'$\bar{u}$', r'$\bar{\bar{z}}$', equal_aspect=True, make_square=True)
+	fig(r'$\bar{u}$', r'$\bar{\bar{z}}$', equal_aspect=True, make_square=True,
+		width='jfm')
 
 	# plot analytical solutions
 	for i in range(len(DEPTHS)):
-		label = r'$ h / \lambda = $' \
+		label = r"$ h' / \lambda' = $" \
 			  + f'{str(Fraction(DEPTHS[i] / WAVELENGTH).limit_denominator())}'
 		z, u = extract_data(['z/h', 'u_d'], analytics, {'depth': DEPTHS[i]})
 		plt.plot(u, z, c='k', ls=STYLES[i], label=label)
