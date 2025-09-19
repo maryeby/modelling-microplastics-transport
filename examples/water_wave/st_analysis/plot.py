@@ -56,9 +56,10 @@ def main():
 			plt.plot(u_bar, z_bar, c='k', ls=ls)
 
 			# plot labels
+			scale = 1 / (k * AMPLITUDE) * (3 / (2 * BETAS[i]) - 1 / 2)
 			j = STOKES_NUMS.index(stokes_num)
 			plt.text(text_position_x[j], text_position_y[j],
-					 f'{stokes_num:.2f}', bbox=properties, fontsize=8)
+					 f'{stokes_num * scale:.2f}', bbox=properties, fontsize=8)
 	plt.show()
 
 if __name__ == '__main__':

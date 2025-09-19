@@ -15,10 +15,10 @@ from examples.water_wave.forces.analysis import A_TO_SHOW as AMPLITUDE
 ZEROS = [0, 0, 0, 0]
 LABELS = ['inertial forces', 'gravity', 'Stokes drag', 'history force']
 LABEL_AEX = 0.04
-LABEL_BCDX = 0.5
+LABEL_BCDX = 0.52
 LABEL_ABY = 0.9
 LABEL_CY = 0.625
-LABEL_DEY = 0.34
+LABEL_DEY = 0.32
 OS = 1e-3 # offset for text positions
 IN_FILE = '../../data/water_wave/forces_numerics.csv'
 
@@ -42,13 +42,14 @@ def main():
 	   drag_x, drag_z, history_x, history_z = data
 
 	# compute positions of various points on the particle trajectory plot
-	A = int(period * 1.3)
-	B = int(period * 1.55)
-	C = int(period * 1.78)
-	D = int(period * 2)
+	A = int(period * 1.28)
+	B = int(period * 1.52)
+	C = int(period * 1.77)
+	D = int(period * 2.02)
 
 	# plot particle trajectory with horizontal force vectors
-	fig(r'$x$', r'$z$', gs[:2, 0], equal_aspect=True, width='jfm')
+	fig(r'$x$', r'$z$', gs[:2, 0], equal_aspect=True, width='jfm',
+		lims=[-0.06, 0.16, -0.25, 0.05])
 	plt.gcf().text(LABEL_AEX, LABEL_ABY, r'$(a)$')
 	plt.gca().xaxis.set_label_position('top')
 	plt.gca().xaxis.tick_top()

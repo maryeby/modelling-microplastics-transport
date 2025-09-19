@@ -1,14 +1,18 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from numpy import pi
 
 from utils.data_tools import extract_data
 from utils.plot import initialize_figure as fig
 from examples.water_wave.particle_velocity import STOKES_NUMS, BETAS, \
-												  INCLUDE_HISTORY, SCALE
+												  INCLUDE_HISTORY, SCALE, \
+												  WAVELENGTH, AMPLITUDE
 from examples.water_wave.particle_velocity import OUT_FILE as IN_FILE
 
+EPSILON = 2 * pi * AMPLITUDE / WAVELENGTH
+
 def main():
-	"""Plot the time vs horizontal velocity of a particle in a wave."""
+	"""Plot the horizontal velocity of a particle in a wave over time."""
 	# read data and initialize figure
 	numerics = pd.read_csv(IN_FILE)
 	fig(r'$t$', r'$\dot{x}$', width='jfm')
@@ -30,7 +34,7 @@ def main():
 			label = ''
 		color = 'k' if stokes_num == STOKES_NUMS[0] else 'silver'
 		style = ':' if history else '-'
-		plt.plot(t, xdot, c=color, ls=style, label=label)
+		plt.plot(t * EPSILON, xdot, c=color, ls=style, label=label)
 		if history: print(f'St = {stokes_num:g}\nR = {beta * SCALE:.2f}\n')
 	plt.legend()
 	plt.show()

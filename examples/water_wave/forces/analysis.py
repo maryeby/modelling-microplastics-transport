@@ -20,7 +20,7 @@ COEFFS = ['A', 'delta', 'phi', 'offset', 'R^2']
 COLUMNS = ['force'] + COEFFS + ['St', 'R', 'epsilon']
 
 ST_TO_SHOW = STOKES_NUMS[1]
-R_TO_SHOW = RS[4]
+R_TO_SHOW = RS[-1]
 EPSILON_TO_SHOW = EPSILONS[1]
 A_TO_SHOW = AMPLITUDES[1]
 MAXFEV = 500000
@@ -33,13 +33,14 @@ def main():
 	For particles of different sizes (Stokes numbers) in a linear wave of
 	deep water, a curve is fit to each of the forces over time. The coefficents
 	resulting from the curve fittings are saved, and the curves are plotted for
-	the particle with Stokes number `ST_TO_SHOW`. Results are saved to the
-	`data/water_wave` directory.
+	the particle with Stokes number `ST_TO_SHOW`, density ratio `R_TO_SHOW`, and
+	wave steepness `EPSILON_TO_SHOW`. Results are saved to the `data/water_wave`
+	directory.
 
 	Notes
 	-----
 	The equation used to fit a curve to the data is,
-	$$f = A \exp(-\delta t) \sin{(\omega t + \phi)} + \text{offset},$$
+	$$f = A e^{-\delta t} \sin{(\omega t + \phi)} + \text{offset},$$
 	and the coefficients saved are the amplitude *A*, angular frequency
 	$\omega$, decay rate $\delta$, phase shift $\phi$, and offset.
 	"""
@@ -53,7 +54,6 @@ def main():
 		# create Wave object and set variables for curve fitting
 		wave = fl.WaterWave(DEPTH, amplitude, WAVELENGTH)
 		epsilon = np.round(wave.wavenum * amplitude, 3)
-#		if stokes_num == STOKES_NUMS[0]:
 		initial_guess1 = [0.07, 0.01, epsilon, 5e-3, 2e-4]
 
 		# extract numerical data
@@ -82,7 +82,6 @@ def main():
 		a, delta, _, phi, offset = coefficients
 		coefficients[2] = epsilon
 		coefficients = coefficients.tolist()
-#		initial_guess1 = coefficients
 		initial_guess2 = coefficients[:2] + [coefficients[-1]]
 		del coefficients[2]
 

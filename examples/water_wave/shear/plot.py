@@ -7,14 +7,17 @@ from utils.plot import initialize_figure as fig
 from utils.data_tools import extract_data
 from utils.colors import COLORS
 from examples.water_wave.shear.numerics import X_0S, RADIUS, ANGLE, Z_NEGATIVE,\
-											   Z_POSITIVE, ST_TO_SHOW, \
-											   BETA_TO_SHOW, STOKES_NUMS, \
-											   BETAS, NUM_POINTS, SCALE
+	 Z_POSITIVE, ST_TO_SHOW, BETA_TO_SHOW, STOKES_NUMS, BETAS, NUM_POINTS, \
+	 WAVELENGTH, AMPLITUDE
+from examples.water_wave.shear.numerics import SCALE as R_SCALE
 from examples.water_wave.shear.numerics import OUT_FILE as IN_FILE1
 from examples.water_wave.shear.analysis import OUT_FILE2 as IN_FILE2
 
+ST_SCALE = WAVELENGTH / (2 * np.pi * AMPLITUDE) \
+					  * (3 / (2 * BETA_TO_SHOW) - 1 / 2)
+
 def main():
-	"""Plot particle position points at regular intervals."""
+	"""Plot particle positions at regular intervals and other shear results."""
 	numerics = pd.read_csv(IN_FILE1)
 	shear_diff = pd.read_csv(IN_FILE2)
 	point_index = range(NUM_POINTS)
@@ -49,15 +52,15 @@ def main():
 	fig(r'$St$', r'$\Delta\bar{S}$', 121, width='jfm', add_subplot_labels=True)
 	stokes_num, shear = extract_data(['St', 'shear_difference'], shear_diff,
 									 {'beta': BETA_TO_SHOW})
-	plt.plot(stokes_num, shear, '-k')
+	plt.plot(stokes_num * ST_SCALE, shear, '-k')
 	fig(r'$R$', num=122, width='jfm', add_subplot_labels=True)
 	idx = shear_diff['beta'].sort_values().index
 	beta, shear = extract_data(['beta', 'shear_difference'],
 								shear_diff.loc[idx], {'St': ST_TO_SHOW})
 	n = np.where(beta == 1)[0][0]
-	plt.plot(beta[:n] * SCALE, shear[:n], '-k')
-	plt.plot(beta[n:-6] * SCALE, shear[n:-6], '--k')
-	plt.axvline(SCALE, c='silver')
+	plt.plot(beta[:n] * R_SCALE, shear[:n], '-k')
+	plt.plot(beta[n:-6] * R_SCALE, shear[n:-6], '--k')
+	plt.axvline(R_SCALE, c='silver')
 	plt.show()
 
 if __name__ == '__main__':

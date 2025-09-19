@@ -8,15 +8,15 @@ from examples.water_wave.forces.numerics import STOKES_NUMS, BETAS, RS, EPSILONS
 from examples.water_wave.forces.analysis import OUT_FILE as IN_FILE
 
 TOL = 1e-1
-PERCENT = 0.75
+KEYS = ['St*', 'St75', 'epsilon', 'beta', 'R']
 OUT_FILE = '../../data/water_wave/forces_st_star.csv'
 
 def main():
 	r"""
-	Compute $St^*$, where the history force overcomes the Stokes drag.
+	Compute $St^*$, where the history force is equal to the Stokes drag.
 
-	The influence of the history force on a particle in a linear wave overcomes
-	the influence of the Stokes drag when the amplitude of the horizontal
+	The influence of the history force on a particle in a linear wave is equal
+	to that of the Stokes drag when the amplitude of the horizontal
 	component of the history force intersects the amplitude of the horizontal
 	component of the Stokes drag, as shown in subplot *(a)* of the figure
 	produced by `plot_coefficients.py`. This intersection value is referred to
@@ -25,7 +25,7 @@ def main():
 	force is 75% of the Stokes drag is also computed, $St_{75}$.
 	"""
 	analysis = pd.read_csv(IN_FILE)
-	results = {'St*': [], 'St75': [], 'epsilon': [], 'beta': [], 'R': []}
+	results = {key: [] for key in KEYS}
 	for r, epsilon in product(RS, EPSILONS):
 		# extract data
 		params = {'R': r, 'epsilon': epsilon, 'force': 'stokes_drag'}
@@ -41,9 +41,9 @@ def main():
 		i = int(np.rint(i[0])) if 0 < len(i) else None
 
 		# compute St75
-		st75 = np.interp(PERCENT, history[:i] / stokes_drag[:i], st[:i]) \
-			if i and 0 < i and not np.isclose(np.interp(PERCENT,
-			history[:i] / stokes_drag[:i], st[:i]), STOKES_NUMS[0]) else 0
+		st75 = np.interp(0.75, history[:i] / stokes_drag[:i], st[:i]) if i \
+			   and 0 < i and not np.isclose(np.interp(0.75,
+			   history[:i] / stokes_drag[:i], st[:i]), STOKES_NUMS[0]) else 0
 
 		# store results
 		beta = BETAS[np.where(RS == r),][0][0]

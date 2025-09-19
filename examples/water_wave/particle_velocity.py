@@ -16,7 +16,7 @@ WAVELENGTH = 1.5
 
 # particle conditions
 SCALE = 2 / 3						# for parameter translations
-STOKES_NUMS = [0.10, 0.10, 1, 1]
+STOKES_NUMS = [0.1, 0.1, 1, 1]
 X_0, Z_0 = 0, 0
 
 # simulation conditions

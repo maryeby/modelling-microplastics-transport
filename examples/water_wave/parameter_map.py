@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
-from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.colors import ListedColormap, Normalize
 from scipy.constants import g
 
 from utils.plot import initialize_figure as fig
@@ -11,110 +11,106 @@ from utils.colors import COLORS
 from utils.data_tools import extract_data
 from examples.water_wave.forces.compute_st_star import OUT_FILE as IN_FILE
 
-MIN_WAVELENGTH, MAX_WAVELENGTH = 1.5, 1000
-MIN_STEEPNESS, MAX_STEEPNESS = 0, 0.5
-MIN_RADIUS, MAX_RADIUS = 0, 2.5e-3
-WAVE_BREAKING = 0.44
-LINEAR_LIMIT = 0.1
-STEEPNESS_TICKS = [0.1, 0.2, 0.3, 0.4, MAX_STEEPNESS]
-RADIUS_TICKS = [0.0005, 0.0010, 0.0015, 0.0020, 0.0025]
+NU = 1e-6			# kinematic viscosity
+ST50 = 0.0592		# 50% value estimated by hand
+STEP = 2.5e-4		# used to compute the radiue ticks
+NEUTRAL_R = 2 / 3
+
+# lower bounds
+MIN_WAVELENGTH = 1.5
+MIN_RADIUS = 0
+MIN_R = 0
+MIN_ST = 0
+
+# upper bounds
+MAX_WAVELENGTH = 1000
+MAX_RADIUS = 2.5e-3
+MAX_R = 1
+MAX_ST = 1
+
+RADIUS_TICKS = np.arange(STEP, MAX_RADIUS + STEP, STEP).tolist()
 ST_TICKS = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1]
-RES = 1000
+R_TICKS = [0, 0.25, 0.5, 0.75, 1]
+RES = 1000 # resolution
 
 def main():
-	"""Map the wave steepness, particle size, and Stokes number."""
+	"""Map the density ratio, Stokes number, and particle size."""
+	# specify colors of the contours and their limits, ignore warnings
+	my_map = ListedColormap(COLORS)
+	fx = [pe.withStroke(linewidth=2, foreground='w')]
 	warnings.filterwarnings('ignore')
 
-	# specify colors of the contours and their limits
-	my_map = ListedColormap(COLORS)
-	my_norm = LogNorm(ST_TICKS[0], ST_TICKS[-1])
-	fx = [pe.withStroke(linewidth=2, foreground='w')]
-
-	# compute Stokes numbers for constant wavelength
-	stokes_nums, epsilon, a, omega = compute_st(MIN_WAVELENGTH)
-
 	# format left subplot
-	fig(r'$\epsilon$', "$a'$", 121, width='jfm')
-	plt.title(rf'$\lambda = ${MIN_WAVELENGTH:g}')
-	plt.xticks(np.arange(MIN_STEEPNESS, MAX_STEEPNESS + 0.1, 0.1))
+	fig(r'$R$', "$St$", 121, lims=[MIN_R, MAX_R, MIN_ST, MAX_ST], width='jfm')
+#	plt.title(rf'$\lambda = ${MIN_WAVELENGTH:g}')
+	plt.xticks(R_TICKS)
 
-	# plot contour of the Stokes number with vertical lines to separate regimes
-	plt.axvline(LINEAR_LIMIT, c='w', ls='--')
-	plt.axvline(WAVE_BREAKING, c='w', ls='--')
-	plt.contourf(epsilon, a, stokes_nums, ST_TICKS, cmap=my_map,
-				 extent=(MIN_STEEPNESS, MAX_STEEPNESS, MIN_RADIUS, MAX_RADIUS),
-				 origin='lower', extend='min', norm=my_norm)
+	# plot contour of the radius for min wavelength and varying St, R
+	a, r, stokes_nums = compute_a(MIN_WAVELENGTH)
+	plt.axvline(NEUTRAL_R, c='w', ls='--')
+	plt.plot(r[0], 2 / (9 * r[0]) - 1 / 9, '-.w')
+	plt.contourf(r, stokes_nums, a, RADIUS_TICKS, cmap=my_map, extend='min',
+				 extent=(MIN_R, MAX_R, MIN_ST, MAX_ST), origin='lower')
 
-	# read and plot St* data
+	# read St* data
 	data = pd.read_csv(IN_FILE[3:])
-	epsilon_star, st_star = extract_data(['epsilon', 'St*'], data,
-										 {'beta': 0.99})
-	epsilon_star, st_star = epsilon_star.to_numpy(), st_star.to_numpy()
-	a_star = np.sqrt(9 * st_star / (2e6 * omega * epsilon_star))
-	plt.plot(epsilon_star, a_star, c='w', ls=':')
+	r_star, st_star = extract_data(['R', 'Sthat*'], data)
+	r_star, st_star = r_star.to_numpy(), st_star.to_numpy()
+	r75, st75 = extract_data(['R', 'Sthat75'], data)
+	r75, st75 = r75.to_numpy(), st75.to_numpy()
 
-	# add labels
-	st_str = r'$St$'
-	plt.text(LINEAR_LIMIT / 2, MAX_RADIUS - 0.0001,
-			 f'moderate {st_str} linear waves', rotation='vertical', c='k',
-			 horizontalalignment='center', verticalalignment='top',
-			 path_effects=fx)
-	plt.text(LINEAR_LIMIT / 2, 0.0002, f'low {st_str}\nlinear\nwaves',
-			 c='k', horizontalalignment='center', verticalalignment='center',
-			 size=7, path_effects=fx)
-	plt.text((WAVE_BREAKING + LINEAR_LIMIT) / 2, (MAX_RADIUS - MIN_RADIUS) / 2,
-			 'non-linear waves', c='k', horizontalalignment='center',
-			 verticalalignment='center', path_effects=fx)
-	plt.text(WAVE_BREAKING + (MAX_STEEPNESS - WAVE_BREAKING) / 2,
-			 (MAX_RADIUS - MIN_RADIUS) / 4, 'breaking waves',
-			 rotation='vertical', c='k', horizontalalignment='center',
-			 verticalalignment='center', path_effects=fx)
-
-	# compute Stokes numbers for constant wavelength
-	stokes_nums, epsilon, a, omega = compute_st(MAX_WAVELENGTH)
+	# plot St* data and annotations
+	plt.plot(r_star, st_star, c='w', ls=':')
+	plt.plot(r75, st75, c='w', ls=':')
+	plt.plot([r75[-1], r75[-1]], [0, st75[-1]], c='w')
+	plt.annotate('', xytext=(0.66, st75[-1]), xy=(0.66, st_star[-1]),
+				 arrowprops=dict(arrowstyle='|-|, widthA=0.5, widthB=0.5',
+				 color='w'))
+	plt.annotate('', xytext=(0.66, ST50), xy=(0.66, ST50 + 1e-7),
+				 arrowprops=dict(arrowstyle='|-|, widthA=0.5, widthB=0.5',
+				 color='w'))
+	plt.annotate(r'100\%', (0.72, st_star[-1]), c='w', va='top', ha='left')
+	plt.annotate(r'75\%', (0.72, st75[-1]), c='w', va='center', ha='left')
+	plt.annotate(r'50\%', (0.72, ST50), c='w', va='center', ha='left')
 
 	# format right subplot
-	fig(r'$\epsilon$', num=122, width='jfm', hide_yticks=True)
-	plt.title(rf'$\lambda = ${MAX_WAVELENGTH:g}')
-	plt.xticks(np.arange(MIN_STEEPNESS, MAX_STEEPNESS + 0.1, 0.1))
+	fig(r'$R$', num=122, lims=[MIN_R, MAX_R, MIN_ST, MAX_ST], width='jfm',
+		hide_yticks=True)
+#	plt.title(rf'$\lambda = ${MAX_WAVELENGTH:g}')
+	plt.xticks(R_TICKS)
 
-	# plot contour of the Stokes number with vertical lines to separate regimes
-	plt.axvline(LINEAR_LIMIT, c='w', ls='--')
-	plt.axvline(WAVE_BREAKING, c='w', ls='--')
-	plt.contourf(epsilon, a, stokes_nums, ST_TICKS, cmap=my_map,
-				 extent=(MIN_STEEPNESS, MAX_STEEPNESS, MIN_RADIUS, MAX_RADIUS),
-				 origin='lower', extend='min', norm=my_norm)
+	# plot contour of the radius for max wavelength and varying St, R
+	a, r, stokes_nums = compute_a(MAX_WAVELENGTH)
+	plt.axvline(NEUTRAL_R, c='w', ls='--')
+	plt.plot(r[0], 2 / (9 * r[0]) - 1 / 9, '-.w')
+	plt.contourf(r, stokes_nums, a, RADIUS_TICKS, cmap=my_map, extend='min',
+				 extent=(MIN_R, MAX_R, MIN_ST, MAX_ST), origin='lower')
 
-	# plot St*
-	a_star = np.sqrt(9 * st_star / (2e6 * omega * epsilon_star))
-	plt.plot(epsilon_star, a_star, c='w', ls=':')
-
-	# add labels
-	plt.text(LINEAR_LIMIT / 2 + 0.014,	MAX_RADIUS - 0.0002,
-			 f'moderate\n{st_str} linear\nwaves', c='k', path_effects=fx,
-			 horizontalalignment='center', verticalalignment='center', size=7)
-	plt.text(LINEAR_LIMIT / 2, MIN_RADIUS + 0.0003,
-			 f'low {st_str} linear waves', rotation='vertical', c='k',
-			 horizontalalignment='center', verticalalignment='bottom',
-			 path_effects=fx)
-	plt.text((WAVE_BREAKING + LINEAR_LIMIT) / 2, (MAX_RADIUS - MIN_RADIUS) / 2,
-			 'non-linear waves', c='w', horizontalalignment='center',
-			 verticalalignment='center')
-	plt.text(WAVE_BREAKING + (MAX_STEEPNESS - WAVE_BREAKING) / 2,
-			 (MAX_RADIUS - MIN_RADIUS) / 2, 'breaking waves',
-			 rotation='vertical', c='w', horizontalalignment='center',
-			 verticalalignment='center')
+	# plot St* data and annotations
+	plt.plot(r_star, st_star, c='w', ls=':')
+	plt.plot(r75, st75, c='k', ls=':')
+	plt.plot([r75[-1], r75[-1]], [0, st75[-1]], c='w')
+	plt.annotate('', xytext=(0.66, st75[-1]), xy=(0.66, st_star[-1]),
+				 arrowprops=dict(arrowstyle='|-|, widthA=0.5, widthB=0.5',
+				 color='w'))
+	plt.annotate('', xytext=(0.66, ST50), xy=(0.66, ST50 + 1e-7),
+				 arrowprops=dict(arrowstyle='|-|, widthA=0.5, widthB=0.5',
+				 color='k'))
+	plt.annotate(r'100\%', (0.72, st_star[-1]), c='w', va='top', ha='left')
+	plt.annotate(r'75\%', (0.72, st75[-1]), c='w', va='center', ha='left')
+	plt.annotate(r'50\%', (0.72, ST50), c='k', va='center', ha='left')
 
 	# create colorbar
-	cbar = plt.colorbar(ticks=ST_TICKS, boundaries=ST_TICKS, shrink=0.8)
-	cbar.set_label(label=st_str)
+	cbar = plt.colorbar(ticks=RADIUS_TICKS, boundaries=RADIUS_TICKS,
+						format='%.1e', shrink=0.8)
+	cbar.set_label(label=r"$a'$")
 	plt.show()
 
-def compute_st(wavelength):
-	r"""Compute the Stokes number varying $a'$ and $\epsilon$."""
+def compute_a(wavelength):
+	r"""Compute the particle radius varying $St$ and $R$."""
 	omega = np.sqrt(g * 2 * np.pi / wavelength)
-	epsilon, a = np.meshgrid(np.linspace(MIN_STEEPNESS, MAX_STEEPNESS, RES),
-							 np.linspace(MIN_RADIUS, MAX_RADIUS, RES))
-	return 2e6 / 9 * a * a * epsilon * omega, epsilon, a, omega
+	r, st = np.meshgrid(np.linspace(MIN_R, MAX_R, RES),
+						np.linspace(MIN_ST, MAX_ST, RES))
+	return np.sqrt(st * 9 / 2 * NU / omega / (1 / r - 1 / 2)), r, st
 
 if __name__ == '__main__': main()

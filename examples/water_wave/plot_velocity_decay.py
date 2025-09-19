@@ -1,19 +1,22 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from numpy import pi
 
 from utils.data_tools import extract_data
 from utils.plot import initialize_figure as fig
 from utils.plot import JFM_WIDTH as JFM
 from examples.water_wave.particle_velocity import STOKES_NUMS, BETAS, \
-												  INCLUDE_HISTORY, SCALE
+												  INCLUDE_HISTORY, SCALE, \
+												  WAVELENGTH, AMPLITUDE
 from examples.water_wave.particle_velocity import OUT_FILE as IN_FILE
+EPSILON = 2 * pi * AMPLITUDE / WAVELENGTH
 
 def main():
-	"""Plot the horizontal velocity decay over time of a particle in a wave."""
+	"""Plot the horizontal velocity decay of a particle in a wave over time."""
 	# read data and initialize figure
 	numerics = pd.read_csv(IN_FILE)
-	xlim = max(numerics['t'].to_numpy())
-	fig(r'$t$', r'$\dot{x}$', lims=[-0.2, xlim + 0.1, -0.1, 1.5], width=JFM / 2)
+	fig(r'$t$', r'$\dot{x}$', width=JFM / 2)
+	plt.ylim(-0.1, 1.5)
 
 	# plot curves and data for each combination of parameters
 	for stokes_num, beta, history in zip(STOKES_NUMS, BETAS, INCLUDE_HISTORY):
@@ -30,7 +33,7 @@ def main():
 		style = '--' if history else '-'
 		label = 'with history effects' if history else 'without history effects'
 		if stokes_num != STOKES_NUMS[0]: label=''
-		plt.plot(t, curve, c=color, ls=style, label=label)
+		plt.plot(t * EPSILON, curve, c=color, ls=style, label=label)
 
 	plt.legend()
 	plt.show()
