@@ -8,12 +8,18 @@ IN_FILE2 = '../data/rigid_body_rotation/analytics.csv'
 OUT_FILE = '../data/rigid_body_rotation/rel_error.csv'
 
 def main():
-	"""
+	r"""
 	Compute the relative error for a rigid rotating body.
 
 	Results reproduce [1] Figure 3, and are saved to the
 	`data/rigid_body_rotation` directory.
-	
+
+	Notes
+	-----
+	The relative error $E_{\text{rel}}$ is computed as in [1],
+	$$ E_{\text{rel}}(t, \Delta t) = \frac{|\boldsymbol{x}(t)
+		- \boldsymbol{x}_{\text{num}}(t, \Delta t)|}{|\boldsymbol{x}(t)|}. $$
+
 	References
 	----------
 	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)

@@ -7,8 +7,8 @@ from models import rotating_flow as fl
 from models import rotating_system as ts
 
 SCALE = 2 / 3				# scale used for parameter translation
-R = SCALE * 0.75			# density ratio
-STOKES_NUM = SCALE * 0.3
+R = 0.75					# density ratio
+STOKES_HAT = SCALE * 0.3
 X_0, Z_0 = 1, 0				# initial particle position
 T_FINAL = 100				# total time
 DELTA_T = 1e-2				# timestep
@@ -29,7 +29,7 @@ def main():
 		  254, 93–106.
 	"""
 	# create the Particle, Flow, and TransportSystem objects
-	particle = prt.Particle(STOKES_NUM)
+	particle = prt.Particle(STOKES_HAT)
 	flow = fl.RotatingFlow()
 	system = ts.RotatingTransportSystem(particle, flow, R)
 

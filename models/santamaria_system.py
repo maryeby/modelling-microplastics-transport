@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.integrate as integrate
-from transport_framework import particle, wave, transport_system
+from utils.colors import print_failure
+from transport_framework import transport_system
 
 class SantamariaTransportSystem(transport_system.TransportSystem):
 	"""Represent the transport of a particle in a linear deep water wave.[^1]"""
@@ -14,15 +15,19 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle and fluid densities.
+			The ratio $\beta$ between the particle and fluid densities,
+			$$\beta = \frac{3\rho'_f}{\rho'_f + 2\rho'_p}.$$
+		stokes_num : float
+			The density-dependent Stokes number,
+			$$\mathrm{St} = \frac{3\widehat{St}}{2\beta}.$$
 		reynolds_num : float
 			The particle Reynolds number, computed as,
-			$$Re_p = \frac{U'd'}{\nu'},$$
-			where *U'* and ν' are attributes of the wave, and *d'* is the
-			diameter of the particle.
+			$$Re_p = \frac{2a'U'}{\nu'},$$
+			where *U'* and $\nu'$ are attributes of the wave, and *a'* is the
+			radius of the particle.
 		st_response_time : float
-			The Stokes response time τ', computed as
-			$$\tau' = \frac{St}{\omega'}.$$
+			The Stokes response time $\tau'$, computed as
+			$$\tau' = \frac{\mathrm{St}}{\omega'}.$$
 
 		References
 		----------
@@ -33,12 +38,17 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.reynolds_num = (2 * self.flow.max_velocity
-							   * np.sqrt(9 * self.particle.stokes_num 
-							   / (2 * self.flow.wavenum ** 2
-							   * self.flow.reynolds_num))) \
+							   * np.sqrt(3 * self.stokes_num
+							   * self.density_ratio
+							   * self.flow.kinematic_viscosity
+							   / self.flow.angular_freq)) \
 							   / self.flow.kinematic_viscosity
-		self.st_response_time = self.particle.stokes_num \
-								/ self.flow.angular_freq
+		self.st_response_time = self.stokes_num / self.flow.angular_freq
+
+	def set_stokes_num(self):
+		r"""Set the density-dependent Stokes number $\mathrm{St}$."""
+		self.stokes_num = 3 * self.particle.stokes_hat \
+							/ (2 * self.density_ratio)
 
 	def maxey_riley(self, t, y):
 		r"""
@@ -59,14 +69,14 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		Notes
 		-----
 		Computations correspond to equations (3) and (4) in [1],
-		$$\frac{\mathrm{d}\mathbf{x'}}{\mathrm{d}t'} = \mathbf{v'},$$
-		$$\frac{\mathrm{d}\mathbf{v'}}{\mathrm{d}t'}
-			= \frac{\mathbf{u'} - \mathbf{v'}}{\tau'} + (1 - \beta) \mathbf{g'}
-			+ \beta \frac{\mathrm{D}\mathbf{u'}}{\mathrm{D}t'}$$ with
+		$$\frac{\mathrm{d}\boldsymbol{x'}}{\mathrm{d}t'} = \boldsymbol{v'},$$
+		$$\frac{\mathrm{d}\boldsymbol{v'}}{\mathrm{d}t'}
+			= \frac{\boldsymbol{u'} - \boldsymbol{v'}}{\tau'} + (1 - \beta) \boldsymbol{g'}
+			+ \beta \frac{\mathrm{D}\boldsymbol{u'}}{\mathrm{D}t'}$$ with
 		$$\tau' = \frac{a'^2}{3 \beta \nu'},
 			\qquad \beta = \frac{3 \rho'_f}{\rho'_f + 2 \rho'_p},$$
-		where *a'* is the particle radius, *ν'* is the kinematic viscosity, and
-		*ρ'* is the density of the particle or the fluid.
+		where *a'* is the particle radius, $\nu'$ is the kinematic viscosity,
+		and $\rho'$ is the density of the particle or the fluid.
 
 		References
 		----------
@@ -116,14 +126,14 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		Notes
 		-----
 		Computations correspond to equation (5) in [1],
-		$$\mathbf{v'} = \mathbf{u'} + \tau' (1 - \beta) \Bigg(\mathbf{g}'
-		- \frac{\mathrm{D}\mathbf{u}'}{\mathrm{D}t'}\Bigg)
-		+ \tau'^2 (1 - \beta) \frac{\mathrm{D}^2\mathbf{u}'}{\mathrm{D}t'^2}
+		$$\boldsymbol{v'} = \boldsymbol{u'} + \tau' (1 - \beta) \Bigg(\boldsymbol{g}'
+		- \frac{\mathrm{D}\boldsymbol{u}'}{\mathrm{D}t'}\Bigg)
+		+ \tau'^2 (1 - \beta) \frac{\mathrm{D}^2\boldsymbol{u}'}{\mathrm{D}t'^2}
 		+ \mathcal{O}(\tau'^3)$$ with
 		$$\tau' = \frac{a'^2}{3 \beta \nu'},
 			\qquad \beta = \frac{3 \rho'_f}{\rho'_f + 2 \rho'_p},$$
-		where *a'* is the particle radius, *ν'* is the kinematic viscosity, and
-		*ρ'* is the density of the particle or the fluid.
+		where *a'* is the particle radius, $\nu'$ is the kinematic viscosity,
+		and $\rho'$ is the density of the particle or the fluid.
 
 		References
 		----------
@@ -212,7 +222,7 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 									   method='BDF', t_eval=t_eval,
 									   rtol=1e-8, atol=1e-10, args=(order,))
 		else:
-			print('FAILURE: Could not recognize equation.')
+			print_failure('Could not recognize equation.')
 
 		# unpack and return solutions
 		x, z, xdot, zdot = sols.y

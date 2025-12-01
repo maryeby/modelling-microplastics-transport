@@ -18,13 +18,13 @@ class BichromaticWave(wave.Wave):
 			1D array of `float` values, the wavelengths $\lambda'_1$ and
 			$\lambda'_2$.
 		kinematic_viscosity : float
-			The kinematic viscosity ν' of seawater.
+			The kinematic viscosity $\nu'$ of seawater.
 		wavenum : ndarray
 			1D array of `float` values, the wavenumbers $k'_1$ and $k'_2$,
 			computed as $$k'_i = \frac{2 \pi}{\lambda'_i}.$$
 		gravity : float
 			The gravity **g** acting on the fluid, non-dimensionalized as,
-			$$g' = \frac{g}{k'_1(\omega'_1 A'_1)^2}.$$
+			$$g = \frac{g'k'_1}{\omega^{\prime 2}_1}.$$
 		angular_freq : ndarray
 			1D array of `float` values, the angular frequencies $\omega'_1$ and
 			$\omega'_2$, computed using the dispersion relation,
@@ -36,19 +36,20 @@ class BichromaticWave(wave.Wave):
 			1D array of `float` values, the periods of the wave, computed as
 			$$\text{period}'_i = \frac{2\pi}{\omega'_i},$$
 			and non-dimensionalized as
-			$$\text{period} = \text{period}' * k'_1 \omega'_1 A'_1.$$
+			$$\text{period} = \text{period}'\omega'_1.$$
 		froude_num : float
 			1D array of `float` values, the Froude numbers $Fr_1$ and $Fr_2$,
-			computed as $$Fr_i = \sqrt{\frac{k'_i (\omega'_i A'_i)^2}{g'}}.$$
+			computed as $$Fr_i = \frac{\omega'_i}{\sqrt{g'k'_i}}.$$
 		reynolds_num : float
 			1D array of `float` values, the Reynolds numbers $Re_1$ and $Re_2$
-			of the wave, computed as $$Re_i = \frac{\omega'_i A'_i}{k'_i ν'}.$$
+			of the wave, computed as $$Re_i = \frac{\omega'_i}{k^{\prime 2}_i 
+			\nu'}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
-		self.gravity /= self.wavenum[0] * (self.angular_freq[0]
-										* self.amplitude[0]) ** 2
-		self.period *= self.angular_freq[0] * self.wavenum[0] \
-											* self.amplitude[0]
+		self.gravity *= self.wavenum[0] / (self.angular_freq[0]
+										* self.angular_freq[0])
+		self.period *= self.angular_freq[0]
+
 	def set_angular_freq(self):
 		r"""
 		Define the angular frequency omega with the dispersion relation,
@@ -59,21 +60,15 @@ class BichromaticWave(wave.Wave):
 
 	def velocity(self, x, z, t):
 		r"""
-		Compute the fluid velocity $\mathbf{u} = \langle u, w \rangle,$
-		$$u(x, z, t) = \frac{\cosh(z + h)}{\sinh(h)} \cos(x - t / \epsilon)
-					 + \psi \frac{\cosh(\kappa (z + h))}{\sinh(\kappa h)}
-					   \cos(\kappa x - \tau t / \epsilon)\\
-					 + K_u \zeta \epsilon g \cos(\xi x - \chi t / \epsilon
-					 + \phi_u) \frac{cc_g - 2 (c_g^2 + gh)}{2ch(gh - c_g^2)},$$
-		$$w(x, z, t) = \frac{\sinh(z + h)}{\sinh(h)} \sin(x - t / \epsilon)
-					 + \psi \frac{\sinh(\kappa (z + h))}{\sinh(\kappa h)}
-					   \sin(\kappa x - \tau t / \epsilon),$$
-		where, $$\epsilon = k'_1 A'_1,$$ $$\kappa = \frac{k'_2}{k'_1},$$
-			   $$\tau = \frac{\omega'_2}{\omega'_1},$$
-			   $$\psi = \frac{\omega'_2 A'_2}{\omega'_1 A'_1},$$
-			   $$\xi = \frac{k'_g}{k'_1},$$
-			   $$\chi = \frac{\omega'_g}{\omega'_1},$$
-			   $$\zeta = k'_1 A'_2,$$ and $K_u = 0$ for a flat seabed.
+		Compute the fluid velocity $\boldsymbol{u} = \langle u, w \rangle,$
+		$$u(x, z, t) = \epsilon \frac{\cosh{(z + h)}}{\sinh{(h)}} \cos{(x - t)}
+					 + \psi\tau\frac{\cosh{(\kappa (z + h))}}{\sinh{(\kappa h)}}
+					   \cos{(\kappa x - \tau t)},$$
+		$$w(x, z, t) = \epsilon \frac{\sinh{(z + h)}}{\sinh{(h)}} \sin{(x - t)} 
+					 + \psi\tau\frac{\sinh{(\kappa (z + h))}}{\sinh{(\kappa h)}}
+					   \sin{(\kappa x - \tau t)},$$
+		with, $$\epsilon = k'_1 A'_1, \quad \kappa = \frac{k'_2}{k'_1}, \quad
+				\psi = k'_1 A'_2, \quad \tau = \frac{\omega'_2}{\omega'_1}.$$
 
 		Parameters
 		----------
@@ -89,35 +84,30 @@ class BichromaticWave(wave.Wave):
 		"""
 		# dimensionless parameters
 		h = self.wavenum[0] * self.depth
-		epsilon = self.wavenum[0] * self.amplitude[0]
+		epsilon = self.steepness[0]
 		kappa = self.wavenum[1] / self.wavenum[0]
 		tau = self.angular_freq[1] / self.angular_freq[0]
-		psi = self.angular_freq[1] * self.amplitude[1] / (self.angular_freq[0]
-								   * self.amplitude[0])
+		psi = self.wavenum[0] * self.amplitude[1]
 
 		# velocity field components
-		u = np.cosh(z + h) * np.cos(x - t / epsilon) / np.sinh(h) \
-					  + psi * np.cosh(kappa * (z + h)) \
-					  * np.cos(kappa * x - tau * t / epsilon) \
-					  / np.sinh(kappa * h)
-		w = np.sinh(z + h) * np.sin(x - t / epsilon) / np.sinh(h) \
-					  + psi * np.sinh(kappa * (z + h)) * np.sin(kappa * x - tau
-					  * t / epsilon) / np.sinh(kappa * h)
+		u = epsilon * np.cosh(z + h) * np.cos(x - t) / np.sinh(h) \
+					+ psi * tau * np.cosh(kappa * (z + h)) \
+					* np.cos(kappa * x - tau * t) / np.sinh(kappa * h)
+		w = epsilon * np.sinh(z + h) * np.sin(x - t) / np.sinh(h) \
+					+ psi * tau * np.sinh(kappa * (z + h)) \
+					* np.sin(kappa * x - tau * t) / np.sinh(kappa * h)
 		return np.array([u, w])
 
 	def partial_t(self, x, z, t): 
 		r"""
 		Compute the partial derivative of the fluid with respect to time,
-		$$\frac{\partial u}{\partial t} = \frac{1}{\epsilon}
-			\Bigg(\frac{\cosh(z + h)}{\sinh(h)} \sin(x - t / \epsilon)
-			+ \psi \tau \frac{\cosh(\kappa (z + h))}{\sinh{\kappa h}}
-			  \sin(\kappa x - \tau t / \epsilon)\Bigg)\\+ K_u \zeta \chi g
-			  \sin(\xi x - \chi t / \epsilon + \phi)
-			  \frac{cc_g - 2 (c_g^2 + gh)}{2ch (gh - c_g^2)},$$
-		$$\frac{\partial w}{\partial t} = -\frac{1}{\epsilon}
-			\Bigg(\frac{\sinh(z + h)}{\sinh(h)} \cos(x - t / \epsilon)
-			+ \psi \tau \frac{\sinh(\kappa (z + h))}{\sinh(\kappa h)}
-			  \cos(\kappa x - \tau t / \epsilon)\Bigg).$$
+		$$\frac{\partial u}{\partial t} = \epsilon \frac{\cosh(z + h)}{\sinh(h)}
+				\sin(x - t) + \psi \tau^2 \frac{\cosh(\kappa(z + h))}
+				{\sinh(\kappa h)} \sin(\kappa x - \tau t),$$
+		$$\frac{\partial w}{\partial t} = -\epsilon \frac{\sinh(z + h)}
+				{\sinh(h)} \cos(x - t) - \psi \tau ^2
+				\frac{\sinh(\kappa (z + h))}{\sinh(\kappa h)}
+				\cos(\kappa x - \tau t).$$
 
 		Parameters
 		----------
@@ -133,33 +123,30 @@ class BichromaticWave(wave.Wave):
 		"""
 		# dimensionless parameters
 		h = self.wavenum[0] * self.depth
-		epsilon = self.wavenum[0] * self.amplitude[0]
+		epsilon = self.steepness[0]
 		kappa = self.wavenum[1] / self.wavenum[0]
 		tau = self.angular_freq[1] / self.angular_freq[0]
-		psi = self.angular_freq[1] * self.amplitude[1] / (self.angular_freq[0]
-								   * self.amplitude[0])
+		psi = self.wavenum[0] * self.amplitude[1]
 
 		# partial derivative components
-		dudt = (np.cosh(z + h) * np.sin(x - t / epsilon) / np.sinh(h) \
-			 + psi * tau * np.cosh(kappa * (z + h)) * np.sin(kappa * x - tau * t
-			 / epsilon) / np.sinh(kappa * h)) / epsilon
-		dwdt = -(np.sinh(z + h) * np.cos(x - t / epsilon) / np.sinh(h) \
-			 + psi * tau * np.sinh(kappa * (z + h)) * np.cos(kappa * x - tau * t
-			 / epsilon) / np.sinh(kappa * h)) / epsilon
-		return np.array([dudt, dwdt])
+		dudt = epsilon * np.cosh(z + h) * np.sin(x - t) / np.sinh(h) \
+					   + psi * tau * tau * np.cosh(kappa * (z + h)) \
+					   * np.sin(kappa * x - tau * t) / np.sinh(kappa * h)
+		dwdt = epsilon * np.sinh(z + h) * np.cos(x - t) / np.sinh(h) \
+					   - psi * tau * tau * np.sinh(kappa * (z + h)) \
+					   * np.cos(kappa * x - tau * t) / np.sinh(kappa * h)
+		return np.array([dudt, -dwdt])
 
 	def partial_x(self, x, z, t): 
 		r"""
 		Compute the partial derivative of the fluid with respect to the
 		horizontal position,
-		$$\frac{\partial u}{\partial x} = -\frac{\cosh(z + h)}{\sinh(h)}
-			\sin(x - t / \epsilon) - \psi \kappa \frac{\cosh(\kappa (z + h))}
-			{\sinh(\kappa h)} \sin(\kappa x - \tau t / \epsilon)\\
-			- K_u \zeta \xi \epsilon g \sin(\xi x - \chi t / \epsilon + \phi)
-			\frac{cc_g - 2 (c_g^2 + gh)}{2ch(gh - c_g^2)},$$
-		$$\frac{\partial w}{\partial x} = \frac{\sinh(z + h)}{\sinh(h)}
-			\cos(x - t / \epsilon) + \psi \kappa \frac{\sinh(\kappa (z + h))}
-			{\sinh(\kappa h)} \cos(\kappa x - \tau t / \epsilon).$$
+		$$\frac{\partial u}{\partial x} = -\epsilon\frac{\cosh(z + h)}{\sinh(h)}
+				\sin(x - t) - \psi \tau \kappa \frac{\cosh(\kappa (z + h))}
+				{\sinh(\kappa h)} \sin (\kappa x - \tau t),$$
+		$$\frac{\partial w}{\partial x} = \epsilon \frac{\sinh(z + h)}{\sinh(h)}
+				\cos(x - t) + \psi \tau \kappa \frac{\sinh(\kappa (z + h))}
+				{\sinh(\kappa h)} \cos(\kappa x - \tau t).$$
 
 		Parameters
 		----------
@@ -175,31 +162,30 @@ class BichromaticWave(wave.Wave):
 		"""
 		# dimensionless parameters
 		h = self.wavenum[0] * self.depth
-		epsilon = self.wavenum[0] * self.amplitude[0]
+		epsilon = self.steepness[0]
 		kappa = self.wavenum[1] / self.wavenum[0]
 		tau = self.angular_freq[1] / self.angular_freq[0]
-		psi = self.angular_freq[1] * self.amplitude[1] / (self.angular_freq[0]
-								   * self.amplitude[0])
+		psi = self.wavenum[0] * self.amplitude[1]
 
 		# partial derivative components
-		dudx = -np.cosh(z + h) * np.sin(x - t / epsilon) / np.sinh(h) - psi \
-			 * kappa * np.cosh(kappa * (z + h)) * np.sin(kappa * x - tau * t 
-			 / epsilon) / np.sinh(kappa * h)
-		dwdx = np.sinh(z + h) * np.cos(x - t / epsilon) / np.sinh(h) + psi \
-			 * kappa * np.sinh(kappa * (z + h)) * np.cos(kappa * x - tau * t \
-			 / epsilon) / np.sinh(kappa * h)
-		return np.array([dudx, dwdx])
+		dudx = epsilon * np.cosh(z + h) * np.sin(x - t) / np.sinh(h) - psi \
+					   * tau * kappa * np.cosh(kappa * (z + h)) \
+					   * np.sin(kappa * x - tau * t) / np.sinh(kappa * h)
+		dwdx = epsilon * np.sinh(z + h) * np.cos(x - t) / np.sinh(h) + psi \
+					   * tau * kappa * np.sinh(kappa * (z + h)) \
+					   * np.cos(kappa * x - tau * t) / np.sinh(kappa * h)
+		return np.array([-dudx, dwdx])
 
 	def partial_z(self, x, z, t):
 		r"""
 		Compute the partial derivative of the fluid with respect to the
 		vertical position,
-		$$\frac{\partial u}{\partial z} = \frac{\sinh(z + h)}{\sinh(h)}
-			\cos(x - t / \epsilon) + \psi \kappa \frac{\sinh(\kappa (z + h))}
-			{\sinh(\kappa h)} \cos(\kappa x - \tau t / \epsilon),$$
-		$$\frac{\partial w}{\partial z} = \frac{\cosh(z + h)}{\sinh(h)}
-			\sin(x - t / \epsilon) + \psi \kappa \frac{\cosh(\kappa (z + h))}
-			{\sinh(\kappa h)} \sin(\kappa x - \tau t / \epsilon).$$
+		$$\frac{\partial u}{\partial z} = \epsilon \frac{\sinh(z + h)}{\sinh(h)}
+				\cos(x - t) + \psi \tau \kappa \frac{\sinh(\kappa (z + h))}
+				{\sinh(\kappa h)} \cos(\kappa x - \tau t),$$
+		$$\frac{\partial w}{\partial z} = \epsilon \frac{\cosh(z + h)}{\sinh(h)}
+				\sin(x - t) + \psi \tau \kappa \frac{\cosh(\kappa (z + h))}
+				{\sinh(\kappa h)} \sin(\kappa x - \tau t).$$
 
 		Parameters
 		----------
@@ -215,17 +201,16 @@ class BichromaticWave(wave.Wave):
 		"""
 		# dimensionless parameters
 		h = self.wavenum[0] * self.depth
-		epsilon = self.wavenum[0] * self.amplitude[0]
+		epsilon = self.steepness[0]
 		kappa = self.wavenum[1] / self.wavenum[0]
 		tau = self.angular_freq[1] / self.angular_freq[0]
-		psi = self.angular_freq[1] * self.amplitude[1] / (self.angular_freq[0]
-								   * self.amplitude[0])
+		psi = self.wavenum[0] * self.amplitude[1]
 
 		# partial derivative components
-		dudz = np.sinh(z + h) * np.cos(x - t / epsilon) / np.sinh(h) + psi \
-			 * kappa * np.sinh(kappa * (z + h)) * np.cos(kappa * x - tau * t \
-			 / epsilon) / np.sinh(kappa * h)
-		dwdz = np.cosh(z + h) * np.sin(x - t / epsilon) / np.sinh(h) + psi \
-			 * kappa * np.cosh(kappa * (z + h)) * np.sin(kappa * x - tau * t \
-			 / epsilon) / np.sinh(kappa * h)
+		dudz = epsilon * np.sinh(z + h) * np.cos(x - t) / np.sinh(h) + psi \
+					   * tau * kappa * np.sinh(kappa * (z + h)) \
+					   * np.cos(kappa * x - tau * t) / np.sinh(kappa * h)
+		dwdz = epsilon * np.cosh(z + h) * np.sin(x - t) / np.sinh(h) + psi \
+					   * tau * kappa * np.cosh(kappa * (z + h)) \
+					   * np.sin(kappa * x - tau * t) / np.sinh(kappa * h)
 		return np.array([dudz, dwdz])

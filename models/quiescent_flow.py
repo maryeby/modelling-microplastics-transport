@@ -11,7 +11,7 @@ class QuiescentFlow(flow.Flow):
 		depth : float, default=50
 			The depth of the fluid *h*.
 		gravity : ndarray
-			1D array of `float` data, the gravity **g'** acting on the fluid.
+			1D array of `float` data, the gravity ***g*** acting on the fluid.
 		period : float
 			A parameter used in the computation of the integration timespan.
 		"""
@@ -21,7 +21,7 @@ class QuiescentFlow(flow.Flow):
 	def velocity(self, x, z, t):
 		r"""
 		Compute the fluid velocity,
-		$$\mathbf{u} = \langle u, w \rangle = \mathbf{0}.$$
+		$$\boldsymbol{u} = \langle u, w \rangle = \mathbf{0}.$$
 
 		Parameters
 		----------
@@ -43,7 +43,7 @@ class QuiescentFlow(flow.Flow):
 	def partial_t(self, x, z, t):
 		r"""
 		Compute the partial derivative of the fluid with respect to time,
-		$$\frac{\partial \mathbf{u}}{\partial t} = \mathbf{0}.$$
+		$$\frac{\partial \boldsymbol{u}}{\partial t} = \mathbf{0}.$$
 
 		Parameters
 		----------
@@ -66,7 +66,7 @@ class QuiescentFlow(flow.Flow):
 		r"""
 		Compute the partial derivative of the fluid with respect to the
 		horizontal position,
-		$$\frac{\partial \mathbf{u}}{\partial x} = \mathbf{0}.$$
+		$$\frac{\partial \boldsymbol{u}}{\partial x} = \mathbf{0}.$$
 
 		Parameters
 		----------
@@ -88,7 +88,7 @@ class QuiescentFlow(flow.Flow):
 	def partial_z(self, x, z, t):
 		r"""
 		Compute the partial derivative of the fluid with respect to the vertical
-		position, $$\frac{\partial \mathbf{u}}{\partial z} = \mathbf{0}.$$
+		position, $$\frac{\partial \boldsymbol{u}}{\partial z} = \mathbf{0}.$$
 
 		Parameters
 		----------
@@ -110,7 +110,7 @@ class QuiescentFlow(flow.Flow):
 	def material_derivative2(self, x, z, t):
 		r"""
 		Compute the second order material derivative,
-		$$\frac{\mathrm{D}^2 \mathbf{u}}{\mathrm{D} t^2} = \mathbf{0}.$$
+		$$\frac{\mathrm{D}^2 \boldsymbol{u}}{\mathrm{D} t^2} = \mathbf{0}.$$
 
 		Parameters
 		----------

@@ -17,7 +17,11 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle and fluid densities.
+			The ratio *R* between the particle and fluid densities,
+			$$R = \frac{3\rho'_f}{\rho'_f + 2\rho'_p}.$$
+		stokes_num : float
+			The density-dependent Stokes number,
+			$$St = \widehat{St}\Bigg(\frac{3}{2R} - \frac 12\Bigg).$$
 
 		References
 		----------
@@ -28,9 +32,14 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		"""
 		super().__init__(particle, flow, density_ratio)
 
+	def set_stokes_num(self):
+		"""Set the density-dependent Stokes number *St*."""
+		self.stokes_num = self.particle.stokes_hat * (3 / (2
+												   * self.density_ratio) - 0.5)
+
 	def maxey_riley(self, t, y, order, include_history=True):
 		r"""
-		Evaluate the Maxey-Riley equation.[^1]
+		Evaluate the Maxey-Riley equation [1].
 
 		Parameters
 		----------
@@ -55,17 +64,10 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 			1D array of `float` data, the vertical particle velocity.
 		t : ndarray
 			1D array containing `float` time series data.
-
-		References
-		----------
-		[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
-			  Advection of inertial particles in the presence of the history
-			  force: Higher order numerical schemes.
-			  *Journal of Computational Physics* 254, 93–106.
 		"""
 		# initialize local variables
-		R = self.density_ratio
-		St = self.particle.stokes_num
+		r = self.density_ratio
+		s = 3 / 2 * self.particle.stokes_hat
 		delta_t = t[1] - t[0]
 
 		# compute the number of time steps and create arrays to store solutions
@@ -89,8 +91,8 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 
 		# only compute alpha, beta, gamma, xi if we're including history effects
 		if include_history:
-			xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
-			mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
+			xi = r * np.sqrt(3 / (np.pi * s)) * np.sqrt(delta_t) 
+			mini_xi = r * np.sqrt(3 / (np.pi * s)) * np.sqrt(mini_step) 
 
 			# compute matrices containing the values of alpha, beta, and gamma
 			if order == 1:
@@ -112,14 +114,11 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		# compute solutions for the first two intervals using finer time steps
 		for n_prime in range(mini_steps):
 			mini_w = mini_v - mini_u
-			G = (3 / 2 * R - 1) \
-				* self.flow.derivative_along_trajectory(mini_x[:, 0].T,
-														mini_x[:, 1].T, 0,
-														mini_v.T).T \
-				- 3 / 2 * R \
-				* self.flow.dot_jacobian(mini_w.T, mini_x[:, 0].T,
-										 mini_x[:, 1].T, 0).T \
-				- R / St * mini_w
+			g = (r - 1) * self.flow.derivative_along_trajectory(mini_x[:, 0].T,
+									mini_x[:, 1].T, 0, mini_v.T).T \
+						- r * self.flow.dot_jacobian(mini_w.T, mini_x[:, 0].T,
+										mini_x[:, 1].T, 0).T \
+						- r / s * mini_w
 			sum_term = 0
 			# equation (15)
 			if order == 1 or n_prime == 0:
@@ -133,14 +132,14 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 								  * (mini_alpha[j + 1, n_prime + 1] \
 								  - mini_alpha[j, n_prime])
 					mini_v[n_prime + 1] = (mini_w[n_prime] \
-											+ mini_step * G[n_prime] \
+											+ mini_step * g[n_prime] \
 											- mini_xi * sum_term) \
 											/ (1 + mini_xi
 											* mini_alpha[0, n_prime + 1]) \
 											+ mini_u[n_prime + 1]
 				else:
 					mini_v[n_prime + 1] = mini_w[n_prime] \
-											+ mini_step * G[n_prime] \
+											+ mini_step * g[n_prime] \
 											+ mini_u[n_prime + 1]
 			# equation (16)
 			elif order == 2 or n_prime == 1:
@@ -155,13 +154,13 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 								  * (mini_beta[j + 1, n_prime + 1]
 								  - mini_beta[j, n_prime])
 					mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 2 \
-											* (3 * G[n_prime] - G[n_prime - 1])
+											* (3 * g[n_prime] - g[n_prime - 1])
 											- mini_xi * sum_term) / (1 + mini_xi
 											* mini_beta[0, n_prime + 1]) \
 											+ mini_u[n_prime + 1]
 				else:
 					mini_v[n_prime + 1] = mini_w[n_prime] + mini_step / 2 \
-											* (3 * G[n_prime] - G[n_prime - 1])\
+											* (3 * g[n_prime] - g[n_prime - 1])\
 											+ mini_u[n_prime + 1]
 			# equation (17)
 			else: # order is 3 and n_prime > 1
@@ -177,18 +176,18 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 								  * (mini_gamma[j + 1, n_prime + 1] \
 								  - mini_gamma[j, n_prime])
 					mini_v[n_prime + 1] = (mini_w[n_prime] + mini_step / 12 \
-											* (23 * G[n_prime]
-											- 16 * G[n_prime - 1]
-											+ 5 * G[n_prime - 2]) \
+											* (23 * g[n_prime]
+											- 16 * g[n_prime - 1]
+											+ 5 * g[n_prime - 2]) \
 											- mini_xi * sum_term) \
 											/ (1 + mini_xi
 											* mini_gamma[0, n_prime + 1]) \
 											+ mini_u[n_prime + 1]
 				else:
 					mini_v[n_prime + 1] = mini_w[n_prime] + mini_step / 12 \
-											* (23 * G[n_prime]
-											- 16 * G[n_prime - 1]
-											+ 5 * G[n_prime - 2]) \
+											* (23 * g[n_prime]
+											- 16 * g[n_prime - 1]
+											+ 5 * g[n_prime - 2]) \
 											+ mini_u[n_prime + 1]
 
 		# store solutions for the first two intervals
@@ -202,12 +201,10 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		# compute solutions for the remaining intervals
 		for n in tqdm(range(2, num_steps)):
 			w = v - u
-			G = (3 / 2 * R - 1) \
-				   * self.flow.derivative_along_trajectory(x[:, 0].T, x[:, 1].T,
-														   0, v.T).T \
-				   - 3 / 2 * R * self.flow.dot_jacobian(w.T, x[:, 0].T,
-														x[:, 1].T, 0).T \
-				   - R / St * w
+			g = (r - 1) * self.flow.derivative_along_trajectory(x[:, 0].T,
+									x[:, 1].T, 0, v.T).T \
+				   - r * self.flow.dot_jacobian(w.T, x[:, 0].T, x[:, 1].T, 0).T\
+				   - r / s * w
 			sum_term = 0
 			if order == 1 or n == 0:
 				x[n + 1] = x[n] + delta_t * v[n]
@@ -216,21 +213,21 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 					for j in range(n + 1):
 						sum_term += w[n - j] * (alpha[j + 1, n + 1]
 											 - alpha[j, n])
-					v[n + 1] = (w[n] + delta_t * G[n] - xi * sum_term) \
+					v[n + 1] = (w[n] + delta_t * g[n] - xi * sum_term) \
 									 / (1 + xi * alpha[0, n + 1]) + u[n + 1]
 				else:
-					v[n + 1] = w[n] + delta_t * G[n] + u[n + 1]
+					v[n + 1] = w[n] + delta_t * g[n] + u[n + 1]
 			elif order == 2 or n == 1:
 				x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
 				u[n + 1] = self.flow.velocity(x[n + 1, 0], x[n + 1, 1])
 				if include_history:
 					for j in range(n + 1):
 						sum_term += w[n - j] * (beta[j + 1, n + 1] - beta[j, n])
-					v[n + 1] = (w[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+					v[n + 1] = (w[n] + delta_t / 2 * (3 * g[n] - g[n - 1])
 									 - xi * sum_term) \
 									 / (1 + xi * beta[0, n + 1]) + u[n + 1]
 				else:
-					v[n + 1] = w[n] + delta_t / 2 * (3 * G[n] - G[n - 1]) \
+					v[n + 1] = w[n] + delta_t / 2 * (3 * g[n] - g[n - 1]) \
 									+ u[n + 1]
 			else: # order is 3 and n > 1
 				x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
@@ -240,12 +237,12 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 					for j in range(n + 1):
 						sum_term += w[n - j] * (gamma[j + 1, n + 1]
 											 - gamma[j, n])
-					v[n + 1] = (w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
-									 + 5 * G[n - 2]) - xi * sum_term) \
+					v[n + 1] = (w[n] + delta_t / 12 * (23 * g[n] - 16 * g[n - 1]
+									 + 5 * g[n - 2]) - xi * sum_term) \
 									 / (1 + xi * gamma[0, n + 1]) + u[n + 1]
 				else:
-					v[n + 1] = w[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
-									+ 5 * G[n - 2]) + u[n + 1]
+					v[n + 1] = w[n] + delta_t / 12 * (23 * g[n] - 16 * g[n - 1]
+									+ 5 * g[n - 2]) + u[n + 1]
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
 def compute_alpha(size):
@@ -271,13 +268,6 @@ def compute_alpha(size):
 		(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n.
 		\end{cases}$$
 	The value of alpha may be obtained by indexing the array `arr[j, n]`.
-
-	References
-	----------
-	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
-		  Advection of inertial particles in the presence of the history force:
-		  Higher order numerical schemes. *Journal of Computational Physics*
-		  254, 93–106.
 	"""
 	print('Computing matrix of alpha coefficients...', end='', flush=True)
 	start = time()
@@ -324,13 +314,6 @@ def compute_beta(size, alpha):
 	-------
 	ndarray
 		2D square array of `float` data, the values of the coefficient beta.
-
-	References
-	----------
-	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
-		  Advection of inertial particles in the presence of the history force:
-		  Higher order numerical schemes. *Journal of Computational Physics*
-		  254, 93–106.
 	"""
 	print('Computing matrix of beta coefficients...', end='', flush=True)
 	start = time()
@@ -419,13 +402,6 @@ def compute_gamma(size, beta):
 	-------
 	ndarray
 		2D square array of `float` data, the values of the coefficient gamma.
-
-	References
-	----------
-	[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
-		  Advection of inertial particles in the presence of the history force:
-		  Higher order numerical schemes. *Journal of Computational Physics*
-		  254, 93–106.
 	"""
 	print('Computing matrix of gamma coefficients...', end='', flush=True)
 	start = time()

@@ -10,9 +10,9 @@ class Flow(ABC):
 		Attributes
 		----------
 		depth : float
-			The depth of the fluid *h'*.
+			The depth of the fluid *h*.
 		gravity : ndarray
-			1D array of `float` data, the gravity **g'** acting on the fluid.
+			1D array of `float` data, the gravity ***g*** acting on the fluid.
 		period : float
 			A parameter used in the computation of the integration timespan.
 		"""
@@ -23,7 +23,7 @@ class Flow(ABC):
 	@abstractmethod
 	def velocity(self, x, z, t):
 		r"""
-		Compute the fluid velocity, $$\mathbf{u} = \langle u, w \rangle.$$
+		Compute the fluid velocity, $\boldsymbol{u} = \langle u, w \rangle.$
 
 		Parameters
 		----------
@@ -43,7 +43,7 @@ class Flow(ABC):
 	def partial_t(self, x, z, t): 
 		r"""
 		Compute the partial derivative of the fluid with respect to time,
-		$$\frac{\partial \mathbf{u}}{\partial t}.$$
+		$\partial_t \boldsymbol{u}.$
 
 		Parameters
 		----------
@@ -63,7 +63,7 @@ class Flow(ABC):
 	def partial_x(self, x, z, t): 
 		r"""
 		Compute the partial derivative of the fluid with respect to the
-		horizontal position, $$\frac{\partial \mathbf{u}}{\partial x}.$$
+		horizontal position, $\partial_x \boldsymbol{u}.$
 
 		Parameters
 		----------
@@ -83,7 +83,7 @@ class Flow(ABC):
 	def partial_z(self, x, z, t):
 		r"""
 		Compute the partial derivative of the fluid with respect to the
-		vertical position, $$\frac{\partial \mathbf{u}}{\partial z}.$$
+		vertical position, $\partial_z \boldsymbol{u}.$
 
 		Parameters
 		----------
@@ -102,7 +102,7 @@ class Flow(ABC):
 	def dot_jacobian(self, vec, x, z, t):
 		r"""
 		Compute the dot product of `vec` with the Jacobian of the fluid,
-		$$\texttt{vec} \cdot \nabla \mathbf{u}.$$
+		$$\texttt{vec} \cdot \nabla \boldsymbol{u}.$$
 
 		Parameters
 		----------
@@ -127,9 +127,9 @@ class Flow(ABC):
 	def material_derivative(self, x, z, t): 
 		r"""
 		Compute the material derivative,
-		$$\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
-			= \frac{\partial \mathbf{u}}{\partial t}
-			+ \mathbf{u} \cdot \nabla \mathbf{u}.$$
+		$$\frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D}t}
+			= \frac{\partial \boldsymbol{u}}{\partial t}
+			+ \boldsymbol{u} \cdot \nabla \boldsymbol{u}.$$
 
 		Parameters
 		----------
@@ -149,9 +149,9 @@ class Flow(ABC):
 	def derivative_along_trajectory(self, x, z, t, v):
 		r"""
 		Compute the derivative of the fluid along the particle trajectory,
-		$$\frac{\mathrm{d}\mathbf{u}}{\mathrm{d}t}
-			= \frac{\partial \mathbf{u}}{\partial t}
-			+ \mathbf{v} \cdot \nabla \mathbf{u}.$$
+		$$\frac{\mathrm{d}\boldsymbol{u}}{\mathrm{d}t}
+			= \frac{\partial \boldsymbol{u}}{\partial t}
+			+ \boldsymbol{v} \cdot \nabla \boldsymbol{u}.$$
 
 		Parameters
 		----------

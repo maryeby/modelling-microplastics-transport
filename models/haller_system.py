@@ -1,8 +1,7 @@
 import numpy as np
 import scipy.integrate as integrate
 
-from models import deep_water_wave
-from transport_framework import particle, transport_system
+from transport_framework import transport_system
 
 class HallerTransportSystem(transport_system.TransportSystem):
 	"""Represent the transport of a particle in a linear water wave.[^1]"""
@@ -16,15 +15,19 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio *R* between the particle and fluid densities.
+			The ratio *R* between the particle and fluid densities,
+			$$R = \frac{2\rho'_f}{\rho'_f + 2\rho'_p}.$$
+		stokes_num : float
+			The density-dependent Stokes number,
+			$$St = \widehat{St} \Bigg(\frac 1R - \frac 12\Bigg).$$
 		reynolds_num : float
 			The particle Reynolds number, computed as,
-			$$Re_p = \frac{2\omega'A'a'}{\nu'},$$
-			where *ω'*, *A'* and ν' are attributes of the wave, and *a'* is the
-			radius of the particle.
+			$$Re_p = \frac{2a'\omega'A'}{\nu'},$$
+			where $\omega'$, *A'* and $\nu'$ are attributes of the wave, and
+			*a'* is the radius of the particle.
 		epsilon : float
-			A relationship between the Stokes number *St* and density ratio *R*,
-			$$\epsilon = \frac{St}{R}.$$
+			A relationship between the Stokes number $\widehat{St}$ and density
+			ratio *R*, $$\epsilon = \frac{\widehat{St}}{R}.$$
 
 		References
 		----------
@@ -35,11 +38,16 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		"""
 		super().__init__(particle, flow, density_ratio)
 		self.reynolds_num = (2 * self.flow.angular_freq * self.flow.amplitude
-							   * np.sqrt(9 * self.particle.stokes_num 
+							   * np.sqrt(9 * self.particle.stokes_hat 
 							   / (2 * self.flow.wavenum ** 2
 							   * self.flow.reynolds_num))) \
 							   / self.flow.kinematic_viscosity
-		self.epsilon = self.particle.stokes_num / self.density_ratio
+		self.epsilon = self.particle.stokes_hat / self.density_ratio
+
+	def set_stokes_num(self):
+		"""Set the density-dependent Stokes number *St*."""
+		self.stokes_num = self.particle.stokes_hat * (1 / self.density_ratio
+												   - 0.5)
 
 	def maxey_riley(self, t, y):
 		r"""
@@ -60,25 +68,19 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		Notes
 		-----
 		Computations correspond to equation (3) in [1],
-		$$\frac{\mathrm{d}\mathbf{x}}{\mathrm{d}t} = \mathbf{v},$$
-		$$\frac{\mathrm{d}\mathbf{v}}{\mathrm{d}t} = \frac{\mathbf{u}
-			- \mathbf{v}}{\epsilon}
-			+ \frac{3R}{2} \frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t}
-			+ \Bigg(1 - \frac{3R}{2}\Bigg) \mathbf{g}$$ with
+		$$\frac{\mathrm{d}\boldsymbol{x}}{\mathrm{d}t} = \boldsymbol{v},$$
+		$$\frac{\mathrm{d}\boldsymbol{v}}{\mathrm{d}t} = \frac{\boldsymbol{u}
+			- \boldsymbol{v}}{\epsilon}
+			+ \frac{3R}{2} \frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D}t}
+			+ \Bigg(1 - \frac{3R}{2}\Bigg) \boldsymbol{g}$$ with
 		$$R = \frac{2 \rho'_f}{\rho'_f + 2 \rho'_p},
-			\qquad \epsilon = \frac{St}{R},
-			\qquad St = \frac 29 \Bigg(\frac{a'}{L'}\Bigg)^2 Re,
-			\qquad Re = \frac{U'L'}{\nu'},$$
-		where *a'* is the particle radius, *ν'* is the kinematic viscosity, *U'*
-		and *L'* are the characteristic velocity and length scales respectively,
-		and *ρ'* is the density of the particle or the fluid.
-
-		References
-		----------
-		[^1]: [G. Haller & T. Sapsis (2008).](
-			  https://doi.org/10.1016/j.physd.2007.09.027)
-			  Where do inertial particles go in fluid flows?
-			  *Physica D: Nonlinear Phenomena* 237(5), 573–583.
+			\qquad \epsilon = \frac{\widehat{St}}{R},
+			\qquad \widehat{St} = \frac 29 (a'k')^2 Re,
+			\qquad Re = \frac{\omega'}{k^{\prime 2} \nu'},$$
+		where *Re* is the Reynolds number, *a'* is the particle radius, $\nu'$
+		is the kinematic viscosity, $\omega'$ is the angular frequency, *k'* is
+		the wave number, and $\rho'$ is the density of the particle or the
+		fluid, denoted by the subscript.
 		"""
 		R = self.density_ratio
 		x, z = y[:2]
@@ -122,27 +124,21 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		Notes
 		-----
 		Computations correspond to equation (10) in [1],
-		$$\mathbf{v} = \mathbf{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
-		\Bigg[\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t} - \mathbf{g}\Bigg]
+		$$\boldsymbol{v} = \boldsymbol{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
+		\Bigg[\frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D}t} - \boldsymbol{g}\Bigg]
 		+ \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
-		\Bigg[\frac{\mathrm{D}^2\mathbf{u}}{\mathrm{D}t^2}
-		+ \Bigg(\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t} - \mathbf{g}\Bigg)
-		\cdot \nabla \mathbf{u}\Bigg]
+		\Bigg[\frac{\mathrm{D}^2\boldsymbol{u}}{\mathrm{D}t^2}
+		+ \Bigg(\frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D}t} - \boldsymbol{g}\Bigg)
+		\cdot \nabla \boldsymbol{u}\Bigg]
 		+ \mathcal{O}(\epsilon^3)$$ with
 		$$R = \frac{2 \rho'_f}{\rho'_f + 2 \rho'_p},
-			\qquad \epsilon = \frac{St}{R},
-			\qquad St = \frac 29 \Bigg(\frac{a'}{L'}\Bigg)^2 Re,
-			\qquad Re = \frac{U'L'}{\nu'},$$
-		where *a* is the particle radius, *ν'* is the kinematic viscosity, *U'*
-		and *L'* are the characteristic velocity and length scales respectively,
-		and *ρ'* is the density of the particle or the fluid.
-
-		References
-		----------
-		[^1]: [G. Haller & T. Sapsis (2008).](
-			  https://doi.org/10.1016/j.physd.2007.09.027)
-			  Where do inertial particles go in fluid flows?
-			  *Physica D: Nonlinear Phenomena* 237(5), 573–583.
+			\qquad \epsilon = \frac{\widehat{St}}{R},
+			\qquad \widehat{St} = \frac 29 (a'k')^2 Re,
+			\qquad Re = \frac{\omega'}{k^{\prime 2} \nu'},$$
+		where *Re* is the Reynolds number, *a'* is the particle radius, $\nu'$
+		is the kinematic viscosity, $\omega'$ is the angular frequency, *k'* is
+		the wave number, and $\rho'$ is the density of the particle or the
+		fluid, denoted by the subscript.
 		"""
 		g = self.flow.gravity
 		R = self.density_ratio

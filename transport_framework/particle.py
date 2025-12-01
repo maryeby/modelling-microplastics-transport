@@ -1,11 +1,11 @@
 class Particle:
 	"""Respresent a rigid, spherical, inertial particle."""
 
-	def __init__(self, stokes_num):
-		"""
+	def __init__(self, stokes_hat):
+		r"""
 		Attributes
 		----------
-		stokes_num : float
-			The Stokes number *St*.
+		stokes_hat : float
+			The density-independent Stokes number $\widehat{St}$.
 		"""
-		self.stokes_num = stokes_num
+		self.stokes_hat = stokes_hat

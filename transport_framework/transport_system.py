@@ -14,10 +14,18 @@ class TransportSystem:
 			The flow through which the particle is transported.
 		density_ratio : float
 			The ratio between the particle and fluid densities.
+		stokes_num : float
+			The density-dependent Stokes number *St*.
 		"""
 		self.particle = particle
 		self.flow = flow
 		self.density_ratio = density_ratio
+		self.set_stokes_num()
+
+	@abstractmethod
+	def set_stokes_num(self):
+		"""Set the density-dependent Stokes number *St*."""
+		pass
 
 	@abstractmethod
 	def maxey_riley(self, t, y):

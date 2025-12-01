@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from transport_framework import flow
 
 class Wave(flow.Flow):
-	"""Represent a wavy flow."""
+	"""Represent an oscillatory flow with gravitational effects."""
 
 	def __init__(self, depth, amplitude, wavelength):
 		r"""
@@ -15,26 +15,27 @@ class Wave(flow.Flow):
 		amplitude : float
 			The amplitude of the wave *A'*.
 		wavelength : float
-			The wavelength *λ'*.
+			The wavelength $\lambda'$.
 		kinematic_viscosity : float
-			The kinematic viscosity ν' of seawater.
+			The kinematic viscosity $\nu'$ of seawater.
 		wavenum : float
-			The wavenumber *k'*, computed as $$k' = \frac{2 \pi}{\lambda'}.$$
+			The wavenumber, $$k' = 2 \pi / \lambda'.$$
+		steepness : float
+			The wave steepness, $$\epsilon = k'A'.$$
 		gravity : ndarray
-			1D array of `float` data, the gravity **g'** acting on the fluid.
+			1D array of `float` data, the gravity ***g'*** acting on the fluid.
 		angular_freq : float
-			The angular frequency *ω'*, computed using the dispersion relation.
+			The angular frequency $\omega'$, computed using the dispersion
+			relation.
 		phase_velocity : float
-			The phase velocity *c'*, computed as $$c' = \frac{\omega'}{k'}.$$
+			The phase velocity, $$c' = \omega' / k'.$$
 		period : float
-			The period of the wave, computed as
-			$$\text{period}' = \frac{2\pi}{\omega'}.$$
+			The wave period, where $$\text{period}' = 2\pi / \omega'.$$
 		froude_num : float
-			The Froude number *Fr*, computed as
-			$$Fr = \sqrt{\frac{k'(\omega'A')^2}{g'}}.$$
+			The Froude number, $$Fr = \omega' / \sqrt{g'k'}.$$
 		reynolds_num : float
-			The Reynolds number *Re* of the wave, computed as
-			$$Re = \frac{\omega'A'}{k'ν'}.$$
+			The Reynolds number of the wave, $$Re = \frac{\omega'}{k^{\prime 2}
+			\nu}'.$$
 		"""
 		super().__init__(depth)
 		self.amplitude = amplitude
@@ -42,17 +43,17 @@ class Wave(flow.Flow):
 		self.kinematic_viscosity = 1e-6
 
 		# computed attributes
-		self.wavenum = 2 * np.pi / self.wavelength
+		self.wavenum = 2 * np.pi / wavelength
+		self.steepness = self.wavenum * amplitude
 		self.set_angular_freq()
 		self.phase_velocity = self.angular_freq / self.wavenum
 		self.period = 2 * np.pi / self.angular_freq
-		self.froude_num = np.sqrt(self.wavenum 
-						* (self.angular_freq * self.amplitude) ** 2
-						/ constants.g)
-		self.reynolds_num = self.angular_freq * self.amplitude / (self.wavenum
+		self.froude_num = self.angular_freq / np.sqrt(constants.g
+											* self.wavenum)
+		self.reynolds_num = self.angular_freq / (self.wavenum * self.wavenum
 											  * self.kinematic_viscosity)
 	
 	@abstractmethod
 	def set_angular_freq(self):
-		"""Define the angular frequency *ω'*."""
+		r"""Define the angular frequency $\omega'$."""
 		pass

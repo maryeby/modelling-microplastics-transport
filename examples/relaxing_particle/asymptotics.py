@@ -5,9 +5,9 @@ from utils.data_tools import update_results
 from transport_framework import particle as prt
 from models import quiescent_flow as fl
 from models import relaxing_system as ts
-from examples.relaxing_particle.numerics import STOKES_NUM, BETAS, scale
+from examples.relaxing_particle.numerics import STOKES_HAT, BETAS
+from examples.relaxing_particle.numerics import OUT_FILE as IN_FILE
 
-IN_FILE = '../data/relaxing_particle/numerics.csv'
 OUT_FILE = '../data/relaxing_particle/asymptotics.csv'
 
 def main():
@@ -27,18 +27,16 @@ def main():
 		  Accurate solution method for the Maxey–Riley equation, and the
 		  effects of Basset history. *Journal of Fluid Mechanics* 868, 428–460.
 	"""
-	particle = prt.Particle(STOKES_NUM)
-	flow = fl.QuiescentFlow()
-
 	# get time t and values of beta from numerics
 	numerics = pd.read_csv(IN_FILE)	
 	t = numerics['t'][1:]
 	results = {'t': [], 'xdot': [], 'beta': []}
+	flow = fl.QuiescentFlow()
 
 	# calculate the asymptotic velocity of a particle with each beta
 	for beta in BETAS:
-		density_ratio = scale(beta)
-		system = ts.RelaxingTransportSystem(particle, flow, density_ratio)
+		particle = prt.Particle(STOKES_HAT)
+		system = ts.RelaxingTransportSystem(particle, flow, beta)
 		xdot = system.asymptotic_velocity(t)
 		results = update_results(results, [t, xdot], [beta])
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file

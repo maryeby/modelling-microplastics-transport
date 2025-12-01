@@ -2,7 +2,7 @@ import numpy as np
 from transport_framework import flow
 
 class RotatingFlow(flow.Flow):
-	"""Represent a fluid flow for rigid body rotation."""
+	"""Represent a fluid flow for rigid body rotation.[^1]"""
 
 	def __init__(self, depth=50):
 		r"""
@@ -11,10 +11,17 @@ class RotatingFlow(flow.Flow):
 		depth : float, default=50
 			The depth of the fluid *h*.
 		gravity : ndarray
-			1D array of `float` data, the gravity **g'** acting on the fluid.
+			1D array of `float` data, the gravity ***g*** acting on the fluid.
 		period : float
 			A parameter used in the computation of the timespan over which to
 			integrate.
+			
+		References
+		----------
+		[^1]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+			  Advection of inertial particles in the presence of the history
+			  force: Higher order numerical schemes. *Journal of Computational
+			  Physics* 254, 93–106.
 		"""
 		super().__init__(depth)
 		self.gravity = np.array([0, 0]) # gravity not considered for this flow
@@ -22,7 +29,7 @@ class RotatingFlow(flow.Flow):
 	def velocity(self, x, z, t=None):
 		r"""
 		Compute the fluid velocity,
-		$$\textbf{u} = \langle u, w \rangle = \langle -z, x \rangle.$$
+		$$\boldsymbol{u} = \langle u, w \rangle = \langle -z, x \rangle.$$
 
 		Parameters
 		----------
@@ -41,7 +48,7 @@ class RotatingFlow(flow.Flow):
 	def partial_t(self, x, z, t):
 		r"""
 		Computes the partial derivative of the fluid with respect to time as,
-		$$\frac{\partial \textbf{u}}{\partial t} = \mathbf{0}.$$
+		$$\frac{\partial \boldsymbol{u}}{\partial t} = \mathbf{0}.$$
 
 		Parameters
 		----------
@@ -61,7 +68,7 @@ class RotatingFlow(flow.Flow):
 		r"""
 		Computes the partial derivative of the fluid with respect to the
 		horizontal position as,
-		$$\frac{\partial \textbf{u}}{\partial x} = \langle 0, 1 \rangle.$$
+		$$\frac{\partial \boldsymbol{u}}{\partial x} = \langle 0, 1 \rangle.$$
 
 		Parameters
 		----------
@@ -81,7 +88,7 @@ class RotatingFlow(flow.Flow):
 		r"""
 		Computes the partial derivative of the fluid with respect to the
 		vertical position as,
-		$$\frac{\partial \textbf{u}}{\partial z} = \langle -1, 0 \rangle.$$
+		$$\frac{\partial \boldsymbol{u}}{\partial z} = \langle -1, 0 \rangle.$$
 
 		Parameters
 		----------

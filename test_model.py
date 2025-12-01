@@ -9,18 +9,19 @@ from tqdm import tqdm
 from transport_framework import particle as prt
 from models import quiescent_flow as qfl
 from models import rotating_flow as rfl
-from models import deep_water_wave as dfl
-from models import water_wave as wfl
+from models import deep_linear_wave as dfl
+from models import linear_wave as wfl
 from models import my_system as ts
 from models import haller_system as hs
 from utils.plot import initialize_figure as fig
 from utils.data_tools import extract_data, match_data
 from utils.colors import COLORS, print_success, print_failure
 
+SCALE = 2 / 3 # scale to use for parameter translation
 IN_FILE1 = 'examples/data/relaxing_particle/prasath_fig4.csv'
 IN_FILE2 = 'examples/data/rigid_body_rotation/daitche_fig3.csv'
-IN_FILE3 = 'examples/data/deep_water_wave/santamaria_fig1.csv'
-IN_FILE4 = 'examples/data/deep_water_wave/cathals_sm_fig1_recreation.csv'
+IN_FILE3 = 'examples/data/deep_linear_wave/santamaria_fig1.csv'
+IN_FILE4 = 'examples/data/deep_linear_wave/cathals_sm_fig1_recreation.csv'
 PLOT_IF_SUCCESSFUL = True
 
 def main():
@@ -46,7 +47,7 @@ def main():
 		print('CASE 1: RELAXING PARTICLE')
 		q_flow = qfl.QuiescentFlow()			# quiescent flow object
 		xdots, ts, asymptotics = [], [], []		# empty lists to store results
-		betas = [0.01, 1, 5]
+		betas = [0.01, 1, 5]					# density ratios
 
 		# run and test a simulation for each beta with & without history effects
 		for beta, history in itertools.product(betas, [True, False]):
@@ -97,18 +98,18 @@ def main():
 		print('\nCASE 2: RIGID BODY ROTATION')
 		r_flow = rfl.RotatingFlow()				# rotating flow object
 		history = True
-		beta = 0.75
-		x_0 = (1, 0)
+		r = 0.75								# density ratio
+		x_0 = (1, 0)							# initial particle position
 
 		# run rigid body rotation simulations
 		print('Simulating first order rigid body rotation...')
-		x, z = simulate(r_flow, beta, history, x_0=x_0, order=1)[:2]
+		x, z = simulate(r_flow, r, history, x_0, order=1)[:2]
 		x1 = np.array((x, z)).T
 		print('\nSimulating second order rigid body rotation...')
-		x, z = simulate(r_flow, beta, history, x_0=x_0, order=2)[:2]
+		x, z = simulate(r_flow, r, history, x_0, order=2)[:2]
 		x2 = np.array((x, z)).T
 		print('\nSimulating third order rigid body rotation...')
-		sols = simulate(r_flow, beta, history, x_0=x_0)
+		sols = simulate(r_flow, r, history, x_0)
 		x, z, t = sols[0], sols[1], sols[4]
 		history_x, history_z = sols[-2:]
 		x3 = np.array((x, z)).T
@@ -216,7 +217,7 @@ def main():
 	if neutrally_bouyant_particle_tests:
 		print('\n\nCASE 3: NEUTRALLY BUOYANT PARTICLE IN A WAVY FLOW')
 		beta = 1
-		depths, amplitude, wavelength = [10, 1, 0.5], 0.02, 1
+		depths, amplitude, wavelength = [5, 0.3, 0.15], 0.01, 1.5
 		label_values = (np.array(depths) / wavelength).tolist()
 		label1 = 'h\'/' +  r'$\lambda$' + f'\' = {wavelength / depths[1]:.2f}'
 		label2 = 'h\'/' +  r'$\lambda$' + f'\' = {wavelength / depths[2]:.2f}'
@@ -225,12 +226,12 @@ def main():
 		# run and test a simulation for each water depth at 4 different z_0s
 		m = 1
 		for depth in depths:
-			wave = wfl.WaterWave(depth, amplitude, wavelength)
+			wave = wfl.LinearWave(depth, amplitude, wavelength)
 			h = wave.wavenum * depth
-			z = np.linspace(0, -h, 100)
+			z = np.linspace(-0.1, -h, 100)
 			analytical_z.append(z / h)
 			analytical_u.append(analytical_stokes_drift(wave, z))
-			z_0s = np.linspace(0, -h, 4, endpoint=False)
+			z_0s = np.linspace(-0.1, -h, 4, endpoint=False)
 			for z_0 in z_0s:
 				print(f'({m}/{len(depths) * len(z_0s):g}) ', end='')
 				drift_vel_success, u, z = test_wave(wave, beta, (0, z_0))
@@ -248,7 +249,7 @@ def main():
 	# +/- buoyant particles in a wavy flow of deep water
 	if positively_negatively_buoyant_particle_tests:
 		print('\n\nCASE 4: POSITIVELY BUOYANT PARTICLE IN A WAVY FLOW')
-		wave = dfl.DeepWaterWave(depth=5, amplitude=0.026, wavelength=0.5)
+		wave = dfl.DeepLinearWave(depth=5, amplitude=0.026, wavelength=0.5)
 		k = wave.wavenum
 		x_light, z_light = test_wave(wave, beta=1.04, x_0=(k * 0.13, k * -0.4))
 		print('\n\nCASE 5: NEGATIVELY BUOYANT PARTICLE IN A WAVY FLOW')
@@ -257,13 +258,13 @@ def main():
 		# extract data from Santamaria et al. (2013) Figure 1
 		names = ['heavy_x', 'heavy_z', 'light_x', 'light_z']
 		sm_heavy_x, sm_heavy_z, sm_light_x, sm_light_z = extract_data(names,
-																  sm_data)
+																	  sm_data)
 		# compare trajectories to extracted data
 		print('\nComparing solutions to extracted data from Santamaria et al.',
 			  '(2013) Figure 1...')
-		if match_data(sm_heavy_x, x_heavy) and match_data(sm_heavy_z, z_heavy) \
-			and match_data(sm_light_x, x_light) \
-			and match_data(sm_light_z, z_light):
+		if match_data(x_heavy, sm_heavy_x) and match_data(z_heavy, sm_heavy_z) \
+			and match_data(x_light, sm_light_x) \
+			and match_data(z_light, sm_light_z):
 			print_success('Numerical solutions match')
 		else:
 			print_failure('Numerical solutions do not match')
@@ -274,11 +275,11 @@ def main():
 			quit()
 	
 	# surface and seabed boundary cases
-	wave = wfl.WaterWave(depth=3, amplitude=0.01, wavelength=2)
+	wave = wfl.LinearWave(depth=0.5, amplitude=0.01, wavelength=1.5)
 	if surface_tests:
 		print('\n\nCASE 6: POSITIVELY BUOYANT PARTICLE REACHING THE SURFACE',
 			  'BOUNDARY')
-		test_wave(wave, beta=1.1, x_0=(0, -4))
+		test_wave(wave, beta=1.1, x_0=(0, -0.4))
 	if seabed_tests:
 		print('\n\nCASE 7: NEGATIVELY BUOYANT PARTICLE REACHING THE SEABED',
 			  'BOUNDARY')
@@ -305,7 +306,7 @@ def main():
 			plt.legend()
 			plt.show()
 
-def simulate(flow, beta, include_history, x_0=(0, 0), order=3):
+def simulate(flow, density_ratio, include_history, x_0=(0, 0), order=3):
 	"""
 	Simulate a particle moving through the specified `flow`.
 
@@ -313,7 +314,7 @@ def simulate(flow, beta, include_history, x_0=(0, 0), order=3):
 	----------
 	flow : Flow (obj)
 		The flow through which the particle is transported.
-	beta : float
+	density_ratio : float
 		The ratio between the particle and fluid densities.
 	include_history : bool
 		Whether to include history effects.
@@ -328,40 +329,40 @@ def simulate(flow, beta, include_history, x_0=(0, 0), order=3):
 		The position and velocity of the particle over time, and forces.
 	"""
 	assert order in [1, 2, 3], 'Integration scheme must be' \
-							  + ' 1st, 2nd, or 3rd order'
-	scale = 2 / 3	# scale to use for parameter translation
+							 + ' 1st, 2nd, or 3rd order'
 	x_0, z_0 = x_0	# initial particle position
 	if isinstance(flow, qfl.QuiescentFlow):
 		xdot_0, zdot_0 = 1, 1						# initial particle velocity
-		stokes_num = scale							# St = 1
+		stokes_hat = SCALE
 		num_periods, delta_t = 15, 1e-2				# time and timestep
-		density_ratio = scale * 3 / (1 + 2 * beta)	# Prasath param translation
+		density_ratio = 2 / (1 + 2 * density_ratio)	# Prasath param translation
 
 	elif isinstance(flow, rfl.RotatingFlow):
 		xdot_0, zdot_0 = flow.velocity(x_0, z_0)	# initial particle velocity
-		stokes_num = scale * 0.3					# St
+		stokes_hat = SCALE * 0.3
 		num_periods, delta_t = 100, 1e-2			# time and timestep
-		density_ratio = scale * beta				# Daitche param translation
+		density_ratio *= SCALE						# Daitche param translation
 
 	else:
 		xdot_0, zdot_0 = flow.velocity(x_0, z_0, t=0) # initial particle vel
-		density_ratio = scale * beta				# Daitche param translation
-		if beta == 1:
-			num_periods, delta_t = 3, 1e-3			# time and timestep
-			stokes_num = 0.1						# St
-		elif beta == 0.96 or beta == 1.04:
-			num_periods, delta_t = 38, 1e-2			# time and timestep
-			stokes_num = scale * np.pi / flow.wavelength * flow.amplitude * beta
+		if density_ratio == 1:
+			num_periods, delta_t = 3, 5e-3			# time and timestep
+			stokes_hat = 0.15
+		elif density_ratio == 0.96 or density_ratio == 1.04:
+			num_periods = 5 if include_history else 38
+			delta_t = 1e-2							# timestep
+			stokes_hat = SCALE * density_ratio / 2
 		else:
-			num_periods, delta_t = 20, 5e-3
-			stokes_num = 0.01
+			num_periods, delta_t = 10, 5e-3
+			stokes_hat = 0.15
+		density_ratio *= SCALE						# Daitche param translation
 
 	# create particle and transport system objects, run simulation
 	t = np.arange(0, num_periods * flow.period, delta_t)
 	y = [x_0, z_0, xdot_0, zdot_0]
-	my_particle = prt.Particle(stokes_num)
+	my_particle = prt.Particle(stokes_hat)
 	my_system = ts.MyTransportSystem(my_particle, flow, density_ratio)
-	return my_system.maxey_riley(t, y, include_history, include_H=True,
+	return my_system.maxey_riley(t, y, include_history, include_h=True,
 								 order=order)
 
 def relaxing_asymptotics(beta, t):
@@ -395,7 +396,7 @@ def relaxing_asymptotics(beta, t):
 		  effects of Basset history. *Journal of Fluid Mechanics* 868, 428–460.
 	"""
 	density_ratio = 2 / (1 + 2 * beta)	# parameter translation
-	stokes_num = 2 / 3
+	stokes_num = SCALE
 	alpha = density_ratio / stokes_num
 	gamma = 3 / 2 * density_ratio * np.sqrt(2 / stokes_num)
 	return 1 / (np.sqrt(np.pi) * t ** (3 / 2)) * (gamma / (2 * alpha ** 2))
@@ -436,32 +437,31 @@ def rotating_analytics(t):
 		  1765–1776.
 	"""
 	# translated parameters
-	scale = 2 / 3
-	density_ratio = scale * 0.75
-	stokes_num = scale * 0.3	# St as defined in Haller & Sapsis (2008)
-	S = stokes_num / 2			# pseudo-Stokes num from Candelier et al. (2004)
+	density_ratio = SCALE * 0.75
+	stokes_num = SCALE * 0.3	# St as defined in Haller & Sapsis (2008)
+	s = stokes_num / 2			# pseudo-Stokes num from Candelier et al. (2004)
 	gamma = 1 / density_ratio - 1 / 2
 
 	flow = rfl.RotatingFlow()
-	x_0, z_0 = 1, 0						# initial particle position
-	u_0, w_0 = flow.velocity(x_0, z_0)	# initial fluid velocity
-	Z_0, U_0 = x_0 + 1j * z_0, u_0 + 1j * w_0
+	xp_0, zp_0 = 1, 0						# initial particle position
+	ux_0, uz_0 = flow.velocity(xp_0, zp_0)	# initial fluid velocity
+	z_0, u_0 = xp_0 + 1j * zp_0, ux_0 + 1j * uz_0
 
 	# initialize coeffs from Candelier et al. (2004) eq (10), compute roots of X
-	A_coeff = 1 / (S * (2 * gamma + 1))
-	B = (3 * S - 1j) / (S * (2 * gamma + 1))
-	C = -3 / ((2 * gamma + 1) * np.sqrt(np.pi * S))
-	X = np.roots([1, -C * np.sqrt(np.pi), A_coeff, 1j * C * np.sqrt(np.pi), B])
+	a_coeff = 1 / (s * (2 * gamma + 1))
+	b = (3 * s - 1j) / (s * (2 * gamma + 1))
+	c = -3 / ((2 * gamma + 1) * np.sqrt(np.pi * s))
+	x = np.roots([1, -c * np.sqrt(np.pi), a_coeff, 1j * c * np.sqrt(np.pi), b])
 
 	# compute A as in Candelier et al. (2004) eq (A2)
-	A = [0, 0, 0, 0]
+	a = [0, 0, 0, 0]
 	for i in range(4):
-		numerator = U_0 * (X[i] ** 2 - C * np.sqrt(np.pi) * X[i]) - B * Z_0
+		numerator = u_0 * (x[i] ** 2 - c * np.sqrt(np.pi) * x[i]) - b * z_0
 		denominator = 1
 		for j in range(4):
 			if j != i:
-				denominator *= X[i] - X[j]
-		A[i] = numerator / denominator
+				denominator *= x[i] - x[j]
+		a[i] = numerator / denominator
 	
 	# compute analytical solutions for various delta_t's
 	timesteps = np.linspace(1e-3, 1e-1, 10)
@@ -472,47 +472,45 @@ def rotating_analytics(t):
 		x_label = 'x_%.2e' % delta_t
 		z_label = 'z_%.2e' % delta_t
 		analytical_t = np.arange(0, 10 + delta_t, delta_t)
-		Z = 0
+		z = 0
 		for i in range(4):
-			Z += A[i] / X[i] * np.exp(X[i] ** 2 * analytical_t) \
-					  * scp.special.erfc(-X[i] * np.sqrt(analytical_t))
-		x, z = np.real(Z), np.imag(Z)
-		results[x_label] = x
-		results[z_label] = z
+			z += a[i] / x[i] * np.exp(x[i] ** 2 * analytical_t) \
+					  * scp.special.erfc(-x[i] * np.sqrt(analytical_t))
+		results[x_label] = np.real(z)
+		results[z_label] = np.imag(z)
 
 	# compute Z, U, and F as in Candelier et al. (2004) eqs (12), (A3), and (14)
 	delta_t = 1e-2
-	Z, U, F = 0, 0, 0
-	for i in range(len(A)):
-		Z += A[i] / X[i] * np.exp(X[i] ** 2 * t) * scp.special.erfc(-X[i]
+	z, u, f = 0, 0, 0
+	for i in range(len(a)):
+		z += a[i] / x[i] * np.exp(x[i] ** 2 * t) * scp.special.erfc(-x[i]
 																* np.sqrt(t))
-		U += A[i] * X[i] * np.exp(X[i] ** 2 * t) \
-				  * scp.special.erfc(-X[i] * np.sqrt(t))
-		F += np.sqrt(np.pi) * (1j * A[i] / X[i] - A[i] * X[i]) * X[i] \
-							* np.exp(X[i] ** 2 * t) \
-							* scp.special.erfc(-X[i] * np.sqrt(t))
-	F *= -C * density_ratio * (gamma + 1 / 2)
-	x, z = np.real(Z), np.imag(Z)		# particle position
-	v_x, v_z = np.real(U), np.imag(U)   # particle velocity
+		u += a[i] * x[i] * np.exp(x[i] ** 2 * t) \
+				  * scp.special.erfc(-x[i] * np.sqrt(t))
+		f += np.sqrt(np.pi) * (1j * a[i] / x[i] - a[i] * x[i]) * x[i] \
+							* np.exp(x[i] ** 2 * t) \
+							* scp.special.erfc(-x[i] * np.sqrt(t))
+	f *= -c * density_ratio * (gamma + 1 / 2)
+	x, z = np.real(z), np.imag(z)		# particle position
+	v_x, v_z = np.real(u), np.imag(u)   # particle velocity
 	u_x, u_z = flow.velocity(x, z, t)   # fluid velocity
 	w_x, w_z = v_x - u_x, v_z - u_z		# relative velocity
-	F_x, F_z = np.real(F), np.imag(F)   # history force
+	f_x, f_z = np.real(f), np.imag(f)   # history force
 
 	# compute history force using the formula for H from Daitche (2013)
-	H_x, H_z = [0] * t.size, [0] * t.size
+	h_x, h_z = [0] * t.size, [0] * t.size
 	alpha = ts.compute_alpha(2, hide_progress=False)
 	beta = ts.compute_beta(3, alpha[:, 1], hide_progress=False) 
 	gamma = ts.compute_gamma(t.size, beta[:, 2], hide_progress=False) 
-	xi = np.sqrt((9 * delta_t) / (2 * np.pi)) \
-							   * (density_ratio / np.sqrt(stokes_num))
-
+	xi = density_ratio / np.sqrt(stokes_num) * np.sqrt(9 * delta_t 
+														 / (2 * np.pi))
 	for n in tqdm(range(t.size - 1)):
 		for j in range(n + 1): 
-			H_x[n] += gamma[j, n] * w_x[n - j]
-			H_z[n] += gamma[j, n] * w_z[n - j]
-	H_x = np.array(H_x) * -xi 
-	H_z = np.array(H_z) * -xi 
-	history_x, history_z = np.gradient(H_x, t), np.gradient(H_z, t)
+			h_x[n] += gamma[j, n] * w_x[n - j]
+			h_z[n] += gamma[j, n] * w_z[n - j]
+	h_x = np.array(h_x) * -xi 
+	h_z = np.array(h_z) * -xi 
+	history_x, history_z = np.gradient(h_x, t), np.gradient(h_z, t)
 
 	# get integer times and the particle position at each integer time  
 	int_indices = np.where(t == t.astype(int))
@@ -551,10 +549,8 @@ def analytical_stokes_drift(wave, z):
 		  *Philosophical Transactions of the Royal Society A: Mathematical,
 		  Physical and Engineering Sciences* 376(2111), 20170104.
 	"""
-	k, A = wave.wavenum, wave.amplitude
-	h = k * wave.depth	
-	u_d = np.cosh(2 * (z + h)) / (2 * np.sinh(h) ** 2)
-	return u_d
+	h = wave.wavenum * wave.depth	
+	return np.cosh(2 * (z + h)) / (2 * np.sinh(h) ** 2)
 
 def test_wave(wave, beta, x_0=(0, 0)):
 	"""
@@ -592,35 +588,36 @@ def test_wave(wave, beta, x_0=(0, 0)):
 		message = 'Simulating a negatively buoyant particle'
 		if beta == 0.96:
 			num_periods, delta_t = 38, 1e-2
-			stokes_num = 2 / 3 * np.pi / wave.wavelength * wave.amplitude * beta
+			stokes_hat = SCALE * beta / 2
 		else:
-			num_periods, delta_t, stokes_num = 20, 5e-3, 0.01
+			num_periods, delta_t, stokes_hat = 10, 5e-3, 0.15
 	elif beta > 1:
 		message = 'Simulating a positively buoyant particle'
 		if beta == 1.04:
 			num_periods, delta_t = 38, 1e-2
-			stokes_num = 2 / 3 * np.pi / wave.wavelength * wave.amplitude * beta
+			stokes_hat = SCALE * beta / 2
 		else:
-			num_periods, delta_t, stokes_num = 20, 5e-3, 0.01
+			num_periods, delta_t, stokes_hat = 10, 5e-3, 0.15
 	else:
 		message = 'Simulating a neutrally buoyant particle'
-		num_periods, delta_t = 3, 1e-3
-		stokes_num = 0.1
+		num_periods, delta_t = 3, 5e-3
+		stokes_hat = 0.15
 
 	# run simulation without history
+	include_history = False
 	print(f'{message} without history...')
 	x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z, \
 		drag_x, drag_z, _, _, history_x, history_z = simulate(wave, beta,
-		include_history=False, x_0=x_0)
+		include_history, x_0)
 	u_x, u_z = wave.velocity(x, z, t) # compute fluid velocity
 
 	# run numerical integration (Haller system)
 	print('Numerically integrating the Maxey-Riley equation...')
-	my_particle = prt.Particle(stokes_num)
-	haller_system = hs.HallerTransportSystem(my_particle, wave, (2 / 3) * beta)
+	particle = prt.Particle(stokes_hat)
+	haller_system = hs.HallerTransportSystem(particle, wave, SCALE * beta)
 	x_h, z_h, xdot_h, zdot_h, t_h = haller_system.run_numerics(haller_system
 												 .maxey_riley, x_0[0], x_0[1],
-												 num_periods, delta_t)
+												  num_periods, delta_t)
 	# truncate data for comparison if necessary
 	if len(x) < len(x_h):
 		x_h = x_h[:len(x)]
@@ -658,15 +655,15 @@ def test_wave(wave, beta, x_0=(0, 0)):
 		quit()
 
 	# verify computed attributes, velocities, and forces
-	desk_check_attributes(wave, stokes_num, beta)
+	desk_check_attributes(particle, wave, beta)
 	if 0.81 != beta != 1.1: verify_num_periods(x, z, xdot, t, num_periods)
 	verify_lengths([x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z,
 					mass_x, mass_z, drag_x, drag_z, history_x, history_z])
 	verify_trajectory_range(x, z, wave.depth * wave.wavenum)
 	verify_velocities(beta, x, z, t, xdot, zdot, u_x, u_z)
-	verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, t,
+	verify_forces(wave, beta, stokes_hat, u_x, u_z, x, z, xdot, zdot, t,
 				  fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
-				  drag_x, drag_z, history_x, history_z, include_history=False)
+				  drag_x, drag_z, history_x, history_z, include_history)
 
 	# save non-history results
 	x_no_history, z_no_history, xdot_no_history, zdot_no_history, \
@@ -674,9 +671,10 @@ def test_wave(wave, beta, x_0=(0, 0)):
 
 	# run simulation with history
 	print(f'\n{message} with history...')
+	include_history = True
 	x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, \
 		mass_z, drag_x, drag_z, _, _, history_x, history_z = simulate(wave,
-		beta, include_history=True, x_0=x_0)
+		beta, include_history, x_0)
 
 	if beta == 1:
 		# check that simulation without history = simulation with history
@@ -708,75 +706,73 @@ def test_wave(wave, beta, x_0=(0, 0)):
 	else:
 		# verify computed attributes, velocities, and forces
 		u_x, u_z = wave.velocity(x, z, t)
-		desk_check_attributes(wave, stokes_num, beta)
-		if 0.81 != beta != 1.1: verify_num_periods(x, z, xdot, t, num_periods)
+		desk_check_attributes(particle, wave, beta)
+		if 0.81 != beta != 1.1: verify_num_periods(x, z, xdot, t, 5)
 		verify_lengths([x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x,
 						buoyancy_z, mass_x, mass_z, drag_x, drag_z, history_x,
 						history_z])
 		verify_trajectory_range(x, z, wave.depth * wave.wavenum)
 		verify_velocities(beta, x, z, t, xdot, zdot, u_x, u_z)
-		verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, 
+		verify_forces(wave, beta, stokes_hat, u_x, u_z, x, z, xdot, zdot, 
 					  t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
-					  drag_x, drag_z, history_x, history_z,
-					  include_history=True)
+					  drag_x, drag_z, history_x, history_z, include_history)
 		return x_no_history, z_no_history
 
-def desk_check_attributes(wave, stokes_num, beta):
-	"""
+def desk_check_attributes(particle, wave, beta):
+	r"""
 	Desk check computed attributes of the Wave and TransportSystem classes.
 
 	Parameters
 	----------
+	particle : Particle (obj)
+		The particle transported through the wave.
 	wave : Wave (obj)
 		The wave through which the particle is transported.
-	stokes_num : float
-		The Stokes number *St*.
 	beta : float
 		The ratio between the particle and fluid densities.
 	"""
 	print('\nDesk checking computed attributes of the Wave and TransportSystem',
 		  'objects...')
-	my_particle = prt.Particle(stokes_num)
-	my_system = ts.MyTransportSystem(my_particle, wave, (2 / 3) * beta)
+	system = ts.MyTransportSystem(particle, wave, SCALE * beta)
+	g = scp.constants.g
 	k = wave.wavenum
 	omega = wave.angular_freq
-	g = scp.constants.g
 
 	if beta == 1:
-		desk_k = 2 * np.pi
-		desk_period = 0.78956835
-		desk_Re_p = 0
-		if wave.depth == 10:
-			desk_omega = 7.85099025
-			desk_c = 1.24952391
-			desk_Fr = 0.12566371
-			desk_Re = 24990.47812053
-		elif wave.depth == 1:
-			desk_omega = 7.85096287
-			desk_c = 1.24951955
-			desk_Fr = 0.12566327
-			desk_Re = 24990.39097033
-		elif wave.depth == 0.5:
-			desk_omega = 7.83634264
-			desk_c = 1.24719267
-			desk_Fr = 0.12542926
-			desk_Re = 24943.85332772
+		desk_k = 4 * np.pi / 3
+		desk_period = 2 * np.pi
+		desk_re_p = 0
+		if wave.depth == 5:
+			desk_omega = 6.4103067
+			desk_c = 1.530348
+			desk_fr = 1
+			desk_re = 365343.67222267
+		elif wave.depth == 0.3:
+			desk_omega = 5.9104777
+			desk_c = 1.4110226
+			desk_fr = 0.92202729
+			desk_re = 336856.83610078
+		elif wave.depth == 0.15:
+			desk_omega = 4.7837096
+			desk_c = 1.1420265
+			desk_fr = 0.74625284
+			desk_re = 272638.75436555
 	elif beta == 0.96 or beta == 1.04:
-		desk_k = 12.5663706
-		desk_omega = 11.1029769
+		desk_k = 4 * np.pi
+		desk_omega = 11.102977
 		desk_c = 0.8835468
-		desk_period = 2.05287771
-		desk_Fr = 0.3267256
-		desk_Re = 22972.2175074
-		desk_Re_p = 4.1584770 if beta == 0.96 else 4.3282801
+		desk_period = 2 * np.pi
+		desk_fr = 1
+		desk_re = 70310.422501496
+		desk_re_p = 4.158477 if beta == 0.96 else 4.3282801
 	else:
-		desk_k = np.pi
-		desk_omega = 5.551488407
-		desk_c = 1.767093643
-		desk_period = 0.197392088
-		desk_Fr = 0.031415927
-		desk_Re = 17670.936429828
-		desk_Re_p = 2.447809741 if beta == 1.1 else 6.315953529
+		desk_k = 4 * np.pi / 3
+		desk_omega = 6.3138229
+		desk_c = 1.5073142
+		desk_period = 2 * np.pi
+		desk_fr = 0.98494864
+		desk_re = 359844.75266697
+		desk_re_p = 0.87054403 if beta == 1.1 else 2.2462186
 
 	assert np.isclose(k, desk_k), f'Wavenumber {k:.4f}m^-1 computed ' \
 								+ f'incorrectly, correct value is {desk_k:.4f}'\
@@ -794,17 +790,17 @@ def desk_check_attributes(wave, stokes_num, beta):
 		f'Wave period {wave.period:.4f}s computed incorrectly,' \
 		+ f' the correct value is {desk_period:.4f}s'
 	print_success('Wave period computed correctly')
-	assert np.isclose(wave.froude_num, desk_Fr, rtol=1e-3, atol=1e-5), \
+	assert np.isclose(wave.froude_num, desk_fr, rtol=1e-3, atol=1e-5), \
 		f'Froude number {wave.froude_num} computed incorrectly,' \
-		+ f' the correct value is {desk_froude:.4f}'
+		+ f' the correct value is {desk_fr:.4f}'
 	print_success('Froude number computed correctly')
-	assert np.isclose(wave.reynolds_num, desk_Re, rtol=1e-3, atol=1e-5), \
+	assert np.isclose(wave.reynolds_num, desk_re, rtol=1e-3, atol=1e-5), \
 		f'Reynolds number {wave.reynolds_num} computed incorrectly,' \
-		+ f' the correct value is {desk_Re:.4f}'
+		+ f' the correct value is {desk_re:.4f}'
 	print_success('Reynolds number computed correctly')
-	assert np.isclose(my_system.reynolds_num, desk_Re_p, rtol=1e-3, atol=1e-5),\
+	assert np.isclose(system.reynolds_num, desk_re_p, rtol=1e-3, atol=1e-5),\
 		f'Particle Reynolds number {my_system.reynolds_num} computed' \
-		+ f' incorrectly, the correct value is {desk_Re_p:.4f}'
+		+ f' incorrectly, the correct value is {desk_re_p:.4f}'
 	print_success('General particle Reynolds number computed correctly')
 
 def verify_lengths(sols):
@@ -931,10 +927,10 @@ def verify_velocities(beta, x, z, t, xdot, zdot, u_x=None, u_z=None):
 		plt.show()
 		quit()
 
-def verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, t,
+def verify_forces(wave, beta, stokes_hat, u_x, u_z, x, z, xdot, zdot, t,
 				  fpg_x, fpg_z, buoyancy_x, buoyancy_z, mass_x, mass_z,
 				  drag_x, drag_z, history_x, history_z, include_history):
-	"""
+	r"""
 	Verify the horizontal and vertical components of each force.
 
 	Parameters
@@ -943,8 +939,8 @@ def verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, t,
 		The wave through which the particle is transported.
 	beta : float
 		The ratio between the particle and fluid densities.
-	stokes_num : float
-			The Stokes number *St*.
+	stokes_hat : float
+			The Stokes number $\widehat{St}$.
 	u_x : ndarray
 		1D array of `float` data, the horizontal fluid velocity.
 	u_z : ndarray
@@ -1031,8 +1027,8 @@ def verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, t,
 		success = False
 
 	# verify the buoyancy force
-	g = np.array([0, -scp.constants.g]) / (wave.wavenum 
-					 * (wave.angular_freq * wave.amplitude) ** 2)
+	g = np.array([0, -scp.constants.g]) * wave.wavenum / (wave.angular_freq
+										* wave.angular_freq)
 	b_x, b_z = (1 - beta) * g
 	if np.allclose(buoyancy_x, b_x, rtol, atol):
 		print_success('Buoyancy force is correct in the x direction')
@@ -1070,7 +1066,7 @@ def verify_forces(wave, beta, stokes_num, u_x, u_z, x, z, xdot, zdot, t,
 		success = False
 
 	# verify the Stokes drag
-	drag_coeff = -2 / 3 * beta / stokes_num
+	drag_coeff = -2 / 3 * beta / stokes_hat
 	drag_est_x = -(beta - 1) * (mdx - wave.gravity[0])
 	drag_est_z = -(beta - 1) * (mdz - wave.gravity[1])
 	if np.allclose(drag_x, drag_coeff * w_x, rtol, atol):
@@ -1224,7 +1220,7 @@ def verify_drift_velocity(wave, x, z, xdot, t):
 		quit()
 
 	# compare the horizontal drift velocity to the analytical solution
-	u_bar = np.mean(u) / (wave.wavenum * wave.amplitude)
+	u_bar = np.mean(u) / (wave.steepness * wave.steepness)
 	z_bar = np.mean(z_crossings)
 	u_d = analytical_stokes_drift(wave, z_bar)
 	if match_data(np.array([u_d]), np.array([u_bar])):

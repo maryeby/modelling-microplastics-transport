@@ -39,7 +39,7 @@ def main():
 
 	# initialize trajectory figure
 	fig(r'$x$', r'$z$', lims=[-2, 2.5, -2.5, 2], make_square=True,
-												equal_aspect=True)
+												 equal_aspect=True)
 	# plot numerical trajectory
 	for i in range(3):
 		fmt = STYLES[i] + 'k'

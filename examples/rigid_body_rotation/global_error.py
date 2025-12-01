@@ -6,19 +6,21 @@ from utils.data_tools import extract_data, update_results
 from transport_framework import particle as prt 
 from models import rotating_flow as fl
 from models import rotating_system as ts
-from examples.rigid_body_rotation.numerics import R, STOKES_NUM, X_0, Z_0
+from examples.rigid_body_rotation.numerics import R, STOKES_HAT, X_0, Z_0
+from examples.rigid_body_rotation.analytics import OUT_FILE as IN_FILE
 
 T_FINAL = 10
-IN_FILE = '../data/rigid_body_rotation/analytics.csv'
+KEYS = ['global_error', 'delta_t', 'order', 'computation_time']
 OUT_FILE = '../data/rigid_body_rotation/global_error.csv'
 
 def main():
 	"""
 	Compute the global error for a rotating rigid body.
 
-	The global error is computed with varying timestep sizes to reproduce
-	results from [1] Figure 4. Results are saved to the
-	`data/rigid_body_rotation` directory.
+	The global error between the exact (analytical) results and numerical 
+	results is computed with varying timestep sizes to reproduce the results
+	from [1] Figure 4. Results are saved to the `data/rigid_body_rotation`
+	directory.
 	
 	References
 	----------
@@ -30,11 +32,10 @@ def main():
 	# read data, initialize delta_ts, and create dictionary to store solutions
 	analytics = pd.read_csv(IN_FILE)
 	timesteps = analytics['delta_t'].drop_duplicates().iloc[:-1]
-	keys = ['global_error', 'delta_t', 'order', 'computation_time']
-	results = {key: [] for key in keys}
+	results = {key: [] for key in KEYS}
 
 	# initialize variables for numerical simulations
-	particle = prt.Particle(STOKES_NUM)
+	particle = prt.Particle(STOKES_HAT)
 	flow = fl.RotatingFlow()
 	system = ts.RotatingTransportSystem(particle, flow, R)
 	xdot_0, zdot_0 = flow.velocity(X_0, Z_0)

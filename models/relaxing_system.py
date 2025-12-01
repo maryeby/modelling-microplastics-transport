@@ -18,21 +18,19 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio between the particle and fluid densities.
-		epsilon : float
-			A relationship between the Stokes number and density ratio[^1],
-			$$\epsilon = \frac{St}{R}.$$
-		sigma : float
-			A parameter related to the density ratio[^1],
-			$$\sigma = \Bigg(1 - \frac{3}{2} R \Bigg) \textbf{g},$$
-			used to compute the asymptotic behavior of the system.
+			The ratio $\beta$ between the particle and fluid densities[^1],
+			$$\beta = \frac{\rho'_p}{\rho'_f}.$$
+		stokes_num : float
+			The density-dependent Stokes number,
+			$$St = \beta \widehat{St}.$$
 		alpha : float
 			A relationship between the density ratio and Stokes number[^1],
-			$$\alpha = \frac{R}{St},$$
+			$$\alpha = \frac{2}{3R \widehat{St}},$$ with
+			$$R = \frac{1 + 2\beta}{3},$$
 			used to compute the asymptotic behavior of the system.
 		gamma : float
 			A relationship between the density ratio and Stokes number[^1],
-			$$\gamma = \frac{3}{2} R \sqrt{\frac{2}{St}},$$
+			$$\gamma = \frac{1}{R} \sqrt{\frac{2}{\widehat{St}}},$$
 			used to compute the asymptotic behavior of the system.
 
 		References
@@ -42,12 +40,19 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 			  Accurate solution method for the Maxey–Riley equation, and the
 			  effects of Basset history. *Journal of Fluid Mechanics*
 			  868, 428–460.
+		[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
+			  Advection of inertial particles in the presence of the history
+			  force: Higher order numerical schemes. *Journal of Computational
+			  Physics* 254, 93–106.
 		"""
 		super().__init__(particle, flow, density_ratio)
-		self.epsilon = self.particle.stokes_num / self.density_ratio
-		self.alpha = self.density_ratio / self.particle.stokes_num
-		self.gamma = 3 / 2 * self.density_ratio \
-					   * np.sqrt(2 / self.particle.stokes_num)
+		r = (1 + 2 * density_ratio) / 3
+		self.alpha = 2 / (3 * r * particle.stokes_hat)
+		self.gamma = 1 / r * np.sqrt(2 / particle.stokes_hat)
+
+	def set_stokes_num(self):
+		"""Set the density-dependent Stokes number *St*."""
+		self.stokes_num = self.particle.stokes_hat * self.density_ratio
 
 	def asymptotic_velocity(self, t):
 		r"""
@@ -93,25 +98,21 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		Notes
 		-----
 		The Maxey-Riley equation is expressed as,
-		$$\frac{\mathrm{d}\textbf{x}}{\mathrm{d}t} = \textbf{v},$$
-		$$\frac{\mathrm{d}\textbf{v}}{\mathrm{d}t} = \frac{3R}{2}
-		  \frac{\mathrm{d}\textbf{u}}{\mathrm{d}t}
-			+ (1 - \frac{3R}{2}) \textbf{g}
-			+ \frac{\textbf{u} - \textbf{v}}{\epsilon},$$
-		with $$R = \frac{2\rho'_f}{\rho'_f + 2\rho'_p},
-			\quad Re = \frac{U'L'}{\nu'},
-			\quad St = \frac{2}{9} \Bigg(\frac{a'}{L'}\Bigg)^2 Re.$$
+		$$\frac{\mathrm{d}\boldsymbol{x}}{\mathrm{d}t} = \boldsymbol{v},$$
+		$$\frac{\mathrm{d}\boldsymbol{v}}{\mathrm{d}t} = \frac{1}{R}
+		  \frac{\mathrm{d}\boldsymbol{u}}{\mathrm{d}t}
+			+ \Bigg(1 - \frac{1}{R}\Bigg) \boldsymbol{g}
+			+ \alpha(\boldsymbol{u} - \boldsymbol{v}).$$
 		"""
 		# initialize local variables and update the particle and fluid histories
-		R = self.density_ratio
+		r = (1 + 2 * self.density_ratio) / 3
 		x, z = y[:2]
 		particle_velocity = y[2:]
 		fluid_velocity = self.flow.velocity(x, z, t)
 
 		# compute terms on the RHS of the M-R equation
-		stokes_drag = (fluid_velocity - particle_velocity) / self.epsilon
-		fluid_pressure_gradient = 3 * R / 2 \
-									* self.flow.material_derivative(x, z, t)
+		stokes_drag = (fluid_velocity - particle_velocity) * self.alpha
+		fluid_pressure_gradient = 1 / r * self.flow.material_derivative(x, z, t)
 
 		# M-R equation
 		particle_acceleration = stokes_drag + fluid_pressure_gradient
@@ -119,7 +120,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
 	def full_maxey_riley(self, t, y, order):
 		r"""
-		Evaluate the Maxey-Riley equation with history effects[^2].
+		Evaluate the Maxey-Riley equation with history effects from [2].
 
 		Parameters
 		----------
@@ -142,24 +143,17 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 			1D array of `float` data, the vertical particle velocity.
 		t : ndarray
 			1D array containing `float` time series data.
-
-		References
-		----------
-		[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
-			  Advection of inertial particles in the presence of the history
-			  force: Higher order numerical schemes.
-			  *Journal of Computational Physics* 254, 93–106.
 		"""
 		# initialize local variables
-		R = self.density_ratio
-		St = self.particle.stokes_num
+		r = (1 + 2 * self.density_ratio) / 3
+		sthat = self.particle.stokes_hat
 		delta_t = t[1] - t[0]
-		xi = np.sqrt((9 * delta_t) / (2 * np.pi)) * (R / np.sqrt(St))
+		xi = 2 / r * np.sqrt(delta_t) * np.sqrt(1 / (2 * np.pi * sthat))
 
 		# compute the number of time steps and create arrays to store x, v data
 		mini_steps = 2 * int(np.sqrt(2) / delta_t)
 		mini_step = delta_t / (mini_steps / 2)
-		mini_xi = np.sqrt((9 * mini_step) / (2 * np.pi)) * (R / np.sqrt(St))
+		mini_xi = 2 / r * np.sqrt(mini_step) * np.sqrt(1 / (2 * np.pi * sthat))
 		mini_x = np.empty((mini_steps + 1, 2))
 		mini_v = np.empty((mini_steps + 1, 2))
 		num_steps = t.size - 1
@@ -189,7 +183,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
 		# compute solutions for the first two intervals using finer time steps
 		for n_prime in range(mini_steps):
-			G = -R / St * mini_v
+			g = -2 / (3 * r * sthat) * mini_v
 			sum_term = 0
 			if order == 1 or n_prime == 0:
 				for j in range(n_prime + 1):
@@ -197,7 +191,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 							  * (mini_alpha[j + 1, n_prime + 1] \
 							  - mini_alpha[j, n_prime])
 				mini_x[n_prime + 1] = x[n_prime] + mini_step * mini_v[n_prime]
-				mini_v[n_prime + 1] = (v[n_prime] + mini_step * G[n_prime]
+				mini_v[n_prime + 1] = (v[n_prime] + mini_step * g[n_prime]
 												  - mini_xi * sum_term) \
 												  / (1 + mini_xi
 												  * mini_alpha[0, n_prime + 1])
@@ -210,7 +204,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 										* (3 * mini_v[n_prime]
 										- mini_v[n_prime - 1])
 				mini_v[n_prime + 1] = (mini_v[n_prime] + mini_step / 2 \
-										* (3 * G[n_prime] - G[n_prime - 1]) \
+										* (3 * g[n_prime] - g[n_prime - 1]) \
 								 		- mini_xi * sum_term) \
 										/ (1 + mini_xi * mini_beta[0,
 																   n_prime + 1])
@@ -224,8 +218,8 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 										- 16 * mini_v[n_prime - 1]
 										+ 5 * mini_v[n_prime - 2])
 				mini_v[n_prime + 1] = (mini_v[n_prime] + mini_step / 12 \
-										* (23 * G[n_prime] - 16 * G[n_prime - 1]
-								 		+ 5 * G[n_prime - 2]) \
+										* (23 * g[n_prime] - 16 * g[n_prime - 1]
+								 		+ 5 * g[n_prime - 2]) \
 										- mini_xi * sum_term) \
 								 		/ (1 + mini_xi * gamma[0, n_prime + 1])
 
@@ -237,27 +231,27 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		
 		# compute solutions for the remaining intervals
 		for n in tqdm(range(2, num_steps)):
-			G = -R / St * v
+			g = -2 / (3 * r * sthat) * v
 			sum_term = 0
 			if order == 1 or n == 0:
 				for j in range(n + 1):
 					sum_term += v[n - j] * (alpha[j + 1, n + 1] - alpha[j, n])
 				x[n + 1] = x[n] + delta_t * v[n]
-				v[n + 1] = (v[n] + delta_t * G[n] - xi * sum_term) \
+				v[n + 1] = (v[n] + delta_t * g[n] - xi * sum_term) \
 								 / (1 + xi * alpha[0, n + 1])
 			elif order == 2 or n == 1:
 				for j in range(n + 1):
 					sum_term += v[n - j] * (beta[j + 1, n + 1] - beta[j, n])
 				x[n + 1] = x[n] + delta_t / 2 * (3 * v[n] - v[n - 1])
-				v[n + 1] = (v[n] + delta_t / 2 * (3 * G[n] - G[n - 1])
+				v[n + 1] = (v[n] + delta_t / 2 * (3 * g[n] - g[n - 1])
 								 - xi * sum_term) / (1 + xi * beta[0, n + 1])
 			else: # order is 3 and n > 1
 				for j in range(n + 1):
 					sum_term += v[n - j] * (gamma[j + 1, n + 1] - gamma[j, n])
 				x[n + 1] = x[n] + delta_t / 12 * (23 * v[n] - 16 * v[n - 1]
 								+ 5 * v[n - 2])
-				v[n + 1] = (v[n] + delta_t / 12 * (23 * G[n] - 16 * G[n - 1]
-								 + 5 * G[n - 2]) - xi * sum_term) \
+				v[n + 1] = (v[n] + delta_t / 12 * (23 * g[n] - 16 * g[n - 1]
+								 + 5 * g[n - 2]) - xi * sum_term) \
 								 / (1 + xi * gamma[0, n + 1])
 		return x[:, 0], x[:, 1], v[:, 0], v[:, 1], t
 
@@ -314,7 +308,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
 def compute_alpha(size):
 	r"""
-	Create an array of the values of alpha as defined in equation (9) from [1].
+	Create an array of the values of alpha as defined in equation (9) from [2].
 
 	Parameters
 	----------
@@ -335,13 +329,6 @@ def compute_alpha(size):
 		(n - 1)^{3 / 2} - n^{3 / 2} + \frac{3}{2} \sqrt{n} & j = n.
 		\end{cases}$$
 	The value of alpha may be obtained by indexing the array `arr[j, n]`.
-
-	References
-	----------
-	[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
-		  Advection of inertial particles in the presence of the history force:
-		  Higher order numerical schemes. *Journal of Computational Physics*
-		  254, 93–106.
 	"""
 	print('Computing matrix of alpha coefficients...', end='', flush=True)
 	start = time()
@@ -368,7 +355,7 @@ def compute_alpha(size):
 
 def compute_beta(size, alpha):
 	r"""
-	Create an array of the values of beta as defined in [1] Section 2.
+	Create an array of the values of beta as defined in [2] Section 2.
 
 	Parameters
 	----------
@@ -381,13 +368,6 @@ def compute_beta(size, alpha):
 	-------
 	ndarray
 		2D square array of `float` data, the values of the coefficient beta.
-
-	References
-	----------
-	[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
-		  Advection of inertial particles in the presence of the history force:
-		  Higher order numerical schemes. *Journal of Computational Physics*
-		  254, 93–106.
 	"""
 	print('Computing matrix of beta coefficients...', end='', flush=True)
 	start = time()
@@ -446,7 +426,7 @@ def compute_beta(size, alpha):
 
 def compute_gamma(size, beta):
 	r"""
-	Create an array of the values of gamma as defined in [1] Section 2.
+	Create an array of the values of gamma as defined in [2] Section 2.
 
 	Parameters
 	----------
@@ -459,13 +439,6 @@ def compute_gamma(size, beta):
 	-------
 	ndarray
 		2D square array of `float` data, the values of the coefficient gamma.
-
-	References
-	----------
-	[^2]: [A. Daitche (2013).](https://doi.org/10.1016/j.jcp.2013.07.024)
-		  Advection of inertial particles in the presence of the history force:
-		  Higher order numerical schemes. *Journal of Computational Physics*
-		  254, 93–106.
 	"""
 	print('Computing matrix of gamma coefficients...', end='', flush=True)
 	start = time()

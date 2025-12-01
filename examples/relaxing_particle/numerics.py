@@ -7,7 +7,7 @@ from models import quiescent_flow as fl
 from models import relaxing_system as ts
 
 # particle conditions
-STOKES_NUM = 2 / 3		# translated Stokes number from [1] Figure 4
+STOKES_HAT = 2 / 3		# translated Stokes number from [1] Figure 4
 X_0, Z_0 = 0, 0			# initial particle position
 XDOT_0, ZDOT_0 = 1, 1	# initial particle velocity
 
@@ -31,14 +31,13 @@ def main():
 		  effects of Basset history. *Journal of Fluid Mechanics* 868, 428–460.
 	"""
 	# initialize Particle and Flow objects, create dictionary to store sols
-	particle = prt.Particle(STOKES_NUM)
 	flow = fl.QuiescentFlow()
 	results = {'t': [], 'xdot': [], 'beta': [], 'history': []}
 
 	for beta, include_history in itertools.product(BETAS, [False, True]):
 		# compute R and initialize TransportSystem object
-		density_ratio = scale(beta)
-		system = ts.RelaxingTransportSystem(particle, flow, density_ratio)
+		particle = prt.Particle(STOKES_HAT)
+		system = ts.RelaxingTransportSystem(particle, flow, beta)
 
 		# compute results
 		_, _, xdot, _, t = system.run_numerics(X_0, Z_0, XDOT_0, ZDOT_0,
@@ -48,7 +47,5 @@ def main():
 		results = update_results(results, [t, xdot], [beta, include_history])
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
-def scale(beta): return 2 / (1 + 2 * beta) # translate beta from [1] to R
-		
 if __name__ == '__main__':
 	main()
