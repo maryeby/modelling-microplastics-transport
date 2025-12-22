@@ -60,7 +60,7 @@ def main():
 
 	# plot contour of the radius for max wavelength and varying St, R
 	fig(r'$R$', r'$St$', 121, lims=[R[0, 0], R[-1, -1], ST[0, 0], ST[-1, -1]],
-		width='jfm', make_square=True, add_subplot_labels=True)
+		make_square=True, add_subplot_labels=True)
 	for c, m in zip(CHIS[:-1], MARKERS[:-1]):
 		plt.scatter(CHI_R, (c / K) ** 2, c='k', marker=m, zorder=2)
 	cs = plt.gca().contour(R, ST, RADIUS, levels=CONTOURS, colors='k')
@@ -73,8 +73,8 @@ def main():
 	plt.legend()
 
 	# plot chi vs St
-	fig(r'$\chi$', r'$St$', num=122, width='jfm', make_square=True,
-		x_scale='log', y_scale='log', lims=[5e-2, K, 6.5e-4, ST[-1][-1]],
+	fig(r'$\chi$', r'$St$', num=122, make_square=True, x_scale='log',
+		y_scale='log', lims=[5e-2, K, 6.5e-4, ST[-1][-1]],
 		add_subplot_labels=True)
 	plt.gca().fill_between(K * np.sqrt(Y), REGIMES[1], REGIMES[0],
 						   color='silver')
@@ -87,7 +87,7 @@ def main():
 	plt.text(LABEL_X[0], LABEL_Y[0], 'history dominant', ha='center')
 	plt.text(LABEL_X[1], LABEL_Y[1], 'non-negligible\nhistory', ha='center')
 	plt.text(LABEL_X[2], LABEL_Y[2], 'Stokes drag dominant', ha='center')
-	plt.legend(loc='lower left', bbox_to_anchor=(0.57, 0.1), fontsize='x-small')
+	plt.legend(loc='lower left', bbox_to_anchor=(0.62, 0.15), fontsize='x-small')
 	plt.show()
 
 if __name__ == '__main__': main()

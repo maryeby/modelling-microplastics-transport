@@ -23,7 +23,7 @@ def main():
 		else:
 			l = [-0.01, 0.11, -7, 0.15]
 			ytix = [0, -2, -4, -6]
-		fig(r'$x$', num=131 + i, make_square=False, width='jfm', lims=l)
+		fig(r'$x$', num=131 + i, make_square=False, lims=l)
 		if i == 0 and j == -3: plt.ylabel(r'$z$')
 #		plt.title(TITLES[i])
 		plt.xticks([0, 0.05, 0.1])

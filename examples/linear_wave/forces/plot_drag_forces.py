@@ -45,7 +45,7 @@ def main():
 	D = int(period * 2.02)
 
 	# plot particle trajectory with horizontal force vectors
-	fig(r'$x$', r'$z$', gs[:2, 0], equal_aspect=True, width='jfm',
+	fig(r'$x$', r'$z$', gs[:2, 0], equal_aspect=True,
 		lims=[-0.06, 0.16, -0.25, 0.05])
 	plt.gcf().text(LABEL_AEX, LABEL_ABY, r'$(a)$')
 	plt.gca().xaxis.set_label_position('top')
@@ -62,8 +62,7 @@ def main():
 	plt.text(x[D] - OS, z[D] - OS, 'D', ha='right', va='bottom')
 
 	# horizontal forces over time subplot
-	fig(y_label='horizontal force', num=gs[0, 1], hide_xticks=True,
-		width='jfm')
+	fig(y_label='horizontal force', num=gs[0, 1], hide_xticks=True)
 	plt.gcf().text(LABEL_BCDX, LABEL_ABY, r'$(b)$')
 	plt.gca().yaxis.set_label_position('right')
 	plt.gca().xaxis.tick_top()
@@ -76,7 +75,7 @@ def main():
 	plt.plot(t, history_x, 'k:')
 
 	# vertical forces over time subplot
-	fig(y_label='vertical force', num=gs[1, 1], width='jfm', hide_xticks=True)
+	fig(y_label='vertical force', num=gs[1, 1], hide_xticks=True)
 	plt.gcf().text(LABEL_BCDX, LABEL_CY, r'$(c)$')
 	plt.gca().yaxis.set_label_position('right')
 	plt.axvline(t[A], c=COLORS[-1])
@@ -87,7 +86,7 @@ def main():
 	plt.plot(t, history_z, 'k:', label=LABELS[3])
 
 	# plot horizontal particle velocity
-	fig(r'$t$', r'$\dot{x}$', gs[2, 0], width='jfm')
+	fig(r'$t$', r'$\dot{x}$', gs[2, 0])
 	plt.gcf().text(LABEL_AEX, LABEL_DEY, r'$(e)$')
 	plt.xticks(ticks=[0, 5, t[A], t[B], t[C], t[D], 15],
 			   labels=['0', '5', 'A', 'B', 'C', 'D', '15'])
@@ -98,7 +97,7 @@ def main():
 	plt.plot(t, xdot, 'k-', label='particle velocity')
 
 	# plot vertical particle velocity
-	fig(r'$t$', r'$\dot{z}$', gs[2, 1], width='jfm')
+	fig(r'$t$', r'$\dot{z}$', gs[2, 1])
 	plt.gcf().text(LABEL_BCDX, LABEL_DEY, r'$(d)$')
 	plt.gca().yaxis.set_label_position('right')
 	plt.xticks(ticks=[0, 5, t[A], t[B], t[C], t[D], 15],

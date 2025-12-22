@@ -10,7 +10,7 @@ from examples.linear_wave.forces.compute_st_star import OUT_FILE as IN_FILE
 def main():
 	r"""Plot $St^*$ as a function of the density ratio $R$."""
 	analysis = pd.read_csv(IN_FILE)
-	fig(r'$R$', r'$St^*$', make_square=True, width='jfm')
+	fig(r'$R$', r'$St^*$', make_square=True)
 
 	# plot 100% lines
 	names = ['St*', 'Sthat*', 'R']

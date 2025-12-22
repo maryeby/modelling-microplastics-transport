@@ -27,7 +27,7 @@ def main():
 
 	# plot neutrally buoyant curve, data points, and label
 	fig(r'$\bar{u}/\epsilon^2$', r'$\bar{z}$', lims=[-0.15, 1, -2, 0],
-		make_square=True, width='jfm')
+		make_square=True)
 	analytical_z, analytical_u = extract_data(names1, analysis, params1)
 	neutral_z, neutral_u = extract_data(names2, numerics, params2)
 	plt.plot(analytical_u, analytical_z, ':k')

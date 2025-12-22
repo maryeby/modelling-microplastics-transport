@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 import pandas as pd
-from itertools import repeat, product
+from itertools import repeat
 from parallelbar import progress_starmap
 from tqdm import tqdm
 

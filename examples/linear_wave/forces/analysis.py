@@ -94,7 +94,7 @@ def main():
 			fig(x_label, LABELS[i], 411 + i)
 			plt.scatter(t, force, marker='.', edgecolors='k', facecolors='none')
 			plt.plot(t, fitted_curve, '--k')
-			if i == 3: print_characteristic_params(particle, wave, system)
+			if i == 3: print_characteristic_params(wave, particle, system)
 			if i == 0:
 				plt.suptitle(rf'$St$ = {ST_TO_SHOW:.3f}, $R$ = {R_TO_SHOW:.2f}')
 

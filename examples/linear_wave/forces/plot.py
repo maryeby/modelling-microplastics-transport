@@ -77,7 +77,7 @@ def main():
 
 	# plot particle trajectory with horizontal force vectors
 	fig(y_label=r'$z$', num=221, make_square=True, equal_aspect=True,
-		width='jfm', hide_xticks=True)
+		hide_xticks=True)
 	plt.plot(x[:A], z[:A], c=COLORS[-1])
 	plt.plot(x[A:D], z[A:D], c='k')
 	plt.plot(x[D:], z[D:], c=COLORS[-1])
@@ -97,7 +97,7 @@ def main():
 	plt.text(x[D] - OS, z[D] - OS, 'D', ha='right', va='bottom')
 
 	# plot particle trajectory with vertical force vectors
-	fig(r'$x$', r'$z$', 223, equal_aspect=True, make_square=True, width='jfm')
+	fig(r'$x$', r'$z$', 223, equal_aspect=True, make_square=True)
 	plt.xticks([0, 0.1, 0.2])
 	plt.plot(x[:A], z[:A], c=COLORS[-1])
 	plt.plot(x[A:D], z[A:D], c='k')
@@ -118,7 +118,7 @@ def main():
 	plt.text(x[D] - OS, z[D] - OS, 'D', ha='right', va='bottom')
 
 	# initialize horizontal forces over time subplot
-	fig(y_label='horizontal force', num=222, hide_xticks=True, width='jfm')
+	fig(y_label='horizontal force', num=222, hide_xticks=True)
 	plt.axvline(t[A], c=COLORS[-1])
 	plt.axvline(t[B], c=COLORS[-1])
 	plt.axvline(t[C], c=COLORS[-1])
@@ -136,7 +136,7 @@ def main():
 	plt.plot(t, history_x, c=COLORS[8], ls=':')
 
 	# initialize vertical forces over time subplot
-	fig(r'$t$', 'vertical force', 224, width='jfm')
+	fig(r'$t$', 'vertical force', 224)
 	plt.xticks(ticks=[0, 5, t[A], t[B], t[C], t[D], 15],
 			   labels=['0', '5', 'A', 'B', 'C', 'D', '15'])
 	plt.axvline(t[A], c=COLORS[-1])

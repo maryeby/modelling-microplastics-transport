@@ -10,9 +10,8 @@ from models import linear_wave as fl
 from models import my_system as ts
 
 # particle conditions
-STOKES_HATS = np.round(np.linspace(99 / 670, 297 / 1675, 8), 5).tolist() \
-			+ np.round(np.linspace(0.18, 1, 21), 5).tolist()
-STOKES_HATS.insert(9, np.round(67 / 330, 5))
+STOKES_HATS = np.round(np.sort(np.linspace(99 / 670, 297 / 1675, 8).tolist() \
+			+ np.linspace(0.18, 1, 21).tolist() + [67 / 330]), 5)
 X_0, Z_0 = 0, 0
 
 # wave conditions
@@ -35,7 +34,7 @@ OUT_FILE = '../../data/linear_wave/forces_numerics.csv'
 
 def main():
 	"""
-	Simulate negatively buoyant particles transported through a wave.
+	Simulate negatively buoyant particles transported through a linear wave.
 
 	Simulations are performed for particles of varying sizes (Stokes numbers)
 	and buoyancies (density ratios), and history effects are included. Results
@@ -53,7 +52,7 @@ def main():
 
 def run_simulation(stokes_hat, r):
 	"""
-	Run a numerical simulation with the specified conditions.
+	Run a numerical simulation with the specified $\widehat{St}$ and *R*.
 
 	Parameters
 	----------

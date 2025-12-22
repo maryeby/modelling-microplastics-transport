@@ -27,7 +27,7 @@ def main():
 	# read data files and initilize figure
 	numerics = pd.read_csv(IN_FILE1)
 	analytics = pd.read_csv(IN_FILE2)
-	fig(r'$\bar{u}/\epsilon^2$', r'$\bar{\bar{z}}$', width='jfm')
+	fig(r'$\bar{u}/\epsilon^2$', r'$\bar{\bar{z}}$')
 
 	# plot analytical solutions
 	for i in range(len(DEPTHS)):

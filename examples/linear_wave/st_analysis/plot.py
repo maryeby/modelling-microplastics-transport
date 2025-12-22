@@ -41,7 +41,7 @@ def main():
 
 		# initialize subplot and create subplot labels
 		fig(r'$\bar{u}/\epsilon^2$', ylabel, 121 + i, make_square=True,
-			add_subplot_labels=True, width='jfm', lims=lims)
+			add_subplot_labels=True, lims=lims)
 
 		# plot curves and data points
 		for stokes_hat, history in product(nums, [False, True]):

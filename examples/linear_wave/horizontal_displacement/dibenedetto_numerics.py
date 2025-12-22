@@ -45,7 +45,7 @@ def main():
 	particle = prt.Particle(STOKES_HAT)
 	wave = fl.LinearWave(DEPTH, AMPLITUDE, WAVELENGTH)
 	system = ts.MyTransportSystem(particle, wave, R)
-	print_characteristic_params(particle, wave, system)
+	print_characteristic_params(wave, particle, system)
 	if 20 < NUM_PERIODS:
 		print_warning('Large timespan, simulation(s) run with history effects '
 					+ 'may be killed.')

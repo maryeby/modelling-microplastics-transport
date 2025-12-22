@@ -1,6 +1,11 @@
 import pandas as pd
 import numpy as np
 from fractions import Fraction
+from transport_framework import particle as prt
+from models import bichromatic_wave
+from models import my_system as ts
+
+NEUTRAL_R = 2 / 3
 
 def extract_data(name, df, params=None):
 	"""
@@ -109,7 +114,8 @@ def update_results(results, arrays, scalars):
 		for i in range(len(scalars)): results[keys[i]].append(scalars[i])
 	return results
 
-def print_characteristic_params(particle, wave, system):
+def print_characteristic_params(wave, particle=None, system=None,
+								stokes_hat=None, density_ratio=None):
 	r"""
 	Print formatted values for key dimensionless parameters.
 
@@ -119,20 +125,32 @@ def print_characteristic_params(particle, wave, system):
 
 	Parameters
 	----------
-	particle : Particle (obj)
-		The particle transported through the wave.
 	wave : Wave (obj)
 		The wave through which the particle is transported.
-	system : TransportSystem (obj)
+	particle : Particle (obj), default=None
+		The particle transported through the wave.
+	system : TransportSystem (obj), default=None
 		The transport system for the particle moving through the wave.
+	stokes_hat : float
+		The density-independent Stokes number $\widehat{St}$.
+	density_ratio : float
+		The ratio between particle and fluid densities.
 	"""
+	if stokes_hat:
+		particle = prt.Particle(stokes_hat)
+		system = ts.MyTransportSystem(particle, wave, density_ratio)
 	print()
 	print_parameter('Sthat', particle.stokes_hat)
 	print_parameter('St', system.stokes_num)
 	print_parameter('Sthat/gamma', particle.stokes_hat / system.gamma)
 	print_parameter('R', system.density_ratio)
-	print_parameter('epsilon', wave.steepness)
-	print_parameter('Fr', wave.froude_num)
+	if isinstance(wave, bichromatic_wave.BichromaticWave):
+		print_parameter('epsilon', wave.steepness[0])
+		print_parameter('Fr1', wave.froude_num[0])
+		print_parameter('Fr2', wave.froude_num[1])
+	else:
+		print_parameter('epsilon', wave.steepness)
+		print_parameter('Fr', wave.froude_num)
 	print()
 
 def print_parameter(name, value):

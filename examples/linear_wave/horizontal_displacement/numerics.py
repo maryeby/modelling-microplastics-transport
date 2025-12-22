@@ -19,8 +19,10 @@ from examples.linear_wave.horizontal_displacement.dibenedetto_numerics import \
 
 X_0S = np.round(np.linspace(0, 9 / (8 * np.pi), 5, endpoint=False), 5)
 NUM_POINTS = 10
-STOKES_HATS = np.round(np.linspace(0.6, 1.2, NUM_POINTS), 5)
-RS = np.round(np.linspace(19 / 30, 7 / 10, NUM_POINTS), 5)
+STOKES_HATS = np.round([0.48160, 0.53939, 0.58755, 0.64534, 0.69350, 0.75129,
+						0.79945, 0.85724, 0.90540, 0.96319], 5)
+RS = np.round([0.63333, 0.64067, 0.64800, 0.65533, 0.66267, 0.67067, 0.67800,
+			   0.68533, 0.69267, 0.70000], 5)
 DELTA_T = 5e-3
 TOL = 5e-2
 HIDE_PROGRESS = True
@@ -46,7 +48,7 @@ def main():
 		sols = run_numerics(x_0, stokes_hat, DB_R, True)
 		results = update_results(results, sols[:2], sols[2:])
 
-	# run varying Stokes number simulations
+	# run varying density ratio simulations
 	for r, x_0 in product(RS, X_0S):
 		sols = run_numerics(x_0, DB_ST, r, False)
 		results = update_results(results, sols[:2], sols[2:])
@@ -72,7 +74,7 @@ def estimate_num_periods(k, g, period, stokes_hat, r):
 		The ratio between the particle and fluid densities.
 	"""
 	h = -k * DEPTH
-	terminal_vel = stokes_hat / r * ((1 - 3 * r / 2) / tanh(h))
+	terminal_vel = stokes_hat / r * ((1 - 3 * r / 2) / np.tanh(h))
 	t_final = h / terminal_vel
 	estimated_periods = t_final // period
 	return int(5 * np.rint((np.abs(estimated_periods)) / 5)) + 5

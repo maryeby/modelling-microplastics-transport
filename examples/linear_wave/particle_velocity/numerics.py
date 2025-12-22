@@ -66,7 +66,7 @@ def main():
 		peaks_list += peaks.tolist()
 		if history:
 			print(f'decay rate: {decay_rate:.2f}')
-			print_characteristic_params(particle, wave, system)
+			print_characteristic_params(wave, particle, system)
 		else:
 			print(f'decay rate: {decay_rate:.2f}\n')
 	results['t_peaks'] = t_peaks.tolist()

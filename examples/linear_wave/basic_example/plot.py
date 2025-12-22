@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
+from utils.data_tools import extract_data
 from examples.linear_wave.basic_example.numerics import OUT_FILE as IN_FILE
 
 def main():
@@ -9,7 +10,7 @@ def main():
 	numerics = pd.read_csv(IN_FILE)
 
 	# plot particle trajectory
-	fig(r'$x$', r'$z$', make_square=True, equal_aspect=True, width='jfm')
+	fig(r'$x$', r'$z$', make_square=True, equal_aspect=False)
 	plt.plot('x', 'z', '-k', data=numerics)
 	plt.scatter('x_crossings', 'z_crossings', ec='k', fc='none', data=numerics)
 	

@@ -12,7 +12,7 @@ def main():
 	"""Plot the horizontal velocity of a particle in a wave over time."""
 	# read data and initialize figure
 	numerics = pd.read_csv(IN_FILE)
-	fig(r'$t$', r'$\dot{x}$', width='jfm')
+	fig(r'$t$', r'$\dot{x}$')
 
 	# plot curves and data for each combination of parameters
 	for stokes_hat, r, history in zip(STOKES_HATS, RS, INCLUDE_HISTORY):

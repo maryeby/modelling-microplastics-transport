@@ -22,7 +22,7 @@ def main():
 	z_center = Z_NEGATIVE * RADIUS
 	z_0s = np.round(RADIUS * np.sin(ANGLE) + z_center, 3)
 
-	fig(r'$x$', r'$z$', equal_aspect=True, make_square=True, width='jfm')
+	fig(r'$x$', r'$z$', equal_aspect=True, make_square=True)
 	for i, history in product(point_index, [False, True]):
 		params = {'x_0': X_0S[i], 'z_0': z_0s[i], 'Sthat': ST_TO_SHOW,
 				  'R': R_TO_SHOW, 'history': history}
@@ -30,7 +30,7 @@ def main():
 		x, z = extract_data(['x', 'z'], numerics, params)
 		plt.scatter(x, z, c=COLORS[i], marker=mk)
 
-	fig('point index', '$M$', width='jfm')
+	fig('point index', '$M$')
 	for i, history in product(point_index, [False, True]):
 		params = {'x_0': X_0S[i], 'z_0': z_0s[i], 'Sthat': ST_TO_SHOW,
 				  'R': R_TO_SHOW, 'history': history}
@@ -38,7 +38,7 @@ def main():
 		total_shear = extract_data('shear', numerics, params).to_numpy()[-1]
 		plt.scatter(i, total_shear, c=COLORS[i], marker=mk)
 
-	fig(r'$x$', 'shear', make_square=True, width='jfm')
+	fig(r'$x$', 'shear', make_square=True)
 	for i, history in product(point_index, [False, True]):
 		params = {'x_0': X_0S[i], 'z_0': z_0s[i], 'Sthat': ST_TO_SHOW,
 				  'R': R_TO_SHOW, 'history': history}
@@ -47,12 +47,12 @@ def main():
 		x, shear = extract_data(['x', 'shear'], numerics, params)
 		plt.plot(x[1:], shear[:-1], c=COLORS[i], marker=mk, ls=ls)
 
-	fig(r'$St$', r'$\Delta\overline{M}$', 121, width='jfm',
+	fig(r'$St$', r'$\Delta\overline{M}$', 121,
 		add_subplot_labels=True)
 	stokes_num, shear = extract_data(['Sthat', 'shear_difference'], shear_diff,
 									 {'R': R_TO_SHOW})
 	plt.plot(stokes_num, shear, '-k')
-	fig(r'$R$', num=122, width='jfm', add_subplot_labels=True)
+	fig(r'$R$', num=122, add_subplot_labels=True)
 	idx = shear_diff['R'].sort_values().index
 	r, shear = extract_data(['R', 'shear_difference'],
 							 shear_diff.loc[idx], {'Sthat': ST_TO_SHOW})

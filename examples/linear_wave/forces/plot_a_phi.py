@@ -44,7 +44,7 @@ def main():
 	stokes_drag, rsq, sthat, st = extract_data(names, coefficients, params)
 	
 	# plot St vs A
-	fig(XLABEL, r'$A$', 121, add_subplot_labels=True, width='jfm')
+	fig(XLABEL, r'$A$', 121, add_subplot_labels=True)
 	plt.xlim(0.15, 1)
 	plt.axvline(ST_TO_SHOW, c='silver')
 	plt.plot(st, stokes_drag, '--k')
@@ -56,7 +56,7 @@ def main():
 	names[0] = COEFFS[2]
 	params['force'] = FORCES[1]
 	data, rsq, sthat, st = extract_data(names, coefficients, params)
-	fig(XLABEL, r'$\phi$', 122, add_subplot_labels=True, width='jfm')
+	fig(XLABEL, r'$\phi$', 122, add_subplot_labels=True)
 	plt.xlim(0.15, 1)
 	plt.yticks(PHI_TICKS, PHI_LABELS)
 	plt.axvline(ST_TO_SHOW, c='silver')
@@ -68,7 +68,7 @@ def main():
 	# plot the ratio of drag forces
 	x = np.linspace(0, 1, 100)
 	stokes_drag, history = stokes_drag.to_numpy(), history.to_numpy()
-	fig(r'$\chi$', r'$\widehat{St}$', make_square=True, width='jfm')
+	fig(r'$\chi$', r'$\widehat{St}$', make_square=True)
 	plt.scatter(history / stokes_drag, sthat, marker='.', ec='k', fc='none')
 	plt.plot(K * np.sqrt(Y), Y, ':k')
 	plt.show()

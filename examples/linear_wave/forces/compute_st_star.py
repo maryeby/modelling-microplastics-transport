@@ -22,7 +22,7 @@ def main():
 	produced by `plot_coefficients.py`. This intersection value is referred to
 	as $St^*$, and is computed for various particle densities. The point at
 	which the history force is 75% of the Stokes drag is also computed,
-	$St_{75}$.
+	$St_{75}$ Results are saved to the `data/linear_wave` directory.
 	"""
 	analysis = pd.read_csv(IN_FILE)
 	results = {key: [] for key in KEYS}

@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import constants
 from transport_framework import wave
-from utils.colors import print_warning
 
 class BichromaticWave(wave.Wave):
 	"""Represent a dimensionless bichromatic wave of arbitrarily deep water."""
@@ -22,6 +21,9 @@ class BichromaticWave(wave.Wave):
 		wavenum : ndarray
 			1D array of `float` values, the wavenumbers $k'_1$ and $k'_2$,
 			computed as $$k'_i = \frac{2 \pi}{\lambda'_i}.$$
+		steepness : ndarray
+			1D array of `float` values, the wave steepnesses
+			$\epsilon = k'_1 A'_1$ and $k'_2 A'_2$.
 		gravity : float
 			The gravity **g** acting on the fluid, non-dimensionalized as,
 			$$g = \frac{g'k'_1}{\omega^{\prime 2}_1}.$$
@@ -36,7 +38,7 @@ class BichromaticWave(wave.Wave):
 			1D array of `float` values, the periods of the wave, computed as
 			$$\text{period}'_i = \frac{2\pi}{\omega'_i},$$
 			and non-dimensionalized as
-			$$\text{period} = \text{period}'\omega'_1.$$
+			$$\text{period}_i = \text{period}_i'\omega_i'.$$
 		froude_num : float
 			1D array of `float` values, the Froude numbers $Fr_1$ and $Fr_2$,
 			computed as $$Fr_i = \frac{\omega'_i}{\sqrt{g'k'_i}}.$$
@@ -48,7 +50,7 @@ class BichromaticWave(wave.Wave):
 		super().__init__(depth, amplitude, wavelength)
 		self.gravity *= self.wavenum[0] / (self.angular_freq[0]
 										* self.angular_freq[0])
-		self.period *= self.angular_freq[0]
+		self.period *= self.angular_freq
 
 	def set_angular_freq(self):
 		r"""
