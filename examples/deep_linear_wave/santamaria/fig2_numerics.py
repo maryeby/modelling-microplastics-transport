@@ -84,7 +84,7 @@ def compute_numerics(system, delta_t, results):
 
 	See Also
 	--------
-	models.my_system.compute_alternate_drift_velocity
+	models.my_system.compute_alternate_drift_velocity()
 	"""
 	xdot_0, zdot_0 = system.flow.velocity(X_0, Z_0, t=0)
 	y = [X_0, Z_0, xdot_0, zdot_0]

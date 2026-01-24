@@ -17,7 +17,7 @@ STOKES_HAT = np.round(19 / 205, 5)	# St = 0.1
 X_0, Z_0 = 0, 0						# initial particle position
 
 # simulation conditions
-R = np.round(19 / 30, 5)			# density ratio
+R = 0.66							# density ratio
 NUM_PERIODS = 5
 DELTA_T = 5e-3						# timestep size (recommended <= 5e-3)
 OUT_FILE = '../../data/stokes_wave/basic_numerics.csv'
@@ -37,8 +37,8 @@ def main():
 	results = {'t': [], 'x': [], 'z': [], 'xdot': [], 'zdot': [], 'history': []}
 	warnings.filterwarnings('ignore')
 
-	# run simulation and compute drift velocity
-	for h in [False, True]:
+	# run simulation with and without history
+	for h in [True, False]:
 		x, z, xdot, zdot, t, fpg_x, fpg_z, buoyancy_x, buoyancy_z, \
 			added_mass_x, added_mass_z, stokes_drag_x, stokes_drag_z, \
 			history_x, history_z = system.maxey_riley(t, y, h)

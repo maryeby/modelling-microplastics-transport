@@ -33,7 +33,7 @@ def main():
 	plt.plot(analytical_u, analytical_z, ':k')
 	plt.scatter(neutral_u, neutral_z, marker='.', ec='k', fc='none')
 	plt.text(TEXT_POSITION_X[0], TEXT_POSITION_Y[0],
-			 str(Fraction(RS[0]).limit_denominator()), bbox=PROPERTIES,
+			 str(Fraction(RS[0]).limit_denominator(1000)), bbox=PROPERTIES,
 			 fontsize=FS)
 
 	# plot negatively & positively buoyant curves, data points, and labels

@@ -5,7 +5,7 @@ from itertools import repeat
 from parallelbar import progress_starmap
 from tqdm import tqdm
 
-from utils.data_tools import update_results
+from utils.data_tools import update_results, NEUTRAL_R
 from transport_framework import particle as prt
 from models import linear_wave as fl
 from models import my_system as ts
@@ -20,7 +20,7 @@ AMPLITUDE = 0.02
 WAVELENGTH = 1.5
 
 # simulation conditions
-RS = [2 / 3, 0.7, 0.8, 0.6, 0.5]
+RS = [NEUTRAL_R, 0.7, 0.8, 0.6, 0.5]
 NUM_PERIODS = 12
 DELTA_T = 5e-3
 NUM_CPUS = None

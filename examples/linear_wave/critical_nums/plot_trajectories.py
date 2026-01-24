@@ -9,6 +9,7 @@ from examples.linear_wave.critical_nums.trajectory_numerics import OUT_FILE as \
 																   IN_FILE
 
 TITLES = ['pre-critical', 'critical', 'post-critical']
+SHOW_TITLES = False
 
 def main():
 	"""Plot the trajectories of particles of critical size and density."""
@@ -25,7 +26,7 @@ def main():
 			ytix = [0, -2, -4, -6]
 		fig(r'$x$', num=131 + i, make_square=False, lims=l)
 		if i == 0 and j == -3: plt.ylabel(r'$z$')
-#		plt.title(TITLES[i])
+		if SHOW_TITLES: plt.title(TITLES[i])
 		plt.xticks([0, 0.05, 0.1])
 		plt.yticks(ytix)
 		x, z = extract_data(['x', 'z'], numerics, {'St': stokes_nums[j]})

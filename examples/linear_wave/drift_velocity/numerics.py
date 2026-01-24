@@ -37,7 +37,7 @@ def main():
 
 	See Also
 	--------
-	models.my_system.compute_alternate_drift_velocity
+	models.my_system.compute_alternate_drift_velocity()
 	"""
 	# create the Particle, Flow, and TransportSystem objects
 	particle = prt.Particle(STOKES_NUM)

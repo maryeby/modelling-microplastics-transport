@@ -42,7 +42,7 @@ def main():
 
 	See Also
 	--------
-	models.my_system.compute_drift_velocity
+	models.my_system.compute_drift_velocity()
 	"""
 	waves, repeated_stokes_hats, repeated_z0s = [], [], []
 	results = {key: [] for key in KEYS}

@@ -32,9 +32,9 @@ def main():
 
 	See Also
 	--------
-	models.my_system.compute_drift_velocity
+	models.my_system.compute_drift_velocity()
 	"""
-	# create dict to store sols, initialize variables for the simulations
+	# create dict to store sols, initialize the Wave object
 	results = {key: [] for key in KEYS}
 	wave = fl.StokesWave(DEPTH, AMPLITUDE, WAVELENGTH)
 	print_parameter('epsilon', wave.steepness)
@@ -43,11 +43,11 @@ def main():
 	print_parameter('R', RS[1])
 	warnings.filterwarnings('ignore')
 
-	# create parameters to run simulations
+	# create lists of parameters to pass to the run_numerics function
 	repeated_st = [STOKES_HATS[0]] + STOKES_HATS[-2:] + STOKES_HATS[:3]
 	repeated_rs = [RS[0]] * 3 + [RS[1]] * 3
 
-	# run simulations iteratively
+	# run simulations with history effects iteratively
 	print('Running simulations with history effects...')
 	repeated_history = [True] * len(repeated_st)
 	for st, r, history in tqdm(zip(repeated_st, repeated_rs, repeated_history),
@@ -56,7 +56,7 @@ def main():
 		results = update_results(results, sol[:3], [None, None] + sol[8:])
 		results = update_results(results, sol[3:8], sol[8:])
 
-	# run simulations in parallel
+	# run simulations without history effects in parallel
 	print('Running simulations without history effects...')
 	repeated_history = [False] * len(repeated_st)
 	params = zip(repeat(wave), repeated_st, repeated_rs, repeated_history)
@@ -90,7 +90,7 @@ def run_numerics(wave, stokes_hat, r, include_history):
 		horizontal drift velocity, the Stokes number, the density ratio, and
 		whether history effects were included.
 	"""
-	# create Particle and TransportSystem objects, time series data
+	# create Particle and TransportSystem objects, initialize time series data
 	particle = prt.Particle(stokes_hat)
 	system = ts.MyTransportSystem(particle, wave, r)
 	num_periods = 25 if stokes_hat == STOKES_HATS[0] else 20
@@ -108,6 +108,8 @@ def run_numerics(wave, stokes_hat, r, include_history):
 	x, z, xdot, _, t = system.maxey_riley(t, y, include_history,
 										  HIDE_PROGRESS)[:5]
 	x_cross, z_cross, u, w, t_cross = ts.compute_drift_velocity(x, z, xdot, t)
+
+	# scale the drift velocity by epsilon^2
 	u /= wave.steepness * wave.steepness
 	w /= wave.steepness * wave.steepness
 	return[t, x, z, t_cross[1:], x_cross[1:], z_cross[1:], u, w, stokes_hat,

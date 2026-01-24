@@ -1,11 +1,13 @@
 import numpy as np
 from scipy import constants
 from transport_framework import wave
+from utils.colors import print_warning
 
 class DimensionalBichromaticWave(wave.Wave):
 	"""Represent a dimensionless bichromatic wave of arbitrarily deep water."""
 
-	def __init__(self, depth, amplitude, wavelength):
+	def __init__(self, depth, amplitude, wavelength, slope=0,
+				 include_subharmonics=True):
 		r"""
 		Attributes
 		----------
@@ -16,6 +18,10 @@ class DimensionalBichromaticWave(wave.Wave):
 		wavelength : ndarray
 			1D array of `float` values, the wavelengths $\lambda'_1$ and
 			$\lambda'_2$.
+		slope : float, default=0
+			The slope of the seabed.
+		include_subharmonics : bool, defualt=True
+			Whether to include subharmonic effects.
 		kinematic_viscosity : float
 			The kinematic viscosity $\nu'$ of seawater.
 		wavenum : ndarray
@@ -45,6 +51,11 @@ class DimensionalBichromaticWave(wave.Wave):
 			\nu'}.$$
 		"""
 		super().__init__(depth, amplitude, wavelength)
+		self.slope = slope
+		self.include_subharmonics = include_subharmonics
+		# warn if the |h_x| << hk_g condition is not met
+		if np.abs(self.wavenum[0] - self.wavenum[1]) * depth / 10 \
+			< np.abs(slope): print_warning('Slope is too steep.')
 
 	def set_angular_freq(self):
 		r"""
@@ -56,15 +67,25 @@ class DimensionalBichromaticWave(wave.Wave):
 
 	def velocity(self, x, z, t):
 		r"""
-		Compute the fluid velocity $\boldsymbol{u}' = \langle u', w' \rangle,$
-		$$u'(x', z', t') = \omega'_1 A'_1 \frac{\cosh{(k'_1(z' + h'))}}
-						  {\sinh{(k'_1 h')}} \cos{(k'_1 x' - \omega'_1 t')} \
-						 + \omega'_2 A'_2 \frac{\cosh{(k'_2 (z' + h'))}}
-						  {\sinh{(k'_2 h')}} \cos{(k'_2 x' - \omega'_2 t')},$$
-		$$w'(x', z', t') = \omega'_1 A'_1 \frac{\sinh{(k'_1(z' + h'))}}
-						  {\sinh{(k'_1 h')}} \sin{(k'_1 x' - \omega'_1 t')} 
-						 + \frac{\sinh{(k'_2 (z' + h'))}}{\sinh{(k'_2 h')}}
-						   \sin{(k'_2 x - \omega'_2 t)}.$$
+		Compute the first order fluid velocity, $\boldsymbol{u}^{(1)\prime} 
+		= \langle u^{(1)\prime}, w^{(1)\prime} \rangle,$
+		$$u^{(1)\prime}(x', z', t') = \omega'_1 A'_1
+				\frac{\cosh{(k'_1(z' + h'))}}{\sinh{(k'_1 h')}}
+				\cos{(k'_1 x' - \omega'_1 t')} + \omega'_2 A'_2
+				\frac{\cosh{(k'_2 (z' + h'))}}{\sinh{(k'_2 h')}}
+				\cos{(k'_2 x' - \omega'_2 t')},$$
+		$$w^{(1)\prime}(x', z', t') = \omega'_1 A'_1
+				\frac{\sinh{(k'_1(z' + h'))}}{\sinh{(k'_1 h')}}
+				\sin{(k'_1 x' - \omega'_1 t')} + \omega'_2 A'_2
+				\frac{\sinh{(k'_2 (z' + h'))}}{\sinh{(k'_2 h')}}
+				\sin{(k'_2 x - \omega'_2 t)}.$$
+		Optionally, the second order horizontal component,
+		$$u^{(2)\prime} = -K_u \frac{A'_1 A'_2}{h^{\prime 2} c'} \cdot
+						  \frac{c^{\prime 2}_g + g'h' - \frac{1}{2} c'c'_g}{1
+						- \frac{c^{\prime 2}_g}{g'h'}} \cos{(k'_g x'
+						- \omega'_g t' + \phi_u)},$$
+		is added to include subharmonic effects, thus returning $\boldsymbol{u}'
+		= \langle u^{(1)\prime} + u^{(2)\prime}, w^{(1)\prime} \rangle.$
 
 		Parameters
 		----------
@@ -78,10 +99,10 @@ class DimensionalBichromaticWave(wave.Wave):
 		ndarray
 			1D array of `float` data, the vector components *u* and *w*.
 		"""
-		h = self.depth
+		h = self.seabed(x)
 		k1, k2 = self.wavenum
-		omega1, omega2 = self.angular_freq
 		a1, a2 = self.amplitude
+		omega1, omega2 = self.angular_freq
 
 		# velocity field components
 		u = a1 * omega1 * np.cosh(k1 * (z + h)) * np.cos(k1 * x - omega1 * t) \
@@ -90,7 +111,10 @@ class DimensionalBichromaticWave(wave.Wave):
 		w = a1 * omega1 * np.sinh(k1 * (z + h)) * np.sin(k1 * x - omega1 * t) \
 			   / np.sinh(k1 * h) + a2 * omega2 * np.sinh(k2 * (z + h)) \
 			   * np.sin(k2 * x - omega2 * t) / np.sinh(k2 * h)
-		return np.array([u, w])
+		if self.include_subharmonics:
+			return np.array([u + self.subharmonic(x, t), w])
+		else:
+			return np.array([u, w])
 
 	def partial_t(self, x, z, t): 
 		r"""
@@ -99,12 +123,16 @@ class DimensionalBichromaticWave(wave.Wave):
 				\frac{\cosh(k'_1(z' + h'))}{\sinh(k'_1 h')}
 				\sin(k'_1 x' - \omega'_1 t') + \omega^{\prime 2}_2 A'_2
 				\frac{\cosh(k'_2(z' + h'))}{\sinh(k'_2 h')}
-				\sin(k'_2 x' - \omega'_2 t'),$$
+				\sin(k'_2 x' - \omega'_2 t')\\-K_u \omega'_g
+				\frac{A'_1 A'_2}{h^{\prime 2} c'} \cdot \frac{(c_g^{\prime 2}
+				- c'c'_g / 2 + g'h')}{(1 - c_g^{\prime 2}/(g'h'))}
+				\sin(x' k'_g - t' \omega'_g + \phi_u),$$
 		$$\frac{\partial w'}{\partial t'} = -\omega^{\prime 2}_1 A'_1
 				\frac{\sinh(k'_1(z' + h'))}{\sinh(k'_1 h')}
 				\cos(k'_1 x' - \omega'_1 t') - \omega^{\prime 2}_2 A'_2
 				\frac{\sinh(k'_2 (z' + h'))}{\sinh(k'_2 h')}
 				\cos(k'_2 x' - \omega'_2 t').$$
+		If subharmonic effects are neglected, we set $K_u = 0.$
 
 		Parameters
 		----------
@@ -118,16 +146,25 @@ class DimensionalBichromaticWave(wave.Wave):
 		ndarray
 			1D array of `float` data, the vector components of the derivative.
 		"""
-		h = self.depth
+		h = self.seabed(x)
 		k1, k2 = self.wavenum
-		omega1, omega2 = self.angular_freq
 		a1, a2 = self.amplitude
+		omega1, omega2 = self.angular_freq
+		k_u = self.k_u(x) if self.include_subharmonics else 0
+		k = (k1 + k2) / 2
+		c = np.sqrt(constants.g * h) * np.sqrt(np.tanh(k * h) / (k * h))
+		omega_g = np.abs(omega1 - omega2)
+		kg = np.abs(k1 - k2)
+		cg = omega_g / kg
 
 		# partial derivative components
 		dudt = a1 * omega1 * omega1 * np.cosh(k1 * (z + h)) \
 				  * np.sin(k1 * x - omega1 * t) / np.sinh(h) \
 				  + a2 * omega2 * omega2 * np.cosh(k2 * (z + h)) \
-				  * np.sin(k2 * x - omega2 * t) / np.sinh(k2 * h)
+				  * np.sin(k2 * x - omega2 * t) / np.sinh(k2 * h) - k_u \
+				  * omega_g * a1 * a2 / (h * h * c) * (cg * cg - c * cg / 2
+				  + constants.g * h) / (1 - cg * cg / (constants.g * h)) \
+				  * np.sin(kg * x - omega_g * t + self.phi_u(x))
 		dwdt = a1 * omega1 * omega1 * np.sinh(k1 * (z + h)) \
 				  * np.cos(k1 * x - omega1 * t) / np.sinh(k1 * h) \
 				  - a2 * omega2 * omega2 * np.sinh(k2 * (z + h)) \
@@ -142,12 +179,16 @@ class DimensionalBichromaticWave(wave.Wave):
 				\frac{\cosh(k'_1(z' + h'))}{\sinh(k'_1 h')}
 				\sin(k'_1 x' - \omega'_1 t') - \omega'_2 k'_2 A'_2
 				\frac{\cosh(k'_2 (z' + h'))}{\sinh(k'_2 h')}
-				\sin(k'_2 x' - \omega'_2 t'),$$
+				\sin(k'_2 x' - \omega'_2 t')\\+ K_u k'_g
+				\frac{A'_1 A'_2}{h^{\prime 2} c'} \cdot \frac{c_g^{\prime 2}
+			  - c'c'_g / 2 + g'h'}{1 - c_g^{\prime 2} / (g'h')} \sin(x' k'_g
+			  - \omega'_g t' + \phi_u),$$
 		$$\frac{\partial w'}{\partial x'} = \omega_1 k'_1 A'_1
 				\frac{\sinh(k'_1(z' + h'))}{\sinh(k'_1 h')}
 				\cos(k'_1 x' - \omega'_1 t') + \omega'_2 k'_2 A'_2
 				\frac{\sinh(k'_2 (z' + h'))}{\sinh(k'_2 h')}
 				\cos(k'_2 x' - \omega'_2 t').$$
+		If subharmonic effects are neglected, we set $K_u = 0.$
 
 		Parameters
 		----------
@@ -161,16 +202,25 @@ class DimensionalBichromaticWave(wave.Wave):
 		ndarray
 			1D array of `float` data, the vector components of the derivative.
 		"""
-		h = self.depth
+		h = self.seabed(x)
 		k1, k2 = self.wavenum
-		omega1, omega2 = self.angular_freq
 		a1, a2 = self.amplitude
+		omega1, omega2 = self.angular_freq
+		k_u = self.k_u(x) if self.include_subharmonics else 0
+		k = (k1 + k2) / 2
+		c = np.sqrt(constants.g * h) * np.sqrt(np.tanh(k * h) / (k * h))
+		omega_g = np.abs(omega1 - omega2)
+		kg = np.abs(k1 - k2)
+		cg = omega_g / kg
 
 		# partial derivative components
 		dudx = omega1 * k1 * a1 * np.cosh(k1 * (z + h)) \
 				  * np.sin(k1 * x - omega1 * t) / np.sinh(k1 * h) \
 				  - a2 * k2 * omega2 * np.cosh(k2 * (z + h)) \
-				  * np.sin(k2 * x - omega2 * t) / np.sinh(k2 * h)
+				  * np.sin(k2 * x - omega2 * t) / np.sinh(k2 * h) + k_u \
+				  * kg * a1 * a2 / (h * h * c) * (cg * cg - c * cg / 2
+				  + constants.g * h) / (1 - cg * cg / (constants.g * h)) \
+				  * np.sin(kg * x - omega_g * t + self.phi_u(x))
 		dwdx = omega1 * k1 * a1 * np.sinh(k1 * (z + h)) \
 				  * np.cos(k1 * x - omega1 * t) / np.sinh(k1 * h) \
 				  + a2 * k2 * omega2 * np.sinh(k2 * (z + h)) \
@@ -204,10 +254,10 @@ class DimensionalBichromaticWave(wave.Wave):
 		ndarray
 			1D array of `float` data, the vector components of the derivative.
 		"""
-		h = self.depth
+		h = self.seabed(x)
 		k1, k2 = self.wavenum
-		omega1, omega2 = self.angular_freq
 		a1, a2 = self.amplitude
+		omega1, omega2 = self.angular_freq
 
 		# partial derivative components
 		dudz = omega1 * k1 * a1 * np.sinh(k1 * (z + h)) \
@@ -219,3 +269,71 @@ class DimensionalBichromaticWave(wave.Wave):
 					  + omega2 * k2 * a2 * np.cosh(k2 * (z + h)) \
 					   * np.sin(k2 * x - omega2 * t) / np.sinh(k2 * h)
 		return np.array([dudz, dwdz])
+
+	def subharmonic(self, x, t):
+		r"""
+		Return the subharmonic component: the second order horizontal velocity,
+		$$u^{(2)\prime} = -K_u \frac{A'_1 A'_2}{h^{\prime 2} c'} \cdot
+						  \frac{c^{\prime 2}_g + g'h' - \frac{1}{2} c'c'_g}{1
+						- \frac{c^{\prime 2}_g}{g'h'}} \cos{(k'_g x'
+						- \omega'_g t' + \phi_u)}.$$
+
+		Parameters
+		----------
+		x : float or ndarray
+			The horizontal position(s).
+		t : float or ndarray
+			The time(s) at which to evaluate the second order velocity.
+
+		Returns
+		-------
+		float or ndarray
+			The second order horizontal velocity.
+		"""
+		h = self.seabed(x)
+		k1, k2 = self.wavenum
+		a1, a2 = self.amplitude
+		omega1, omega2 = self.angular_freq
+		k = (k1 + k2) / 2
+		c = np.sqrt(constants.g * h) * np.sqrt(np.tanh(k * h) / (k * h))
+		omega_g = np.abs(omega1 - omega2)
+		kg = np.abs(k1 - k2)
+		cg = omega_g / kg
+
+		# horizontal second order velocity (subharmonic component)
+		return -self.k_u(x) * a1 * a2 / (h * h * c) * (cg * cg + constants.g * h
+			   - 0.5 * c * cg) / (1 - cg * cg / (constants.g * h)) * np.cos(kg
+			   * x - omega_g * t + self.phi_u(x))
+
+	def seabed(self, x=0):
+		"""Return the depth of the seabed at horizontal position `x`."""
+		return self.slope * x + self.depth
+
+	def beta(self, x):
+		r"""Return $$\beta \equiv \frac{|h'_{x'}|}{k'_g h'(x')}.$$"""
+		beta = np.abs(self.slope) / (np.abs(self.wavenum[0] - self.wavenum[1])
+								  * self.seabed(x))
+		if np.any(beta) > 0.5: print_warning('Coefficient \u03B2 is outside '
+										   + 'the pre-computed range.')
+		return beta
+
+	def xi(self, x):
+		r"""Return $$\xi = h'(x') \frac{k'_1 + k'_2}{2}.$$"""
+		xi = (self.wavenum[0] + self.wavenum[1]) / 2 * self.seabed(x)
+		if np.any(xi) > 4.12: print_warning('Coefficient \u03BE is outside the '
+										  + 'pre-computed range.')
+		return xi
+
+	def k_u(self, x):
+		r"""Return $$K_u(\xi, \beta) = \tanh(p_7 \xi^{p_8} \beta^{p_9}).$$"""
+		p7 = 0.3917
+		p8 = 0.9522
+		p9 = -0.4982
+		return np.tanh(p7 * self.xi(x) ** p8 * self.beta(x) ** p9)
+
+	def phi_u(self, x):
+		r"""Return $$\phi_u(\xi, \beta) = p_{10}\xi^{p_{11}}\beta^{p_{12}}.$$"""
+		p10 = 0.8919
+		p11 = -1.3034
+		p12 = 0.5583
+		return p10 * self.xi(x) ** p11 * self.beta(x) ** p12

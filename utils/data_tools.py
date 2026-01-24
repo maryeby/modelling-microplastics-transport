@@ -5,7 +5,7 @@ from transport_framework import particle as prt
 from models import bichromatic_wave
 from models import my_system as ts
 
-NEUTRAL_R = 2 / 3
+NEUTRAL_R = np.round(2 / 3, 5)
 
 def extract_data(name, df, params=None):
 	"""
@@ -80,8 +80,17 @@ def match_data(data, extracted_data, rtol=1e-1, atol=1e-2):
 		i = np.abs(data - n).argmin()
 		sample.append(data[i])
 	if not np.allclose(sample, extracted_data, rtol, atol):
-		print(f'{np.max(np.abs(sample-extracted_data))} at {np.argmax(np.abs(sample-extracted_data))}')
+		print(f'{np.max(np.abs(sample-extracted_data))} at ',
+			  f'{np.argmax(np.abs(sample-extracted_data))}')
 	return np.allclose(sample, extracted_data, rtol, atol)
+
+def f(t, a, delta, phi, offset):
+	r"""Evaluate $f(t, A, \delta, \phi, \text{offset})$."""
+	return a * np.exp(-delta * t) * np.sin(t + phi) + offset
+
+def g(x, a, delta, offset):
+	r"""Evaluate $g(x, A, \delta, \text{offset})$."""
+	return a * np.exp(delta * x) + offset
 
 def update_results(results, arrays, scalars):
 	"""
@@ -167,5 +176,6 @@ def print_parameter(name, value):
 					.denominator):^11}{value:<8.5g}')
 	else:
 		name = 'Sthat/\u03B3' if name == 'Sthat/gamma' else name
+		name = '\u03B4' if name == 'decay_rate' else name
 		print(f'{name:^10}{str(Fraction(value).limit_denominator(1000)):^11}'
 			+ f'{value:<8.5g}')

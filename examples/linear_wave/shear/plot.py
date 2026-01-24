@@ -4,15 +4,13 @@ import matplotlib.pyplot as plt
 from itertools import product
 
 from utils.plot import initialize_figure as fig 
-from utils.data_tools import extract_data
+from utils.data_tools import extract_data, NEUTRAL_R
 from utils.colors import COLORS
 from examples.linear_wave.shear.numerics import X_0S, RADIUS, ANGLE, \
 	 Z_NEGATIVE, Z_POSITIVE, ST_TO_SHOW, R_TO_SHOW, STOKES_HATS, RS, \
 	 NUM_POINTS, WAVELENGTH, AMPLITUDE
 from examples.linear_wave.shear.numerics import OUT_FILE as IN_FILE1
 from examples.linear_wave.shear.analysis import OUT_FILE2 as IN_FILE2
-
-NEUTRAL_R = np.round(2 / 3, 5)
 
 def main():
 	"""Plot particle positions at regular intervals and other shear results."""

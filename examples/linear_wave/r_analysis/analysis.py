@@ -5,7 +5,7 @@ import scipy.constants as constants
 from scipy.optimize import curve_fit
 from tqdm.contrib.itertools import product
 
-from utils.data_tools import extract_data, update_results
+from utils.data_tools import extract_data, update_results, g
 from models import linear_wave as fl
 from examples.linear_wave.r_analysis.numerics import AMPLITUDE as A
 from examples.linear_wave.r_analysis.numerics import DEPTH, WAVELENGTH, RS
@@ -17,7 +17,7 @@ KEYS = ['z', 'u', 'R', 'history', 'analytical']
 OUT_FILE = '../../data/linear_wave/r_analysis.csv'
 
 def main():
-	"""
+	r"""
 	Compute the drift velocity of particles in a wave, fit a curve to the data.
 
 	The average horizontal Stokes drift velocity is numerically computed for
@@ -31,11 +31,14 @@ def main():
 	neutrally buoyant simulations, rather than fitting a curve to the numerical
 	solutions. For other particles, the drift velocity is averaged over each
 	wave period, and single curve is fit to the numerical solutions of each
-	simulation. Results are saved to the `data/linear_wave` directory.
+	simulation. The expression $$g(x, A, \delta, \text{offset}) = Ae^{\delta t}
+	+ offset$$ is used to fit a curve to the data. Results are saved to the
+	`data/linear_wave` directory.
 
 	See Also
 	--------
-	models.my_system.compute_drift_velocity
+	models.my_system.compute_drift_velocity()
+	utils.data_tools.g()
 
 	References
 	----------
@@ -65,9 +68,9 @@ def main():
 						 np.linspace(-7, 0, EXT_RANGE)
 
 		# fit a curve to the numerical data
-		coefficients, _ = curve_fit(power, z_bar, u_bar, maxfev=MAXFEV)
-		a, b, offset = coefficients
-		u_bar = power(extended_range, a, b, offset)
+		coefficients, _ = curve_fit(g, z_bar, u_bar, maxfev=MAXFEV)
+		a, delta, offset = coefficients
+		u_bar = g(extended_range, a, delta, offset)
 
 		# store fitted curves
 		results = update_results(results, [extended_range, u_bar],
@@ -80,8 +83,6 @@ def main():
 	u_d = np.cosh(2 * (z + h)) / (2 * np.sinh(h) ** 2)
 	results = update_results(results, [z, u_d], [r, history, analytical])
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
-
-def power(x, a, b, offset): return a * np.exp(b * x) + offset
 
 if __name__ == '__main__':
 	main()

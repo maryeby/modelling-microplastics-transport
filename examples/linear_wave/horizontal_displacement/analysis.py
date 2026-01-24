@@ -116,7 +116,7 @@ def find_midpoints(x, z):
 	mid = np.rint((np.array(right) + np.array(left)) / 2).astype(int)
 	return x[mid], z[mid]
 
-def f(z, a, b, c, d): return a + b * z + c * z * z + d * z ** 3# + j * z ** 4
+def f(z, a, b, c, d): return a + b * z + c * z * z + d * z ** 3
 
 def compute_horizontal_displacement(x_0, x_f, x_f_history):
 	"""

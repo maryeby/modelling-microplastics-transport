@@ -5,7 +5,7 @@ import scipy as scp
 from matplotlib import pyplot as plt
 from tqdm.contrib.itertools import product
 
-from utils.data_tools import extract_data, print_characteristic_params
+from utils.data_tools import extract_data, print_characteristic_params, f
 from utils.plot import initialize_figure as fig
 from transport_framework import particle as prt
 from models import linear_wave as fl
@@ -103,9 +103,6 @@ def main():
 	coeffs = restrict_coeffs(coeffs)
 	coeffs.round(6).to_csv(OUT_FILE, index=False)
 	plt.show()
-
-def f(t, a, delta, phi, offset):
-	return a * np.exp(delta * t) * np.sin(t + phi) + offset
 
 def restrict_coeffs(df):
 	r"""Restrict *A* to be positive and map $\phi$ to $[0, 2\pi]$ in `df`."""

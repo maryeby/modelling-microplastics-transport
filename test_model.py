@@ -5,6 +5,9 @@ import numpy as np
 import scipy as scp
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from scipy.io import loadmat
+from scipy.fft import fft, fftfreq, ifft
+from scipy.signal import find_peaks, correlate, correlation_lags
 
 from transport_framework import particle as prt
 from models import quiescent_flow as qfl
@@ -25,6 +28,8 @@ IN_FILE2 = 'examples/data/rigid_body_rotation/daitche_fig3.csv'
 IN_FILE3 = 'examples/data/deep_linear_wave/santamaria_fig1.csv'
 IN_FILE4 = 'examples/data/deep_linear_wave/cathals_sm_fig1_recreation.csv'
 IN_FILE5 = 'examples/data/bichromatic_wave/swash_flat_seabed_data.mat'
+IN_FILE6 = 'examples/data/bichromatic_wave/swash_sloped_seabed_data.mat'
+IN_FILE7 = 'examples/data/bichromatic_wave/sloped_seabed_coords.mat'
 PLOT_IF_SUCCESSFUL = True
 
 def main():
@@ -37,6 +42,7 @@ def main():
 	test_boundaries()
 	test_stokes_wave()
 	test_flat_seabed()
+	test_subharmonics()
 	if PLOT_IF_SUCCESSFUL: plt.show()
 
 def test_relaxation():
@@ -83,16 +89,16 @@ def test_relaxation():
 
 		# compare the numerical results to the extracted data
 		if match_data(xdot, extracted_xdot):
-			print_success(f'Numerical solutions match {h_str}\n\n')
+			print_success(f'Numerical solutions match {h_str}\n')
 		else:
-			print_failure(f'Numerical solutions do not match {h_str}\n\n')
+			print_failure(f'Numerical solutions do not match {h_str}\n')
 			success = False
-	if not success: # plot the data if there were any failures
-		plot_relaxing_case(betas, data, xdots, ts, asymptotics)
+	# plot the data and show immediately if there were any failures
+	plot_relaxing_case(betas, data, xdots, ts, asymptotics)
+	if not success:
 		plt.show()
 		quit()
-	else:
-		plot_relaxing_case(betas, data, xdots, ts, asymptotics)
+	print()
 
 def relaxing_asymptotics(beta, t):
 	r"""
@@ -154,6 +160,7 @@ def plot_relaxing_case(betas, data, xdots, ts, asymptotics):
 		  effects of Basset history. *Journal of Fluid Mechanics* 868, 428–460.
 	"""
 	fig(r'$t$', r'$\dot{x}$', lims=[0, 14.5, 1e-5, 1e1], y_scale='log')
+	plt.title('case 1: relaxing particle')
 	for i in range(len(betas)):
 		# get extracted data
 		names = ['xdot', 't']
@@ -166,9 +173,9 @@ def plot_relaxing_case(betas, data, xdots, ts, asymptotics):
 		ext_xdot, ext_t = extract_data(names, data, params)
 
 		# plot extracted data
-		plt.plot(ext_t_history, ext_xdot_history, c=COLORS[-1])
-		plt.plot(ext_t, ext_xdot, c=COLORS[-1], ls='--')
-		plt.plot(ext_asym_t, ext_asym_xdot, c=COLORS[-1], ls=':')
+		plt.plot(ext_t_history, ext_xdot_history, c=COLORS[-1], lw=4)
+		plt.plot(ext_t, ext_xdot, c=COLORS[-1], ls='--', lw=4)
+		plt.plot(ext_asym_t, ext_asym_xdot, c=COLORS[-1], ls=':', lw=4)
 
 		# plot numerical and asymptotic results
 		plt.plot(ts[i * 2], xdots[i * 2], c=COLORS[i],
@@ -258,14 +265,13 @@ def test_rotation():
 		plt.legend()
 		plt.show()
 		quit()
+	plot_error_analysis(data, t, e_rel1, e_rel2, e_rel3)
+	plot_rotating_trajectory(data, exact[:n], x_int, x1[:n], x2[:n], x3[:n])
+	plt.legend()
 	if match_data(e_rel3, ext_e_rel3):
 		print_success('Third order error analysis matches')
 	else:
 		print_failure('Third order error analysis does not match')
-		plot_error_analysis(data, t, e_rel1, e_rel2, e_rel3)
-		plot_rotating_trajectory(data, exact[:n], x_int, x1[:n],
-								 x2[:n], x3[:n])
-		plt.legend()
 		plt.show()
 		quit()
 
@@ -278,13 +284,12 @@ def test_rotation():
 		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
 		plt.show()
 		quit()
+	plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
 	if match_data(exact_hz, history_z):
 		print_success('History force verified in the z direction')
-		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
 		print('\n')
 	else:
 		print_failure('History force not verified in the z direction')
-		plot_history(t[:-3], exact_hx, exact_hz, history_x, history_z)
 		plt.show()
 		quit()
 
@@ -438,6 +443,7 @@ def plot_rotating_trajectory(data, analytical, x_int, x1, x2=None, x3=None):
 
 	# plot
 	fig(r'$x$', r'$z$', lims=[-2, 2.5, -2.5, 2], make_square=True)
+	plt.title('case 2: rigid body rotation')
 	plt.scatter(ext_x, ext_z, c=COLORS[-1], marker='x')	# extracted 1st order
 	x, z = analytical.T
 	plt.plot(x, z, c='k', label='analytical')			# exact solution
@@ -477,6 +483,7 @@ def plot_error_analysis(data, t, e_rel1, e_rel2=None, e_rel3=None):
 		  254, 93–106.
 	"""
 	fig(r'$t$', r'$E_{rel}$', lims=[0, 100, 1e-7, 1e0], y_scale='log')
+	plt.title('case 2: rigid body rotation error analysis')
 
 	# extract data
 	names = ['rel_error1', 't1', 'rel_error2', 't2', 'rel_error3', 't3']
@@ -510,6 +517,7 @@ def plot_history(t, exact_hx, exact_hz, history_x, history_z):
 		1D array of `float` data, the vertical numerical history force.
 	"""
 	fig(y_label=r"$H'(t)_x$", num=211)
+	plt.suptitle('case 2: rigid body rotation history verification')
 	plt.plot(t, exact_hx, c=COLORS[-1])
 	plt.plot(t, history_x, ':k')
 	fig(y_label=r"$H'(t)_z$", num=212)
@@ -544,16 +552,13 @@ def test_tracers():
 			success &= drift_vel_success
 			m += 1
 
-	if not success: # plot if any tests failed
-		plot_drift_velocity(label_values, analytical_u, analytical_z, u_bar,
-							z_bar)
-		plt.legend()
+	# plot results and show immediately if any tests failed
+	plot_drift_velocity(label_values, analytical_u, analytical_z, u_bar, z_bar)
+	plt.legend()
+	if not success:
 		plt.show()
 		quit()
 	else:
-		plot_drift_velocity(label_values, analytical_u, analytical_z, u_bar,
-							z_bar)
-		plt.legend()
 		print('\n')
 
 def analytical_stokes_drift(wave, z):
@@ -611,6 +616,7 @@ def plot_drift_velocity(labels, analytical_u, analytical_z, u_bar, z_bar):
 		A list of `float` elements, the average vertical positions.
 	"""
 	fig(r'$\bar{u}$', r'$\bar{z}$')
+	plt.title('case 3: neutrally buoyant particles in a linear wave')
 	label0 = 'h\'/' +  r'$\lambda$' + f'\' = {labels[0]:.2f}'
 	label1 = 'h\'/' +  r'$\lambda$' + f'\' = {labels[1]:.2f}'
 	label2 = 'h\'/' +  r'$\lambda$' + f'\' = {labels[2]:.2f}'
@@ -637,22 +643,18 @@ def test_buoyancy():
 	names = ['heavy_x', 'heavy_z', 'light_x', 'light_z']
 	sm_heavy_x, sm_heavy_z, sm_light_x, sm_light_z = extract_data(names,
 																  sm_data)
-	# compare trajectories to extracted data
+	# compare trajectories to extracted data and plot
 	print('\nComparing solutions to extracted data from Santamaria et al.',
 		  '(2013) Figure 1...')
+	plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy, x_light, z_light)
+	plt.legend()
 	if match_data(x_heavy, sm_heavy_x) and match_data(z_heavy, sm_heavy_z) \
 		and match_data(x_light, sm_light_x) \
 		and match_data(z_light, sm_light_z):
 		print_success('Numerical solutions match')
-		plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy,
-												 x_light, z_light)
-		plt.legend()
 		print('\n')
 	else:
 		print_failure('Numerical solutions do not match')
-		plot_wavy_trajectories(sm_data, cc_data, x_heavy, z_heavy,
-												 x_light, z_light)
-		plt.legend()
 		plt.show()
 		quit()
 
@@ -683,6 +685,7 @@ def plot_wavy_trajectories(data1, data2, x_heavy, z_heavy, x_light, z_light):
 		  *EPL (Europhysics Letters)* 102(1), 14003.
 	"""
 	fig(r'$x$', r'$z$', lims=[0, 3.2, -4, 0])
+	plt.title(r'cases 4 $\&$ 5: comparison to Santamaria')
 	plt.plot('heavy_x', 'heavy_z', c='grey', data=data1, linewidth=4,
 			 label='extracted data (Santamaria)')
 	plt.plot('heavy_x', 'heavy_z', c=COLORS[-1], data=data2,
@@ -719,13 +722,13 @@ def test_stokes_wave():
 		xl, zl, xdotl, zdotl, tl = simulate(linear_wave, r, h)[:5]
 		rtol, atol = 1e-1, 1e-3
 
-		# compare particle trajectories
+		# compare and plot particle trajectories
+		plot_stokes_wave(xs, zs, xl, zl, xdots, zdots, xdotl, zdotl, ts, tl)
+		plt.legend()
 		if np.allclose(xs, xl, rtol, atol) and np.allclose(zs, zl, rtol, atol):
 			print_success('Particle trajectories match')
 		else:
 			print_failure('Particle trajectories do not match')
-			plot_stokes_wave(xs, zs, xl, zl, xdots, zdots, xdotl, zdotl, ts, tl)
-			plt.legend()
 			plt.show()
 			quit()
 
@@ -733,12 +736,8 @@ def test_stokes_wave():
 		if np.allclose(xdots, xdotl, rtol, atol) and np.allclose(zdots, zdotl,
 					   rtol, atol) and np.allclose(ts, tl, rtol, atol):
 			print_success('Particle velocities match')
-			plot_stokes_wave(xs, zs, xl, zl, xdots, zdots, xdotl, zdotl, ts, tl)
-			plt.legend()
 		else:
 			print_failure('Particle velocities do not match')
-			plot_stokes_wave(xs, zs, xl, zl, xdots, zdots, xdotl, zdotl, ts, tl)
-			plt.legend()
 			plt.show()
 			quit()
 	print('\n')
@@ -762,15 +761,17 @@ def plot_stokes_wave(xs, zs, xl, zl, xdots, zdots, xdotl, zdotl, ts, tl):
 	"""
 	# plot particle trajectories
 	fig(r'$x$', r'$z$', make_square=True)
-	plt.plot(xl, zl, c='silver')
+	plt.title('case 8: fifth order Stokes wave')
+	plt.plot(xl, zl, lw=4, c='silver')
 	plt.plot(xs, zs, '-k')
 
 	# plot particle velocities
 	fig(y_label=r'$\dot{x}$', num=211)
-	plt.plot(tl, xdotl, c='silver')
+	plt.suptitle('case 8: fifth order Stokes wave')
+	plt.plot(tl, xdotl, lw=4, c='silver')
 	plt.plot(ts, xdots, '-k')
 	fig(r'$t$', r'$\dot{z}$', 212)
-	plt.plot(tl, zdotl, c='silver', label='linear wave')
+	plt.plot(tl, zdotl, lw=4, c='silver', label='linear wave')
 	plt.plot(ts, zdots, '-k', label='Stokes wave')
 
 def test_flat_seabed():
@@ -811,12 +812,14 @@ def test_flat_seabed():
 			w_data = swash_w[t_0_index:, i, j] / c
 			u_index, w_index = np.nonzero(u_data)[0], np.nonzero(w_data)[0]
 
+
 			# plot if the velocity field doesn't match SWASH data
 			if not (np.allclose(u[u_index], u_data[u_index], rtol, atol) \
 				and np.allclose(w[w_index], w_data[w_index], rtol, atol)):
 				print_failure('Fluid velocity does not match the SWASH data')
 				fig(y_label=r'$u$', num=211, hide_xticks=True)
-				plt.title(f'x[{i}], z[{j}]')
+				plt.title('case 9: bichromatic wave over a flat seabed'
+					   + f' (x[{i}], z[{j}])')
 				plt.scatter(t, u_data, marker='.', ec='k', fc='none')
 				plt.plot(t, u, '-k')
 				fig(r'$t$', r'$w$', 212)
@@ -826,6 +829,87 @@ def test_flat_seabed():
 				quit()
 	print_success('Fluid velocity matches the flat seabed SWASH data')
 	print('\n')
+
+def test_subharmonics():
+	"""Verify subharmonic effects in a bichromatic wave over a sloped seabed."""
+	print('CASE 10: BICHROMATIC WAVE OVER A SLOPED SEABED')
+	i, j = 100, 10	# indices of x data to test
+	t_0 = 600		# initial time
+	t_n = 4101		# total number of time points
+	delta_t = 0.2	# timestep
+
+	# read data from files
+	swash = loadmat(IN_FILE6)
+	coord = loadmat(IN_FILE7)
+	swash_x = coord['x_E']
+	swash_u = swash['u']
+	x = swash_x[i, j]
+
+	# create the BichromaticWave object
+	print('Verifying the solution for subharmonic effects with SWASH data...')
+	depth = 15
+	amplitudes = np.array([0.54 / 2, 0.18 / 2])
+	wavelengths = np.array([60.2991, 80.8996])
+	wave = bfl.BichromaticWave(depth, amplitudes, wavelengths, slope=0.0125)
+
+	# variables for non-dimensional scaling
+	omega = wave.angular_freq[0]
+	c = wave.phase_velocity[0]
+	k = wave.wavenum[0]
+
+	# time series and subharmonic solution
+	t = np.round(np.arange(600, t_0 + t_n * delta_t, delta_t), 5)
+	u = wave.subharmonic(k * x, t * omega)
+
+	# subtract the time-averaged signal and take the FFT
+	swash_u = (swash_u[:, i, j] - np.mean(swash_u[:, i, j]))
+	u_fft = fft(swash_u)
+	freqs = fftfreq(len(swash_u), delta_t)
+	n = len(swash_u) // 2
+
+	# compute the subharmonic and superharmonic frequencies
+	peaks, _ = find_peaks(np.abs(u_fft[:n]), height=100)
+	p1, p2 = peaks
+	f1, f2 = freqs[peaks]
+	subharmonic = np.abs(f1 - f2)
+	superharmonic = f1 + f2
+
+	# filter out non-subharmonic frequencies and scale results
+	subharmonic_fft = u_fft.copy()
+	subharmonic_fft[1e-3 < np.abs(np.abs(freqs) - subharmonic)] = 0
+	filtered_u = np.real(ifft(subharmonic_fft)) / c
+	t *= omega
+
+	# compute the phase shift and shift the computed data from my implementation
+	correlation = correlate(u, filtered_u)
+	lags = correlation_lags(len(u), len(filtered_u))
+	i = np.argmax(correlation)
+	phase_shift = int(lags[i])
+	indices = range(len(u)) if phase_shift < 0 else np.array(range(len(u))) \
+			- phase_shift
+	shifted_u = [u[phase_shift + j] for j in indices]
+
+	# plot the frequencies
+	fig('Hz', r'$|A|$')
+	plt.title('case 10: frequencies of a bichromatic wave over a sloped seabed')
+	plt.xlim(0, 0.35)
+	plt.axvline(subharmonic, c='silver')
+	plt.axvline(superharmonic, c='silver', ls='--')
+	plt.plot(np.abs(freqs[:n]), np.abs(u_fft[:n]), '-k')
+
+	# plot the subharmonics over time
+	fig(r'$t$', r'$u^{(2)}$')
+	plt.title('case 10: subharmonic effects')
+	plt.scatter(t, filtered_u, marker='.', ec='k', fc='none')
+	plt.plot(t, shifted_u, '-k')
+
+	# compare the computed subharmonic solution and SWASH data
+	if not np.allclose(filtered_u, shifted_u, rtol=1e-3, atol=1e-4):
+		print_failure('Fluid velocity does not match the SWASH data')
+		plt.show()
+		quit()
+	print_success('Solution for subharmonic effects matches the sloped seabed '
+				+ 'SWASH data')
 
 def simulate(flow, density_ratio, include_history, x_0=(0, 0), order=3):
 	"""

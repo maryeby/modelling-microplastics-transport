@@ -48,7 +48,7 @@ class LinearWave(wave.Wave):
 			   * self.amplitude, 5):
 			print_warning('Wave steepness parameter '
 				+ f'(epsilon = {self.wavenum * self.amplitude:.5f}) is not '
-				+ f'<< tanh(h) (= {np.tanh(self.wavenum * self.depth):.5f}).')
+				+ f'<< tanh(h) (= {np.tanh(self.wavenum * self.depth):g}).')
 
 	def set_angular_freq(self):
 		r"""

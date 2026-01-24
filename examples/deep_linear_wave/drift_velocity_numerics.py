@@ -40,7 +40,7 @@ def main():
 
 	See Also
 	--------
-	models.my_system.compute_drift_velocity
+	models.my_system.compute_drift_velocity()
 	"""
 	# create Wave object and array of timesteps
 	wave = fl.DeepLinearWave(AMPLITUDE, WAVELENGTH, DEPTH)

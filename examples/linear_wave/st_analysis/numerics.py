@@ -41,7 +41,7 @@ def main():
 
 	See Also
 	--------
-	models.my_system.compute_drift_velocity
+	models.my_system.compute_drift_velocity()
 	"""
 	# create dict to store sols, initialize variables for the simulations
 	results = {key: [] for key in KEYS}
