@@ -6,7 +6,7 @@ from utils.data_tools import extract_data
 from examples.bichromatic_wave.basic_example.numerics import OUT_FILE as IN_FILE
 
 def main():
-	"""Plot the position and velocity of a particle in a linear wave."""
+	"""Plot the position and velocity of a particle in a bichromatic wave."""
 	numerics = pd.read_csv(IN_FILE)
 
 	# plot particle trajectory
