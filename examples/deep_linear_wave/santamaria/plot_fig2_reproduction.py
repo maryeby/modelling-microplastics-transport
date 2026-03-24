@@ -14,7 +14,7 @@ MARKERS = ['o', 's', '^', 'v']
 
 def main():
 	"""
-	Reproduce Figure 2 from [1].
+	Reproduce Figure 2 from Ref. 1.
 
 	References
 	----------

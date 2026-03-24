@@ -25,8 +25,8 @@ HIDE_PROGRESS = True
 OUT_FILE = '../../data/linear_wave/history_convergence.csv'
 
 def main():
-	"""
-	Compute numerical solutions for the history force at time *t* = 0.
+	r"""
+	Compute numerical solutions for the history force at time $t = 0$.
 
 	The value of the history force is recorded from simulations run with various
 	time step sizes. Results are saved to the `data/linear_wave` directory.

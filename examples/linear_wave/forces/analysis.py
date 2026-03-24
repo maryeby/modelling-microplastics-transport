@@ -40,7 +40,7 @@ def main():
 	-----
 	The equation used to fit a curve to the data is,
 	$$f(t) = A e^{-\delta t} \sin{(\omega t + \phi)} + \text{offset},$$
-	and the coefficients saved are the amplitude *A*, angular frequency
+	and the coefficients saved are the amplitude $A$, angular frequency
 	$\omega$, decay rate $\delta$, phase shift $\phi$, and offset.
 	"""
 	# read data, suppress warnings
@@ -105,7 +105,7 @@ def main():
 	plt.show()
 
 def restrict_coeffs(df):
-	r"""Restrict *A* to be positive and map $\phi$ to $[0, 2\pi]$ in `df`."""
+	r"""Restrict $A$ to be positive and map $\phi$ to $[0, 2\pi]$ in `df`."""
 	# force A to be positive and shift the phase by pi where necessary
 	a, phi = df['A'].to_numpy(), df['phi'].to_numpy()
 	phi[a < 0] += np.pi

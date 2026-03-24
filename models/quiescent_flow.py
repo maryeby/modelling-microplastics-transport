@@ -4,19 +4,20 @@ from transport_framework import flow
 class QuiescentFlow(flow.Flow):
 	"""Represent a quiescent fluid flow."""
 
-	def __init__(self, depth=50):
+	def __init__(self, depth=50, g=1):
 		r"""
 		Attributes
 		----------
 		depth : float, default=50
-			The depth of the fluid *h*.
+			The depth of the fluid $h$.
 		gravity : ndarray
-			1D array of `float` data, the gravity ***g*** acting on the fluid.
+			1D array of `float` data, the gravity $\boldsymbol{g}$ acting on the
+			fluid.
 		period : float
 			A parameter used in the computation of the integration timespan.
 		"""
 		super().__init__(depth)
-		self.gravity = np.array([0, -1])
+		self.gravity = np.array([0, -g])
 	
 	def velocity(self, x, z, t):
 		r"""
@@ -33,7 +34,7 @@ class QuiescentFlow(flow.Flow):
 		Returns
 		-------
 		ndarray
-			1D array of `float` data, the vector components *u* and *w*.
+			1D array of `float` data, the vector components $u$ and $w$.
 		"""
 		if isinstance(t, np.ndarray):
 			return np.zeros((2, t.size))

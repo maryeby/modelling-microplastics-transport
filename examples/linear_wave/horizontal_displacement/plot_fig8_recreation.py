@@ -8,7 +8,7 @@ from examples.linear_wave.horizontal_displacement.dibenedetto_numerics import \
 
 def main():
 	"""
-	Reproduce Figure 8 from [1].
+	Reproduce Figure 8 from Ref. 1.
 
 	References
 	----------

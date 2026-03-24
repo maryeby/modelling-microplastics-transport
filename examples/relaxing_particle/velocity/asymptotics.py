@@ -5,10 +5,10 @@ from utils.data_tools import update_results
 from transport_framework import particle as prt
 from models import quiescent_flow as fl
 from models import relaxing_system as ts
-from examples.relaxing_particle.numerics import STOKES_HAT, BETAS
-from examples.relaxing_particle.numerics import OUT_FILE as IN_FILE
+from examples.relaxing_particle.velocity.numerics import STOKES_HAT, BETAS
+from examples.relaxing_particle.velocity.numerics import OUT_FILE as IN_FILE
 
-OUT_FILE = '../data/relaxing_particle/asymptotics.csv'
+OUT_FILE = '../../data/relaxing_particle/asymptotics.csv'
 
 def main():
 	"""

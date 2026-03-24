@@ -7,22 +7,22 @@ from models import quiescent_flow as fl
 from models import relaxing_system as ts
 
 # particle conditions
-STOKES_HAT = 2 / 3		# translated Stokes number from [1] Figure 4
+STOKES_HAT = 2 / 3		# translated Stokes number from Ref. 1 Figure 4
 X_0, Z_0 = 0, 0			# initial particle position
 XDOT_0, ZDOT_0 = 1, 1	# initial particle velocity
 
 # simulation conditions
-BETAS = [0.01, 1, 5]	# values of beta from [1] Figure 4
+BETAS = [0.01, 1, 5]	# values of beta from Ref. 1 Figure 4
 T_FINAL = 15			# total time
 DELTA_T = 1e-2			# timestep
-OUT_FILE = '../data/relaxing_particle/numerics.csv'
+OUT_FILE = '../../data/relaxing_particle/velocity_numerics.csv'
 
 def main():
 	"""
 	Run numerical simulations for a relaxing particle in a quiescent flow.
 
-	This program reproduces the results from [1] Figure 4, and saves the results
-	to the `data/relaxing_particle` directory.
+	This program reproduces the results from Ref. 1 Figure 4, and saves the
+	results to the `data/relaxing_particle` directory.
 
 	References
 	----------

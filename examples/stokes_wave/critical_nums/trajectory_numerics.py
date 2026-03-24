@@ -75,7 +75,7 @@ def run_numerics(wave_type, stokes_hat, amplitude):
 	stokes_hat : float
 		The Stokes number to use for the initialization of the particle.
 	amplitude : float
-		The amplitude *A'* of the wave.
+		The amplitude $A'$ of the wave.
 
 	Returns
 	-------

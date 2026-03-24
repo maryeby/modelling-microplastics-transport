@@ -118,7 +118,7 @@ def relaxing_asymptotics(beta, t):
 
 	Notes
 	-----
-	The computation is based on eq (4.7) from [1],
+	The computation is based on eq (4.7) from Ref. 1,
 	$$q^{(2)}(0, t) \approx c(\alpha, \gamma)
 		- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
 		+ \mathcal{O}(t^{3 / 2}),$$
@@ -138,7 +138,7 @@ def relaxing_asymptotics(beta, t):
 
 def plot_relaxing_case(betas, data, xdots, ts, asymptotics):
 	"""
-	Plot a recreation of Figure 4 from [1].
+	Plot a recreation of Figure 4 from Ref. 1.
 
 	Parameters
 	----------
@@ -413,7 +413,7 @@ def rotating_analytics(t):
 
 def plot_rotating_trajectory(data, analytical, x_int, x1, x2=None, x3=None):
 	"""
-	Plot a recreation of Figure 3(a) from [1].
+	Plot a recreation of Figure 3(a) from Ref. 1.
 	
 	Parameters
 	----------
@@ -460,7 +460,7 @@ def plot_rotating_trajectory(data, analytical, x_int, x1, x2=None, x3=None):
 
 def plot_error_analysis(data, t, e_rel1, e_rel2=None, e_rel3=None):
 	"""
-	Plot a recreation of Figure 3(b) from [1].
+	Plot a recreation of Figure 3(b) from Ref. 1.
 	
 	Parameters
 	----------
@@ -660,7 +660,7 @@ def test_buoyancy():
 
 def plot_wavy_trajectories(data1, data2, x_heavy, z_heavy, x_light, z_light):
 	"""
-	Plot a recreation of Figure 1 from [1].
+	Plot a recreation of Figure 1 from Ref. 1.
 
 	Parameters
 	----------

@@ -106,7 +106,7 @@ def main():
 	plt.show()
 
 def restrict_coeffs(df):
-	r"""Restrict *A* to be positive and map $\phi$ to $[0, 2\pi]$ in `df`."""
+	r"""Restrict $A$ to be positive and map $\phi$ to $[0, 2\pi]$ in `df`."""
 	# force A to be positive and shift the phase by pi where necessary
 	a, phi = df['A'].to_numpy(), df['phi'].to_numpy()
 	phi[a < 0] += np.pi

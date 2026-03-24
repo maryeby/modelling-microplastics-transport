@@ -11,17 +11,20 @@ from examples.stokes_wave.critical_nums.analysis import OUT_FILE as IN_FILE
 WAVENUM = 2 * np.pi / WAVELENGTH
 NAMES = ['R_c', 'St_c']
 YLIMS = [(0.25, 0.85), (0.3, 1), (0.3, 1)]
+HIDE_TITLES = True
 
 def main():
 	"""Plot the critical density ratio vs the critical Stokes number."""
 	analysis = pd.read_csv(IN_FILE)
 	amplitudes = analysis['A\''].drop_duplicates()
 	for i, j in zip(range(len(amplitudes)), YLIMS):
-		# create the subplot
+		# format and create the subplot
+		title = ' ' if HIDE_TITLES else r'$\epsilon = $' \
+					+ f'{amplitudes.iloc[i] * WAVELENGTH:.5g}'
 		print_parameter('epsilon', amplitudes.iloc[i] * WAVELENGTH)
 		plot_num = 100 * len(amplitudes) + 11 + i
 		fig(y_label=r'$St_c$', num=plot_num, hide_xticks=True)
-		plt.title(' ') # add space for labels
+		plt.title(title)
 		plt.ylim(j)
 		if i == len(amplitudes) - 1:
 			plt.xlabel(r'$R_c$')

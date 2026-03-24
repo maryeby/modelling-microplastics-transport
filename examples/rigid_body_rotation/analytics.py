@@ -83,7 +83,7 @@ def main():
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False) # write to data file
 
 def compute_analytics(flow, a, t):
-	"""
+	r"""
 	Compute analytical solutions.
 
 	Parameters
@@ -108,8 +108,8 @@ def compute_analytics(flow, a, t):
 
 	Notes
 	-----
-	Relevant equations for this function are (12), (A3), and (14) from [1], as
-	well as the formula for **H** from [2].
+	Relevant equations for this function are (12), (A3), and (14) from Ref. 1,
+	as well as the formula for $\boldsymbol{H}$ from [2].
 	
 	References
 	----------

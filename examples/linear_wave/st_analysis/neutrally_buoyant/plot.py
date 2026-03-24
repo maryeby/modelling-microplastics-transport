@@ -12,7 +12,7 @@ from examples.linear_wave.st_analysis.neutrally_buoyant.numerics \
 from examples.linear_wave.st_analysis.neutrally_buoyant.analytics \
 	 import OUT_FILE as IN_FILE2
 
-STYLES = ['-', '--', ':']
+FORMATS = ['-k', '--k', ':k']
 
 def main():
 	"""
@@ -34,7 +34,7 @@ def main():
 		label = r"$ h' / \lambda' = $" \
 			  + f'{str(Fraction(DEPTHS[i] / WAVELENGTH).limit_denominator())}'
 		z, u = extract_data(['z/h', 'u_d'], analytics, {'depth': DEPTHS[i]})
-		plt.plot(u, z, c='k', ls=STYLES[i], label=label)
+		plt.plot(u, z, FORMATS[i], label=label)
 	plt.legend()
 
 	# plot numerical solutions

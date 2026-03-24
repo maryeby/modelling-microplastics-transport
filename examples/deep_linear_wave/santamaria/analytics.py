@@ -17,8 +17,9 @@ def main():
 	
 	The Stokes drift velocity is analytically computed[^1] for a particle in a
 	linear wave of infinitely deep water for the purposes of recreating Figure 2
-	from [1]. Equations (13) and (14) from [1] are implemented here with slight
-	modifications. Results are saved to the `data/deep_linear_wave` directory.
+	from Ref. 1. Equations (13) and (14) from Ref. 1 are implemented here with
+	slight modifications. Results are saved to the `data/deep_linear_wave`
+	directory.
 
 	References
 	----------

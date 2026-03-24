@@ -5,7 +5,7 @@ from transport_framework import wave
 from utils.colors import print_warning
 
 class BichromaticWave(wave.Wave):
-	"""Represent a dimensionless bichromatic wave of arbitrarily deep water."""
+	"""Represent a dimensionless bichromatic water wave[^1]."""
 
 	def __init__(self, depth, amplitude, wavelength, slope=0,
 				 include_subharmonics=True):
@@ -13,7 +13,7 @@ class BichromaticWave(wave.Wave):
 		Attributes
 		----------
 		depth : float
-			The depth of the fluid *h'*.
+			The depth of the fluid $h'$.
 		amplitude : ndarray
 			1D array of `float` values, the wave amplitudes $A'_1$ and $A'_2$.
 		wavelength : ndarray
@@ -32,7 +32,7 @@ class BichromaticWave(wave.Wave):
 			1D array of `float` values, the wave steepnesses
 			$\epsilon = k'_1 A'_1$ and $k'_2 A'_2$.
 		gravity : float
-			The gravity **g** acting on the fluid, non-dimensionalized as,
+			The gravity $g$ acting on the fluid, non-dimensionalized as,
 			$$g = \frac{g'k'_1}{\omega^{\prime 2}_1}.$$
 		angular_freq : ndarray
 			1D array of `float` values, the angular frequencies $\omega'_1$ and
@@ -53,6 +53,12 @@ class BichromaticWave(wave.Wave):
 			1D array of `float` values, the Reynolds numbers $Re_1$ and $Re_2$
 			of the wave, computed as $$Re_i = \frac{\omega'_i}{k^{\prime 2}_i 
 			\nu'}.$$
+
+		References
+		----------
+		[^1]: [Z. Liao & Q. Zou (2025).](https://doi.org/10.1017/jfm.2025.10323)
+			  Mass transport induced by infragravity waves. *Journal of Fluid
+			  Mechanics* 1016, A5-1–A5-42.
 		"""
 		super().__init__(depth, amplitude, wavelength)
 		self.slope = slope
@@ -60,9 +66,12 @@ class BichromaticWave(wave.Wave):
 		self.gravity *= self.wavenum[0] / (self.angular_freq[0]
 										* self.angular_freq[0])
 		self.period *= self.angular_freq
-		# warn if the |h_x| << hk_g condition is not met
-		if np.abs(self.wavenum[0] - self.wavenum[1]) * depth / 10 \
-			< np.abs(slope): print_warning('Slope is too steep.')
+
+		# warn if the |h'_x'| << h' |k'_1 - k'_2| << 1 condition is not met
+		kgh = np.abs(self.wavenum[0] - self.wavenum[1]) * depth
+		if kgh / 10 < np.abs(slope): print_warning('Slope is too steep.')
+		if 0.1 < kgh: print_warning('Wave group should be long compared to the'
+								  + ' depth.')
 
 	def set_angular_freq(self):
 		r"""
@@ -92,7 +101,7 @@ class BichromaticWave(wave.Wave):
 						+ \phi_u),$$
 		where $$\upsilon = \frac{k'_g}{k'_1}, \quad
 				\zeta = \frac{\omega'_g}{\omega'_1},$$
-		is added to include subharmonic effects, thus returning
+		is added to include subharmonic effects [1], thus returning
 		$\boldsymbol{u} = \langle u^{(1)} + u^{(2)}, w^{(1)} \rangle.$
 
 		Parameters
@@ -105,7 +114,7 @@ class BichromaticWave(wave.Wave):
 		Returns
 		-------
 		ndarray
-			1D array of `float` data, the vector components *u* and *w*.
+			1D array of `float` data, the vector components $u$ and $w$.
 		"""
 		# dimensional parameters
 		k1, k2 = self.wavenum
@@ -329,22 +338,27 @@ class BichromaticWave(wave.Wave):
 			   - self.phi_u(x))
 
 	def seabed(self, x=0):
-		"""Return the depth of the seabed at horizontal position `x`."""
+		"""Return the depth of the seabed $h'$ at horizontal position `x`."""
 		return self.slope * x / self.wavenum[0] + self.depth
 
 	def beta(self, x):
 		r"""Return $$\beta \equiv \frac{|h'_{x'}|}{k'_g h'(x')}.$$"""
 		kg = np.abs(self.wavenum[0] - self.wavenum[1])
 		beta = np.abs(self.slope) / (kg * self.seabed(x))
-		if np.any(beta) > 0.5: print_warning('Coefficient \u03B2 is outside '
-										   + 'the pre-computed range.')
+		h = self.seabed(x)
+		if np.any(beta > 0.5):
+			beta_str = beta[beta > 0.5][-1]
+			h_str = h[beta > 0.5][-1]
+			print_warning('Coefficient \u03B2 is outside '
+			+ f'the pre-computed range: \u03B2 = {beta_str:.4g}, '
+			+ f'h(x) = {h_str:.4g}')
 		return beta
 
 	def xi(self, x):
 		r"""Return $$\xi = h'(x') \frac{k'_1 + k'_2}{2}.$$"""
 		k = (self.wavenum[0] + self.wavenum[1]) / 2
 		xi = k * self.seabed(x)
-		if np.any(xi) > 4.12: print_warning('Coefficient \u03BE is outside the '
+		if np.any(4.12 < xi): print_warning('Coefficient \u03BE is outside the '
 										  + 'pre-computed range.')
 		return xi
 

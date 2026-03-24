@@ -10,9 +10,9 @@ class StokesWave(wave.Wave):
 		Attributes
 		----------
 		depth : float
-			The depth of the fluid *h'*.
+			The depth of the fluid $h'$.
 		amplitude : float
-			The amplitude of the wave *A'*.
+			The amplitude of the wave $A'$.
 		wavelength : float
 			The wavelength $\lambda'$.
 		kinematic_viscosity : float
@@ -22,8 +22,8 @@ class StokesWave(wave.Wave):
 		steepness : float
 			The wave steepness, $$\epsilon = k'A'.$$
 		gravity : float
-			The gravity **g** acting on the fluid, non-dimensionalized as,
-			$$\boldsymbol{g} = \frac{\boldsymbol{g}'k'}{\omega^{\prime 2}}.$$
+			The gravity $g$ acting on the fluid, non-dimensionalized as,
+			$$g = \frac{g'k'}{\omega^{\prime 2}}.$$
 		angular_freq : float
 			The angular frequency $\omega'$, computed using the dispersion
 			relation, $$\omega' = \sqrt{g'k' \tanh(k'h')}.$$
@@ -122,7 +122,7 @@ class StokesWave(wave.Wave):
 		Returns
 		-------
 		ndarray
-			1D array of `float` data, the vector components *u* and *w*.
+			1D array of `float` data, the vector components $u$ and $w$.
 		"""
 		h = self.wavenum * self.depth	# dimensionless water depth
 		u = 1 - self.mean_speed

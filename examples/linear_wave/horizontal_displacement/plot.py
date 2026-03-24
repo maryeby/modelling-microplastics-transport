@@ -16,7 +16,7 @@ YMIN, YMAX = 0, 0.45
 NUM_BINS = 200
 
 def main():
-	r"""Plot *R* vs the change in horizontal displacement."""
+	r"""Plot $\widehat{St}$ and $R$ vs the change in horizontal displacement."""
 	numerics = pd.read_csv(IN_FILE1)
 	analysis = pd.read_csv(IN_FILE2)
 	names = ['Sthat', 'mean', 'max', 'min']

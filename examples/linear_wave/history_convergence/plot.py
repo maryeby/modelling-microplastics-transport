@@ -6,7 +6,7 @@ from examples.linear_wave.history_convergence.numerics import OUT_FILE as \
 															  IN_FILE
 
 def main():
-	"""Plot the convergence of the value of the history force at *t* = 0."""
+	"""Plot the convergence of the value of the history force at $t = 0$."""
 	numerics = pd.read_csv(IN_FILE) # read data
 
 	# initialize drift velocity figure & left subplot

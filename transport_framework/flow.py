@@ -10,9 +10,10 @@ class Flow(ABC):
 		Attributes
 		----------
 		depth : float
-			The depth of the fluid *h*.
+			The depth of the fluid $h$.
 		gravity : ndarray
-			1D array of `float` data, the gravity ***g*** acting on the fluid.
+			1D array of `float` data, the gravity $\boldsymbol{g}$ acting on the
+			fluid.
 		period : float
 			A parameter used in the computation of the integration timespan.
 		"""
@@ -35,7 +36,7 @@ class Flow(ABC):
 		Returns
 		-------
 		ndarray
-			1D array of `float` data, the vector components *u* and *w*.
+			1D array of `float` data, the vector components $u$ and $w$.
 		"""
 		pass
 

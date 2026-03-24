@@ -11,9 +11,9 @@ class Wave(flow.Flow):
 		Attributes
 		----------
 		depth : float
-			The depth of the fluid *h'*.
+			The depth of the fluid $h'$.
 		amplitude : float
-			The amplitude of the wave *A'*.
+			The amplitude of the wave $A'$.
 		wavelength : float
 			The wavelength $\lambda'$.
 		kinematic_viscosity : float
@@ -23,7 +23,8 @@ class Wave(flow.Flow):
 		steepness : float
 			The wave steepness, $$\epsilon = k'A'.$$
 		gravity : ndarray
-			1D array of `float` data, the gravity ***g'*** acting on the fluid.
+			1D array of `float` data, the gravity $\boldsymbol{g}'$ acting on
+			the fluid.
 		angular_freq : float
 			The angular frequency $\omega'$, computed using the dispersion
 			relation.

@@ -10,9 +10,9 @@ class DimensionalDeepLinearWave(wave.Wave):
 		Attributes
 		----------
 		depth : float, default=600
-			The depth of the fluid *h'*.
+			The depth of the fluid $h'$.
 		amplitude : float
-			The amplitude of the wave *A'*.
+			The amplitude of the wave $A'$.
 		wavelength : float
 			The wavelength $\lambda'$.
 		kinematic_viscosity : float
@@ -22,7 +22,8 @@ class DimensionalDeepLinearWave(wave.Wave):
 		steepness : float
 			The wave steepness, $$\epsilon = k'A'.$$
 		gravity : ndarray
-			1D array of `float` data, the gravity ***g'*** acting on the fluid.
+			1D array of `float` data, the gravity $\boldsymbol{g'}$ acting on
+			the fluid.
 		angular_freq : float
 			The angular frequency $\omega'$, computed using the dispersion
 			relation, $$\omega' = \sqrt{g'k'}.$$
@@ -37,7 +38,7 @@ class DimensionalDeepLinearWave(wave.Wave):
 			The Reynolds number of the wave, $$Re = \frac{\omega'}{k^{\prime 2}
 			\nu'}.$$
 		max_velocity : float
-			The maximum velocity *U'* at the surface *z'* = 0, computed as
+			The maximum velocity $U'$ at the surface $z' = 0$, computed as
 			$$U' = \omega' A'.$$
 
 		References
@@ -75,7 +76,7 @@ class DimensionalDeepLinearWave(wave.Wave):
 		Returns
 		-------
 		ndarray
-			1D array of `float` data, the vector components *u* and *w*.
+			1D array of `float` data, the vector components $u$ and $w$.
 		"""
 		u = self.max_velocity
 		k = self.wavenum

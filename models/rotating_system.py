@@ -17,7 +17,7 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio *R* between the particle and fluid densities,
+			The ratio $R$ between the particle and fluid densities,
 			$$R = \frac{3\rho'_f}{\rho'_f + 2\rho'_p}.$$
 		stokes_num : float
 			The density-dependent Stokes number,
@@ -33,7 +33,7 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 		super().__init__(particle, flow, density_ratio)
 
 	def set_stokes_num(self):
-		"""Set the density-dependent Stokes number *St*."""
+		r"""Set the density-dependent Stokes number $St$."""
 		self.stokes_num = self.particle.stokes_hat * (3 / (2
 												   * self.density_ratio) - 0.5)
 
@@ -247,7 +247,7 @@ class RotatingTransportSystem(transport_system.TransportSystem):
 
 def compute_alpha(size):
 	r"""
-	Create an array of the values of alpha as defined in equation (9) from [1].
+	Create an array of the values of alpha as defined in eq. (9) from Ref. 1.
 
 	Parameters
 	----------

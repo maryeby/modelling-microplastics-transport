@@ -8,8 +8,6 @@ from itertools import product
 
 from utils.plot import initialize_figure as fig
 from utils.data_tools import extract_data, update_results, NEUTRAL_R
-from examples.linear_wave.horizontal_displacement.dibenedetto_numerics import \
-	 DEPTH, WAVELENGTH
 from examples.linear_wave.horizontal_displacement.numerics import STOKES_HATS, \
 	 RS, DB_ST, DB_R, X_0S
 from examples.linear_wave.horizontal_displacement.numerics import OUT_FILE \
@@ -34,16 +32,16 @@ def main():
 	warnings.filterwarnings('ignore')
 
 	for sthat, h in product(STOKES_HATS, [False, True]):
-		sol = compute_displacement(numerics1, numerics2, sthat, DB_R, h,results)
+		sol = compute_displacement(numerics1, numerics2, sthat, DB_R, h)
 		if sol: results = update_results(results, sol[:2], sol[2:])
 	for r, h in product(RS, [False, True]):
-		sol = compute_displacement(numerics1, numerics2, DB_ST, r, h, results)
+		sol = compute_displacement(numerics1, numerics2, DB_ST, r, h)
 		if sol: results = update_results(results, sol[:2], sol[2:])
 	pd.DataFrame(results).to_csv(OUT_FILE, index=False)
 	plt.show()
 
-def compute_displacement(linear_numerics, nonlinear_numerics, sthat, r, history,
-						 results):
+def compute_displacement(linear_numerics, nonlinear_numerics, sthat, r,
+						 history):
 	r"""
 	Return the difference in total horizontal displacement between 2 particles.
 
@@ -59,13 +57,11 @@ def compute_displacement(linear_numerics, nonlinear_numerics, sthat, r, history,
 		The ratio between the particle and fluid densities.
 	history : bool
 		Whether to include history effects.
-	results : dict
-		The results dictionary to update.
 
 	Returns
 	-------
-	results : dict
-		The updated dictionary of results.
+	list
+		A list of elements to add to the results dictionary.
 	"""
 	st = sthat * (1 / r - 0.5)
 	delta_xfs = []

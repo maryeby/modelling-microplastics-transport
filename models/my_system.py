@@ -19,7 +19,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio *R* between the particle and fluid densities,
+			The ratio $R$ between the particle and fluid densities,
 			$$R = \frac{2\rho'_f}{\rho'_f + 2\rho'_p}.$$
 		stokes_num : float
 			The density-dependent Stokes number,
@@ -63,7 +63,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 										   / flow.kinematic_viscosity, 5)
 
 	def set_stokes_num(self):
-		"""Set the density-dependent Stokes number *St*."""
+		"""Set the density-dependent Stokes number $St$."""
 		self.stokes_num = np.round(self.particle.stokes_hat 
 						* (1 / self.density_ratio - 0.5), 5)
 
@@ -85,11 +85,12 @@ class MyTransportSystem(transport_system.TransportSystem):
 		Notes
 		-----
 		The maximum particle Reynolds number $Re_p$ is determined using equation
-		(2.6) from [1],
+		(2.6) from Ref. 1,
 		$$Re_p = \text{max}\Bigg(\frac{2a'|\boldsymbol{v}'
 			   - \boldsymbol{u}'|}{\nu'}\Bigg),$$
-		where **v**' and **u**' are the particle and fluid velocities, $a'$ is
-		the particle radius, and $\nu'$ is the kinematic viscosity.
+		where $\boldsymbol{v}'$ and $\boldsymbol{u}'$ are the particle and fluid
+		velocities, $a'$ is the particle radius, and $\nu'$ is the kinematic
+		viscosity.
 		"""
 		nu = self.flow.kinematic_viscosity
 		a = np.sqrt(9 * self.particle.stokes_hat * nu \
@@ -121,7 +122,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 		hide_progress : bool, default=False
 			Whether to hide progress output (progress bar, print statements).
 		include_H : boolean, default=False
-			Whether to return the values of variable H.
+			Whether to return the values of variable $H$.
 		order : int, default=3
 			The order of the integration scheme.
 
@@ -159,9 +160,9 @@ class MyTransportSystem(transport_system.TransportSystem):
 		drag_z : ndarray
 			1D array of `float` data, the vertical Stokes drag.
 		h_x : ndarray, optional
-			1D array of `float` data, the horizontal *H* value.
+			1D array of `float` data, the horizontal $H$ value.
 		h_z : ndarray, optional
-			1D array of `float` data, the vertical *H* value.
+			1D array of `float` data, the vertical $H$ value.
 		history_x : ndarray
 			1D array of `float` data, the horizontal history force.
 		history_z : ndarray
@@ -171,12 +172,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 		r = self.density_ratio
 		sthat = self.particle.stokes_hat
 		delta_t = t[1] - t[0]
-		if isinstance(self.flow, bichromatic_wave.BichromaticWave):
-			depth = self.flow.wavenum[0] * self.flow.depth
-		elif isinstance(self.flow, wave.Wave):
-			depth = self.flow.wavenum * self.flow.depth
-		else:
-			depth = self.flow.depth
+		depth = self.get_depth(y[0])
 
 		# compute the number of time steps and create arrays to store solutions
 		num_mini_steps = int(np.ceil(2 * np.sqrt(2) / delta_t))
@@ -252,6 +248,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 			print('Computing the first two intervals using mini steps...')
 		for n_prime in tqdm(range(mini_steps.size - 1), disable=hide_progress):
 			# return immediately if the particle reaches the seabed (z < -h)
+			depth = self.get_depth(mini_x[n_prime, 0])
 			if mini_x[n_prime, 1] <= -depth:
 				if not hide_progress:
 					print('Simulation ended prematurely: particle reached the',
@@ -416,6 +413,7 @@ class MyTransportSystem(transport_system.TransportSystem):
 			print('Computing the remaining intervals...')
 		for n in tqdm(range(2, num_steps), disable=hide_progress):
 			# return immediately if the particle reaches the seabed (z < -h)
+			depth = self.get_depth(x[n, 0])
 			if x[n, 1] <= -depth:
 				if not hide_progress:
 					print('Simulation ended prematurely: particle reached the',
@@ -538,9 +536,18 @@ class MyTransportSystem(transport_system.TransportSystem):
 			return [result[:m] for result in results]
 		return results
 
+	def get_depth(self, x):
+		r"""Return the dimensionless depth $h$ of the water at position `x`."""
+		if isinstance(self.flow, bichromatic_wave.BichromaticWave):
+			return self.flow.wavenum[0] * self.flow.seabed(x)
+		elif isinstance(self.flow, wave.Wave):
+			return self.flow.wavenum * self.flow.depth
+		else:
+			return self.flow.depth
+
 def compute_alpha(size, hide_progress):
 	r"""
-	Create an array of the values of alpha as defined in equation (9) in [1].
+	Create an array of the values of $\alpha$ as defined in equation (9) in [1].
 
 	Parameters
 	----------
@@ -552,7 +559,7 @@ def compute_alpha(size, hide_progress):
 	Returns
 	-------
 	ndarray
-		2D square array of `float` data, the values of the coefficient alpha.
+		2D square array of `float` data, the values of the coefficient $\alpha$.
 
 	Notes
 	-----
@@ -596,21 +603,22 @@ def compute_alpha(size, hide_progress):
 
 def compute_beta(size, alpha, hide_progress):
 	r"""
-	Create an array of the values of beta as defined in [1] Section 2.
+	Create an array of the values of $\beta$ as defined in [1] Section 2.
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
 	alpha : ndarray
-		2D array of `float` data, the values of the coefficient alpha at n = 1.
+		2D array of `float` data, the values of the coefficient $\alpha$ at
+		$n = 1$.
 	hide_progress : bool
 		Whether to hide progress output (print statements).
 
 	Returns
 	-------
 	ndarray
-		2D square array of `float` data, the values of the coefficient beta.
+		2D square array of `float` data, the values of the coefficient $\beta$.
 	"""
 	if not hide_progress:
 		print('Computing matrix of beta coefficients...', end='', flush=True)
@@ -688,14 +696,15 @@ def compute_beta(size, alpha, hide_progress):
 
 def compute_gamma(size, beta, hide_progress):
 	r"""
-	Create an array of the values of gamma as defined in [1] Section 2.
+	Create an array of the values of $\gamma$ as defined in [1] Section 2.
 
 	Parameters
 	----------
 	size : int
 		The number of rows and columns for the square matrix.
 	beta : ndarray
-		2D array of `float` data, the values of the coefficient beta at n = 1.
+		2D array of `float` data, the values of the coefficient $\beta$ at
+		$n = 1$.
 	hide_progress : bool
 		Whether to hide progress output (print statements).
 
@@ -888,9 +897,9 @@ def compute_drift_velocity(x, z, xdot, t):
 
 	Notes
 	-----
-	The drift velocity $$\bar{\boldsymbol{u}} = \langle \bar{u}, \bar{w} \rangle$$
-	is computed using the distance travelled by the particle averaged over each
-	wave period *p*,
+	The drift velocity $$\bar{\boldsymbol{u}} = \langle \bar{u}, \bar{w}
+	\rangle$$ is computed using the distance travelled by the particle averaged
+	over each wave period $p$,
 	$$\bar{\boldsymbol{u}} = \frac{\boldsymbol{x}_{p + 1} - \boldsymbol{x}_p}
 	{t_{p + 1} - t_p}.$$
 	"""

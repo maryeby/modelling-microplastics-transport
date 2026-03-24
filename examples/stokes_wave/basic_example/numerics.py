@@ -13,8 +13,8 @@ AMPLITUDE = 0.07
 WAVELENGTH = 1.5
 
 # particle conditions
-STOKES_HAT = np.round(19 / 205, 5)	# St = 0.1
-X_0, Z_0 = 0, 0						# initial particle position
+STOKES_HAT = 0.2
+X_0, Z_0 = 0, -1					# initial particle position
 
 # simulation conditions
 R = 0.66							# density ratio

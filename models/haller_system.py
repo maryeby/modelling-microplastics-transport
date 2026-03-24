@@ -15,7 +15,7 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		flow : Flow (obj)
 			The flow through which the particle is transported.
 		density_ratio : float
-			The ratio *R* between the particle and fluid densities,
+			The ratio $R$ between the particle and fluid densities,
 			$$R = \frac{2\rho'_f}{\rho'_f + 2\rho'_p}.$$
 		stokes_num : float
 			The density-dependent Stokes number,
@@ -23,11 +23,11 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		reynolds_num : float
 			The particle Reynolds number, computed as,
 			$$Re_p = \frac{2a'\omega'A'}{\nu'},$$
-			where $\omega'$, *A'* and $\nu'$ are attributes of the wave, and
-			*a'* is the radius of the particle.
+			where $\omega'$, $A'$ and $\nu'$ are attributes of the wave, and
+			$a'$ is the radius of the particle.
 		epsilon : float
 			A relationship between the Stokes number $\widehat{St}$ and density
-			ratio *R*, $$\epsilon = \frac{\widehat{St}}{R}.$$
+			ratio $R$, $$\epsilon = \frac{\widehat{St}}{R}.$$
 
 		References
 		----------
@@ -45,7 +45,7 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		self.epsilon = self.particle.stokes_hat / self.density_ratio
 
 	def set_stokes_num(self):
-		"""Set the density-dependent Stokes number *St*."""
+		r"""Set the density-dependent Stokes number $St$."""
 		self.stokes_num = self.particle.stokes_hat * (1 / self.density_ratio
 												   - 0.5)
 
@@ -77,8 +77,8 @@ class HallerTransportSystem(transport_system.TransportSystem):
 			\qquad \epsilon = \frac{\widehat{St}}{R},
 			\qquad \widehat{St} = \frac 29 (a'k')^2 Re,
 			\qquad Re = \frac{\omega'}{k^{\prime 2} \nu'},$$
-		where *Re* is the Reynolds number, *a'* is the particle radius, $\nu'$
-		is the kinematic viscosity, $\omega'$ is the angular frequency, *k'* is
+		where $Re$ is the Reynolds number, $a'$ is the particle radius, $\nu'$
+		is the kinematic viscosity, $\omega'$ is the angular frequency, $k'$ is
 		the wave number, and $\rho'$ is the density of the particle or the
 		fluid, denoted by the subscript.
 		"""
@@ -124,19 +124,19 @@ class HallerTransportSystem(transport_system.TransportSystem):
 		Notes
 		-----
 		Computations correspond to equation (10) in [1],
-		$$\boldsymbol{v} = \boldsymbol{u} + \epsilon \Bigg(\frac{3R}{2} - 1\Bigg)
-		\Bigg[\frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D}t} - \boldsymbol{g}\Bigg]
-		+ \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
-		\Bigg[\frac{\mathrm{D}^2\boldsymbol{u}}{\mathrm{D}t^2}
-		+ \Bigg(\frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D}t} - \boldsymbol{g}\Bigg)
-		\cdot \nabla \boldsymbol{u}\Bigg]
+		$$\boldsymbol{v} = \boldsymbol{u} + \epsilon \Bigg(\frac{3R}{2}]
+		- 1\Bigg)\Bigg[\frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D}t}
+		- \boldsymbol{g}\Bigg] + \epsilon^2 \Bigg(1 - \frac{3R}{2}\Bigg)
+		  \Bigg[\frac{\mathrm{D}^2\boldsymbol{u}}{\mathrm{D}t^2}
+		+ \Bigg(\frac{\mathrm{D}\boldsymbol{u}}{\mathrm{D}t}
+		- \boldsymbol{g}\Bigg) \cdot \nabla \boldsymbol{u}\Bigg]
 		+ \mathcal{O}(\epsilon^3)$$ with
 		$$R = \frac{2 \rho'_f}{\rho'_f + 2 \rho'_p},
 			\qquad \epsilon = \frac{\widehat{St}}{R},
 			\qquad \widehat{St} = \frac 29 (a'k')^2 Re,
 			\qquad Re = \frac{\omega'}{k^{\prime 2} \nu'},$$
-		where *Re* is the Reynolds number, *a'* is the particle radius, $\nu'$
-		is the kinematic viscosity, $\omega'$ is the angular frequency, *k'* is
+		where $Re$ is the Reynolds number, $a'$ is the particle radius, $\nu'$
+		is the kinematic viscosity, $\omega'$ is the angular frequency, $k'$ is
 		the wave number, and $\rho'$ is the density of the particle or the
 		fluid, denoted by the subscript.
 		"""

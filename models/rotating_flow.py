@@ -9,9 +9,10 @@ class RotatingFlow(flow.Flow):
 		Attributes
 		----------
 		depth : float, default=50
-			The depth of the fluid *h*.
+			The depth of the fluid $h$.
 		gravity : ndarray
-			1D array of `float` data, the gravity ***g*** acting on the fluid.
+			1D array of `float` data, the gravity $\boldsymbol{g}$ acting on the
+			fluid.
 		period : float
 			A parameter used in the computation of the timespan over which to
 			integrate.
@@ -41,7 +42,7 @@ class RotatingFlow(flow.Flow):
 		Returns
 		-------
 		ndarray
-			1D array of `float` data, the vector components *u* and *w*.
+			1D array of `float` data, the vector components $u$ and $w$.
 		"""
 		return np.array([-z, x])
 

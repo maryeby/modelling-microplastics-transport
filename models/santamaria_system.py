@@ -23,7 +23,7 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		reynolds_num : float
 			The particle Reynolds number, computed as,
 			$$Re_p = \frac{2a'U'}{\nu'},$$
-			where *U'* and $\nu'$ are attributes of the wave, and *a'* is the
+			where $U'$ and $\nu'$ are attributes of the wave, and $a'$ is the
 			radius of the particle.
 		st_response_time : float
 			The Stokes response time $\tau'$, computed as
@@ -71,11 +71,12 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		Computations correspond to equations (3) and (4) in [1],
 		$$\frac{\mathrm{d}\boldsymbol{x'}}{\mathrm{d}t'} = \boldsymbol{v'},$$
 		$$\frac{\mathrm{d}\boldsymbol{v'}}{\mathrm{d}t'}
-			= \frac{\boldsymbol{u'} - \boldsymbol{v'}}{\tau'} + (1 - \beta) \boldsymbol{g'}
-			+ \beta \frac{\mathrm{D}\boldsymbol{u'}}{\mathrm{D}t'}$$ with
+			= \frac{\boldsymbol{u'} - \boldsymbol{v'}}{\tau'} + (1 - \beta)
+			  \boldsymbol{g'} + \beta \frac{\mathrm{D}\boldsymbol{u'}}
+			  {\mathrm{D}t'}$$ with
 		$$\tau' = \frac{a'^2}{3 \beta \nu'},
-			\qquad \beta = \frac{3 \rho'_f}{\rho'_f + 2 \rho'_p},$$
-		where *a'* is the particle radius, $\nu'$ is the kinematic viscosity,
+			  \qquad \beta = \frac{3 \rho'_f}{\rho'_f + 2 \rho'_p},$$
+		where $a'$ is the particle radius, $\nu'$ is the kinematic viscosity,
 		and $\rho'$ is the density of the particle or the fluid.
 
 		References
@@ -126,13 +127,14 @@ class SantamariaTransportSystem(transport_system.TransportSystem):
 		Notes
 		-----
 		Computations correspond to equation (5) in [1],
-		$$\boldsymbol{v'} = \boldsymbol{u'} + \tau' (1 - \beta) \Bigg(\boldsymbol{g}'
+		$$\boldsymbol{v'} = \boldsymbol{u'} + \tau' (1 - \beta)
+		  \Bigg(\boldsymbol{g}'
 		- \frac{\mathrm{D}\boldsymbol{u}'}{\mathrm{D}t'}\Bigg)
 		+ \tau'^2 (1 - \beta) \frac{\mathrm{D}^2\boldsymbol{u}'}{\mathrm{D}t'^2}
 		+ \mathcal{O}(\tau'^3)$$ with
 		$$\tau' = \frac{a'^2}{3 \beta \nu'},
 			\qquad \beta = \frac{3 \rho'_f}{\rho'_f + 2 \rho'_p},$$
-		where *a'* is the particle radius, $\nu'$ is the kinematic viscosity,
+		where $a'$ is the particle radius, $\nu'$ is the kinematic viscosity,
 		and $\rho'$ is the density of the particle or the fluid.
 
 		References

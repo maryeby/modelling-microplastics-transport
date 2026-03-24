@@ -4,18 +4,18 @@ import matplotlib.pyplot as plt
 from utils.plot import initialize_figure as fig
 from utils.data_tools import extract_data
 from utils.colors import COLORS
-from examples.relaxing_particle.numerics import BETAS
+from examples.relaxing_particle.velocity.numerics import BETAS
+from examples.relaxing_particle.velocity.numerics import OUT_FILE as IN_FILE1
+from examples.relaxing_particle.velocity.asymptotics import OUT_FILE as IN_FILE2
 
-IN_FILE1 = '../data/relaxing_particle/numerics.csv'
-IN_FILE2 = '../data/relaxing_particle/asymptotics.csv'
-IN_FILE3 = '../data/relaxing_particle/prasath_fig4.csv'
+IN_FILE3 = '../../data/relaxing_particle/prasath_fig4.csv'
 
 def main():
 	"""
 	Plot the horizontal velocity of a relaxing particle over time.
 
 	The plot includes numerical and asymptotic results for a particle in a
-	quiescent flow, reproducing the results from [1] Figure 4.
+	quiescent flow, reproducing the results from Ref. 1 Figure 4.
 
 	References
 	----------

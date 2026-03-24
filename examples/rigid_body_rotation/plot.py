@@ -11,6 +11,7 @@ IN_FILE3 = '../data/rigid_body_rotation/history.csv'
 IN_FILE4 = '../data/rigid_body_rotation/rel_error.csv'
 IN_FILE5 = '../data/rigid_body_rotation/global_error.csv'
 IN_FILE6 = '../data/rigid_body_rotation/daitche_fig3.csv'
+IN_FILE7 = '../data/rigid_body_rotation/mini_numerics.csv'
 STYLES = ['--', '-.', ':']
 LABELS = ['first order', 'second order', 'third order']
 
@@ -36,6 +37,7 @@ def main():
 	rel_error = pd.read_csv(IN_FILE4)
 	global_error = pd.read_csv(IN_FILE5)
 	daitche = pd.read_csv(IN_FILE6)
+	mini_numerics = pd.read_csv(IN_FILE7)
 
 	# initialize trajectory figure
 	fig(r'$x$', r'$z$', lims=[-2, 2.5, -2.5, 2], make_square=True,
@@ -118,6 +120,18 @@ def main():
 	fig(r'$t$', r"$H'(t)_z$", 212)
 	plt.plot(t, exact_z, c='silver')
 	plt.plot(t, history_z, ':k')
+
+	# plot history over small time
+	names = ['t', 'history_x', 'history_z']
+	t, x, z = extract_data(['t', 'history_x', 'history_z'], mini_numerics)
+	t, x, z = crop([t, x, z], -2)
+	t, x = t.to_list(), x.to_list()
+	fig(y_label=r"$H'(t)_x$", num=211, hide_xticks=True)
+	plt.plot(t, [0] + x[1:], '-k')
+	plt.scatter(t[1:15], x[1:15], c='k', marker='.')
+	fig(r'$t$', r"$H'(t)_z$", 212)
+	plt.plot(t, z, '-k')
+	plt.scatter(t[1:50:20], z[1:50:20], c='k', marker='.')
 
 	# plot computation time
 	fig(r'$\Delta t$', 'computation time (s)', x_scale='log', y_scale='log')

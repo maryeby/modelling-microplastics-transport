@@ -4,6 +4,7 @@ import matplotlib.gridspec as gridspec
 PTS_PER_INCH = 72.27			# used to compute figure size
 THESIS_WIDTH = 426.79135		# textwidth for thesis LaTeX template
 JFM_WIDTH = 384					# textwidth for JFM LaTeX template
+AIP_WIDTH = 246					# columnwidth for AIP LaTeX template
 RATIO = (5 ** (1 / 2) - 1) / 2	# ratio of figure width to height
 
 # formatting for subplot (a), (b) labels
@@ -29,7 +30,7 @@ def initialize_figure(x_label=None, y_label=None, num=None, make_square=False,
 	equal_aspect : bool, default=False
 		Whether to make the aspect ratio of the pyplot Axes scaling equal.
 	width : str or float, default=THESIS_WIDTH
-		The width of the figure in pts, or 'jfm' to use the JFM template width.
+		The width of the figure in pts or one of the templates (`jfm` or `aip`).
 	lims : list, default=None
 		A list containing the axis limits `[xmin, xmax, ymin, ymax]`.
 	x_scale, y_scale : str, default=None
@@ -80,6 +81,24 @@ def initialize_figure(x_label=None, y_label=None, num=None, make_square=False,
 
 	# set figure size
 	if width == 'jfm': width = JFM_WIDTH
+	if width == 'aip': width = AIP_WIDTH
 	width /= PTS_PER_INCH
 	height = width * RATIO * (rows / cols)
 	plt.gcf().set_size_inches(width, height)
+
+def plot_quality_control(xdata, ydata, rsq, tol=0.99):
+	r"""
+	Plot data points where the $R^2$ value is above the tolerance `tol`.
+
+	Parameters
+	----------
+	xdata, ydata : Series
+		The data to be plotted on the horizontal and vertical axes.
+	rsq : Series
+		The $R^2$ data.
+	tol : float, default=0.99
+		The tolerance with which to compare the $R^2$ data.
+	"""
+	qc_xdata = xdata.where(rsq < tol).dropna()
+	qc_ydata = ydata.where(rsq < tol).dropna()
+	plt.scatter(qc_xdata, qc_ydata, edgecolors='k', facecolors='none')

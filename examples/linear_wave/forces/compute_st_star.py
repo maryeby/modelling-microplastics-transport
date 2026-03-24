@@ -8,7 +8,7 @@ from examples.linear_wave.forces.numerics import STOKES_HATS, RS
 from examples.linear_wave.forces.analysis import OUT_FILE as IN_FILE
 
 TOL = 1e-1
-KEYS = ['Sthat*', 'Sthat75', 'St*', 'St75', 'R']
+KEYS = ['Sthat*', 'Sthat75', 'St*', 'St75', 'R', 'R^2']
 OUT_FILE = '../../data/linear_wave/forces_st_star.csv'
 
 def main():
@@ -29,11 +29,13 @@ def main():
 	for r in RS:
 		# extract data
 		params = {'R': r, 'force': 'stokes_drag'}
-		stokes_drag = extract_data('A', analysis, params)
+		stokes_drag, rsq1 = extract_data(['A', 'R^2'], analysis, params)
 		params['force'] = 'history_force'
-		history, st = extract_data(['A', 'St'], analysis, params)
+		history, st, rsq2 = extract_data(['A', 'St', 'R^2'], analysis, params)
 		st, stokes_drag, history = st.to_numpy(), stokes_drag.to_numpy(), \
 								   history.to_numpy()
+		rsq = max(rsq1.max(), rsq2.max())
+
 		# compute St*
 		st_star, a_star, i, _ = intersection(st, stokes_drag, st, history)
 		sthat_star, ahat_star, i, _ = intersection(STOKES_HATS, stokes_drag,
@@ -56,10 +58,10 @@ def main():
 
 		# store results
 		if st_star == 0 and st75 == 0:
-			results = update_results(results, [], [0, 0, 0, 0, 0])
+			results = update_results(results, [], [0, 0, 0, 0, 0, 0])
 		else:
 			results = update_results(results, [], [sthat_star, sthat75, st_star,
-												   st75, r])
+												   st75, r, rsq])
 	# write results to data file
 	df = pd.DataFrame(results)
 	df.replace(0, pd.NA, inplace=True)

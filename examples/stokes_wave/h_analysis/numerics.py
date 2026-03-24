@@ -78,7 +78,7 @@ def run_numerics(stokes_hat, r, h, include_history):
 	r : float
 		The ratio between the particle and fluid densities.
 	h : float
-		The depth *h'* of the water.
+		The depth $h'$ of the water.
 	include_history : bool
 		Whether to include history effects.
 

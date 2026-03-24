@@ -9,7 +9,7 @@ from examples.deep_linear_wave.santamaria.fig1_numerics import OUT_FILE \
 
 def main():
 	"""
-	Reproduce Figure 1 from [1].
+	Reproduce Figure 1 from Ref. 1.
 
 	References
 	----------

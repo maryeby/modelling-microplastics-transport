@@ -82,7 +82,7 @@ def run_numerics(particle, a, z_0, r, include_history):
 	particle : Particle (obj)
 		The particle transported through the wave.
 	a : float
-		The amplitude of the wave, *A'*.
+		The amplitude of the wave, $A'$.
 	z_0 : float
 		The initial vertical particle position.
 	r : float

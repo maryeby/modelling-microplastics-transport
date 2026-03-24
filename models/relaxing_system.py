@@ -51,7 +51,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 		self.gamma = 1 / r * np.sqrt(2 / particle.stokes_hat)
 
 	def set_stokes_num(self):
-		"""Set the density-dependent Stokes number *St*."""
+		r"""Set the density-dependent Stokes number $St$."""
 		self.stokes_num = self.particle.stokes_hat * self.density_ratio
 
 	def asymptotic_velocity(self, t):
@@ -70,7 +70,7 @@ class RelaxingTransportSystem(transport_system.TransportSystem):
 
 		Notes
 		-----
-		The computation is based on eq (4.7) from [1],
+		The computation is based on eq (4.7) from Ref. 1,
 		$$q^{(2)}(0, t) \approx c(\alpha, \gamma)
 			- \frac{\sigma \gamma}{\alpha^2 \sqrt{\pi t}}
 			+ \mathcal{O}(t^{3 / 2}),$$

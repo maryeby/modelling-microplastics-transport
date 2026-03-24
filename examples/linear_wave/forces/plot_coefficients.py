@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from utils.plot import initialize_figure as fig
+from utils.plot import plot_quality_control
 from utils.data_tools import extract_data
 from examples.linear_wave.forces.numerics import STOKES_HATS
 from examples.linear_wave.forces.numerics import OUT_FILE as IN_FILE1
@@ -14,7 +15,6 @@ from examples.linear_wave.forces.analysis import OUT_FILE as IN_FILE2
 FORMATS = ['-k', '--k', '-.k', ':k']
 XLABEL = r'$St$'
 YLABELS = [r'$A$', r'$\delta$', r'$\phi$', 'offset']
-TOL = 0.96
 
 def main():
 	"""
@@ -54,13 +54,7 @@ def plot_points(force, label, coeff, fmt, coefficients):
 	params = {'force': force, 'R': R}
 	data, rsq, st = extract_data(names, coefficients, params)
 	plt.plot(st, data, fmt, label=label)
-
-	# plot quality control points
-	qc_st = st.where(rsq < TOL).dropna()
-	qc_data = data.where(rsq < TOL).dropna()
-	label = rf'$R^2 < {TOL}$' if include_legend else ''
-	plt.scatter(qc_st[3:], qc_data[3:], edgecolors='k', facecolors='none',
-			    label=label)
+	plot_quality_control(st, data, rsq)
 
 	# compute max offset and its % of the amplitude, add legend
 	if include_legend:

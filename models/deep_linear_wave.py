@@ -10,11 +10,11 @@ class DeepLinearWave(wave.Wave):
 		Attributes
 		----------
 		amplitude : float
-			The amplitude of the wave *A'*.
+			The amplitude of the wave $A'$.
 		wavelength : float
 			The wavelength $\lambda'$.
 		depth : float, default=600
-			The depth of the fluid *h'*.
+			The depth of the fluid $h'$.
 		wavenum : float
 			The wavenumber, $$k' = 2 \pi / \lambda'.$$
 		steepness : float
@@ -22,7 +22,8 @@ class DeepLinearWave(wave.Wave):
 		kinematic_viscosity : float
 			The kinematic viscosity $\nu'$ of seawater.
 		gravity : ndarray
-			The gravity **g** acting on the fluid, non-dimensionalized as,
+			The gravity $\boldsymbol{g}$ acting on the fluid,
+			non-dimensionalized as,
 			$$\boldsymbol{g} = \frac{\boldsymbol{g}'k'}{\omega^{\prime 2}}.$$
 		angular_freq : float
 			The angular frequency $\omega'$, computed using the dispersion
@@ -38,7 +39,7 @@ class DeepLinearWave(wave.Wave):
 			The Reynolds number of the wave, $$Re = \frac{\omega'}{k^{\prime 2}
 			\nu'}.$$
 		max_velocity : float
-			The maximum velocity *U'* at the surface *z'* = 0, computed as
+			The maximum velocity $U'$ at the surface $z' = 0$, computed as
 			$$U' = \omega' A'.$$
 
 		References
@@ -76,7 +77,7 @@ class DeepLinearWave(wave.Wave):
 		Returns
 		-------
 		ndarray
-			1D array of `float` data, the vector components *u* and *w*.
+			1D array of `float` data, the vector components $u$ and $w$.
 		"""
 		return np.array([self.steepness * np.exp(z) * np.cos(x - t),
 						 self.steepness * np.exp(z) * np.sin(x - t)])

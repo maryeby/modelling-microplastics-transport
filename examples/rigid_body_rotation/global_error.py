@@ -19,7 +19,7 @@ def main():
 
 	The global error between the exact (analytical) results and numerical 
 	results is computed with varying timestep sizes to reproduce the results
-	from [1] Figure 4. Results are saved to the `data/rigid_body_rotation`
+	from Ref. 1 Figure 4. Results are saved to the `data/rigid_body_rotation`
 	directory.
 	
 	References

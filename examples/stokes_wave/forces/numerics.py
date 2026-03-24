@@ -41,7 +41,7 @@ def main():
 
 def run_simulation(stokes_hat, r):
 	r"""
-	Run a numerical simulation with the specified $\widehat{St}$ and *R*.
+	Run a numerical simulation with the specified $\widehat{St}$ and $R$.
 
 	Parameters
 	----------

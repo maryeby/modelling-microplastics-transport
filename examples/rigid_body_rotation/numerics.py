@@ -18,7 +18,7 @@ def main():
 	"""
 	Run numerical simultions for a rotating rigid body.
 
-	The simulations reproduce the numerical results from [1] Figures 3 and 4.
+	The simulations reproduce the numerical results from Ref. 1 Figures 3 and 4.
 	Results are saved to the `data/rigid_body_rotation` directory.
 	
 	References

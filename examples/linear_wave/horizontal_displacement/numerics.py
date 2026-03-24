@@ -63,9 +63,9 @@ def estimate_num_periods(k, g, period, stokes_hat, r):
 	Parameters
 	----------
 	k : float
-		The wavenumber *k'* associated with the flow.
+		The wavenumber $k'$ associated with the flow.
 	g : float
-		The dimensionless gravity *g* acting on the particle.
+		The dimensionless gravity $g$ acting on the particle.
 	period : float
 		The dimensionless wave period.
 	stokes_hat : float
@@ -149,7 +149,7 @@ def check_boundary(stokes_hat, r, include_history, z_f, k):
 	z_f : float
 		The final vertical position of the particle.
 	k : float
-		The wavenumber *k'* associated with the flow.
+		The wavenumber $k'$ associated with the flow.
 	"""
 	h = -k * DEPTH
 	if r < 2 / 3 and TOL < np.abs(h - z_f):
